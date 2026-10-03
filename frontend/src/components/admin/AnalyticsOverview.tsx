@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Calendar, ShoppingBag, TrendingUp, Filter, Loader2 } from 'lucide-react';
+// FIX 1: Removed unused imports (Calendar, Filter, Loader2)
+import { ShoppingBag, TrendingUp } from 'lucide-react'; 
 import { adminRequest } from '@/lib/adminApi';
 import { formatRupees } from '@/lib/format';
 
@@ -92,7 +93,8 @@ export function AnalyticsOverview() {
           <select 
             className="h-10 rounded-xl bg-white px-3 text-sm font-medium ring-1 ring-brand-100 outline-none focus:ring-2 focus:ring-brand-500"
             value={dateRangeType}
-            onChange={(e) => setDateRangeType(e.target.value as any)}
+            // FIX 2: Replaced `as any` with the exact literal types expected by state
+            onChange={(e) => setDateRangeType(e.target.value as 'today' | 'yesterday' | 'custom')}
           >
             <option value="today">Today</option>
             <option value="yesterday">Yesterday</option>
@@ -134,7 +136,7 @@ export function AnalyticsOverview() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           
-          {/* Revenue Card */}
+      
           <div className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ink-soft">
               <TrendingUp className="h-4 w-4 text-brand-600" />

@@ -155,7 +155,7 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
       {(!billed || dirty) && !confirmDelivery && <p className="text-xs text-ink-soft">Save the bill before marking the order as delivered.</p>}
     </div>
   );
-
+// jgg
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
@@ -239,6 +239,7 @@ function AmountInput({ id, label, hint, value, onChange }: { id: string; label: 
           className="h-11 w-full rounded-xl bg-transparent px-2 font-semibold tabular-nums focus:outline-none"
         />
       </div>
+      
       <p className="mt-1 text-[11px] text-ink-soft">{hint}</p>
     </div>
   );
