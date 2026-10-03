@@ -564,6 +564,7 @@ export function OrdersBoard() {
     else if (event.key === 'Home') next = 0;
     else if (event.key === 'End') next = TABS.length - 1;
     else return;
+    if (!TABS[next]) return;
     event.preventDefault();
     setActiveTab(TABS[next].status);
     document.getElementById(`${tabsId}-tab-${TABS[next].status}`)?.focus();
