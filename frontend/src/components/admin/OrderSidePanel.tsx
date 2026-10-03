@@ -37,6 +37,24 @@ const CANCEL_REASONS = [
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Keeps Tab / Shift+Tab inside the element the handler is attached to. */
+// function trapTab(event: ReactKeyboardEvent<HTMLElement>) {
+//   if (event.key !== 'Tab') return;
+//   const container = event.currentTarget;
+//   const nodes = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((node) => node.getClientRects().length > 0);
+//   if (nodes.length === 0) return;
+//   const first = nodes[0];
+//   const last = nodes[nodes.length - 1];
+//   const active = document.activeElement;
+//   const outside = !container.contains(active);
+//   if (event.shiftKey && (active === first || outside)) {
+//     event.preventDefault();
+//     last.focus();
+//   } else if (!event.shiftKey && (active === last || outside)) {
+//     event.preventDefault();
+//     first.focus();
+//   }
+// }
+/** Keeps Tab / Shift+Tab inside the element the handler is attached to. */
 function trapTab(event: ReactKeyboardEvent<HTMLElement>) {
   if (event.key !== 'Tab') return;
   const container = event.currentTarget;
@@ -48,10 +66,10 @@ function trapTab(event: ReactKeyboardEvent<HTMLElement>) {
   const outside = !container.contains(active);
   if (event.shiftKey && (active === first || outside)) {
     event.preventDefault();
-    last.focus();
+    last?.focus(); // <-- Yahan ? add kiya gaya hai
   } else if (!event.shiftKey && (active === last || outside)) {
     event.preventDefault();
-    first.focus();
+    first?.focus(); // <-- Yahan ? add kiya gaya hai
   }
 }
 
