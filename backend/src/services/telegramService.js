@@ -50,7 +50,8 @@ export function buildOrderMessage(order, settings) {
   return lines.join('\n');
 }
 
-export function createTelegramNotifier({ botToken, chatId, fetchImpl = globalThis.fetch, timeoutMs = 6000, logger = console }) {
+// Timeout updated to 30000 (30 seconds) for Render deployment
+export function createTelegramNotifier({ botToken, chatId, fetchImpl = globalThis.fetch, timeoutMs = 30000, logger = console }) {
   const configured = Boolean(botToken && chatId);
 
   async function call(method, payload) {
