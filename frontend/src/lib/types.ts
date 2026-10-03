@@ -1,5 +1,7 @@
+// types.ts
 export type OrderType = 'manual_text' | 'prescription_image';
-export type OrderStatus = 'Pending' | 'Delivered';
+// ADDED: 'Cancelled' to OrderStatus
+export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
 export interface MedicineItem {
   name: string;
@@ -50,6 +52,8 @@ export interface TrackedOrder {
   deliveredAt: string | null;
   paymentMethod: string;
   finalAmount: number | null;
+  // ADDED: cancelReason for the tracking page
+  cancelReason: string | null;
 }
 
 export interface OfferEvaluation {
@@ -100,6 +104,8 @@ export interface AdminOrder {
   createdAt: string;
   deliveredAt: string | null;
   customer: CustomerSummary | null;
+
+  cancelReason: string | null;
 }
 
 export interface Pagination {

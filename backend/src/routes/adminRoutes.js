@@ -7,6 +7,7 @@ import {
   listOrdersQuerySchema,
   loginSchema,
   settingsUpdateSchema,
+  cancelOrderSchema, // ADDED
 } from '../validation/schemas.js';
 
 export function createAdminRouter({ env, controller, limiters }) {
@@ -27,6 +28,8 @@ export function createAdminRouter({ env, controller, limiters }) {
   router.get('/orders/:id', authenticated, controller.getOrder);
   router.patch('/orders/:id/billing', authenticated, validateBody(billingSchema), controller.saveBilling);
   router.patch('/orders/:id/deliver', authenticated, controller.markDelivered);
+  
+  router.patch('/orders/:id/cancel', authenticated, validateBody(cancelOrderSchema), controller.cancelOrder);
 
   router.get('/customers', authenticated, validateQuery(listCustomersQuerySchema), controller.listCustomers);
 

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
-export const ORDER_STATUSES = Object.freeze(['Pending', 'Delivered']);
+// UPDATED: Added 'Cancelled' to allowed statuses
+export const ORDER_STATUSES = Object.freeze(['Pending', 'Delivered', 'Cancelled']);
 export const ORDER_TYPES = Object.freeze(['manual_text', 'prescription_image']);
 export const PAYMENT_METHOD = 'Pay at Delivery (Cash/UPI)';
 
@@ -30,14 +31,12 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: { type: String, default: PAYMENT_METHOD },
 
-    // Billing. The first-order gift threshold is checked against medicineSubtotal ONLY.
     medicineSubtotal: money,
     nonMedicineSubtotal: money,
     deliveryCharge: money,
     finalAmount: money,
     billedAt: { type: Date, default: null },
 
-    // Offer state. offerOptIn records the customer's banner choice; eligibility is decided at billing.
     offerOptIn: { type: Boolean, default: false },
     firstOrderAtCreation: { type: Boolean, required: true },
     customerOrderNumber: { type: Number, required: true, min: 1 },
@@ -45,6 +44,9 @@ const orderSchema = new mongoose.Schema(
     offerApplied: { type: Boolean, default: false },
 
     status: { type: String, enum: ORDER_STATUSES, default: 'Pending', index: true },
+    
+    cancelReason: { type: String, default: null },
+    
     telegramNotificationSent: { type: Boolean, default: false },
     deliveredAt: { type: Date, default: null },
   },

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Order } from '../models/Order.js';
 import { User } from '../models/User.js';
-import { conflict, notFound, unprocessable } from '../utils/AppError.js';
+import { conflict, notFound, unprocessable, badRequest } from '../utils/AppError.js';
 import { escapeRegex } from '../utils/text.js';
 import { calculateBill, evaluateOfferEligibility } from './offerService.js';
 import { getSettings } from './settingsService.js';
@@ -39,7 +39,6 @@ function toAdminOrder(order, user, settings) {
     previousOrders: order.customerOrderNumber - 1,
     offerEligible: order.offerEligible,
     offerApplied: order.offerApplied,
-    // Live check against current settings, using the stored medicine subtotal only.
     offer: evaluateOfferEligibility({
       settings,
       firstOrderAtCreation: order.firstOrderAtCreation,
@@ -47,6 +46,8 @@ function toAdminOrder(order, user, settings) {
       medicineSubtotal: order.medicineSubtotal,
     }),
     status: order.status,
+    // NEW: Include cancel details for the frontend
+    cancelReason: order.cancelReason,
     telegramNotificationSent: order.telegramNotificationSent,
     createdAt: order.createdAt,
     deliveredAt: order.deliveredAt,
@@ -68,7 +69,7 @@ async function findOrderOrThrow(id) {
 
 export async function listOrders({ status, page, limit }) {
   const filter = { status };
-  const sort = status === 'Delivered' ? { deliveredAt: -1, _id: -1 } : { createdAt: -1, _id: -1 };
+  const sort = status === 'Delivered' || status === 'Cancelled' ? { updatedAt: -1, _id: -1 } : { createdAt: -1, _id: -1 };
   const [orders, total, settings] = await Promise.all([
     Order.find(filter).sort(sort).skip((page - 1) * limit).limit(limit).lean(),
     Order.countDocuments(filter),
@@ -87,13 +88,9 @@ export async function getOrder(id) {
   return toAdminOrder(order, user, settings);
 }
 
-/**
- * Admin enters only the two subtotals. Delivery comes from Settings, the final amount is
- * computed, and eligibility is decided here on the medicine subtotal alone.
- */
 export async function saveBilling(id, { medicineSubtotal, nonMedicineSubtotal, offerApplied }) {
   const order = await findOrderOrThrow(id);
-  if (order.status !== 'Pending') throw conflict('Delivered orders cannot be re-billed', 'ORDER_LOCKED');
+  if (order.status !== 'Pending') throw conflict('Only pending orders can be billed', 'ORDER_LOCKED');
 
   const [settings, user] = await Promise.all([getSettings(), User.findOne({ mobileNumber: order.mobileNumber }).lean()]);
   const bill = calculateBill({ medicineSubtotal, nonMedicineSubtotal, deliveryCharge: settings.deliveryCharge });
@@ -113,18 +110,17 @@ export async function saveBilling(id, { medicineSubtotal, nonMedicineSubtotal, o
     { $set: { ...bill, offerEligible: offer.eligible, offerApplied: Boolean(offerApplied), billedAt: new Date() } },
     { new: true, lean: true },
   );
-  if (!updated) throw conflict('Order was delivered while you were billing it', 'ORDER_LOCKED');
+  if (!updated) throw conflict('Order was modified while you were billing it', 'ORDER_LOCKED');
   return toAdminOrder(updated, user, settings);
 }
 
 export async function markDelivered(id) {
   const order = await findOrderOrThrow(id);
-  if (order.status === 'Delivered') throw conflict('Order is already delivered', 'ALREADY_DELIVERED');
+  if (order.status !== 'Pending') throw conflict('Order is already delivered or cancelled', 'ALREADY_DELIVERED');
   if (!order.billedAt) throw unprocessable('Save the bill before marking the order as delivered.', 'BILL_REQUIRED');
 
   let claimedGift = false;
   if (order.offerApplied) {
-    // Conditional update makes the one-gift-per-customer rule safe under concurrent requests.
     const claim = await User.updateOne(
       { mobileNumber: order.mobileNumber, offerClaimed: false },
       { $set: { offerClaimed: true, offerClaimedOrderId: order.orderId } },
@@ -147,10 +143,30 @@ export async function markDelivered(id) {
         { $set: { offerClaimed: false, offerClaimedOrderId: null } },
       );
     }
-    throw conflict('Order is already delivered', 'ALREADY_DELIVERED');
+    throw conflict('Order is already modified', 'ALREADY_DELIVERED');
   }
 
   await User.updateOne({ mobileNumber: order.mobileNumber }, { $inc: { deliveredOrders: 1 } });
+  return getOrder(id);
+}
+
+// NEW: Cancel Order Service
+export async function cancelOrder(id, cancelReason) {
+  const order = await findOrderOrThrow(id);
+  if (order.status !== 'Pending') {
+    throw badRequest('Only pending orders can be cancelled');
+  }
+
+  const updated = await Order.findOneAndUpdate(
+    { _id: order._id, status: 'Pending' },
+    { $set: { status: 'Cancelled', cancelReason, updatedAt: new Date() } },
+    { new: true, lean: true }
+  );
+
+  if (!updated) {
+    throw conflict('Order was modified while you were cancelling it', 'ORDER_LOCKED');
+  }
+
   return getOrder(id);
 }
 

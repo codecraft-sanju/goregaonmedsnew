@@ -14,10 +14,6 @@ function formatRupees(amount) {
   return `₹${Number(amount).toLocaleString('en-IN')}`;
 }
 
-/**
- * Builds the admin notification. The gift is never shown as "eligible" here because the
- * medicine subtotal is unknown until the pharmacy bills the order.
- */
 export function buildOrderMessage(order, settings) {
   const lines = [
     `🆕 <b>New Order ${escapeHtml(order.orderId)}</b>`,
@@ -50,7 +46,11 @@ export function buildOrderMessage(order, settings) {
   return lines.join('\n');
 }
 
-// Timeout updated to 30000 (30 seconds) for Render deployment
+// NEW: Build a highly visible cancel message
+export function buildCancelMessage(order) {
+  return `❌ <b>ORDER CANCELLED: ${escapeHtml(order.orderId)}</b>\n\n👤 ${escapeHtml(order.customerName)}\n📞 ${escapeHtml(formatIndianMobile(order.mobileNumber))}\n\n🛑 <b>Reason:</b> ${escapeHtml(order.cancelReason)}`;
+}
+
 export function createTelegramNotifier({ botToken, chatId, fetchImpl = globalThis.fetch, timeoutMs = 30000, logger = console }) {
   const configured = Boolean(botToken && chatId);
 
@@ -71,7 +71,6 @@ export function createTelegramNotifier({ botToken, chatId, fetchImpl = globalThi
     await call('sendMessage', { text: text.slice(0, MESSAGE_LIMIT), disable_web_page_preview: true });
   }
 
-  /** Never throws: returns true only when Telegram confirmed delivery of the notification. */
   async function notifyNewOrder(order, settings) {
     if (!configured) {
       logger.warn(`[telegram] not configured; order ${order.orderId} saved without notification`);
@@ -88,7 +87,6 @@ export function createTelegramNotifier({ botToken, chatId, fetchImpl = globalThi
             await sendText(message);
           }
         } catch (photoError) {
-          // Telegram could not fetch the image: still notify, with a link the admin can open.
           logger.warn(`[telegram] sendPhoto failed for ${order.orderId}: ${photoError.message}`);
           await sendText(`${message}\n\n🖼 <a href="${escapeHtml(order.prescriptionUrl)}">View prescription</a>`);
         }
@@ -102,5 +100,18 @@ export function createTelegramNotifier({ botToken, chatId, fetchImpl = globalThi
     }
   }
 
-  return { notifyNewOrder, isConfigured: configured };
+  // NEW: Notify Telegram that order was cancelled
+  async function notifyOrderCancelled(order) {
+    if (!configured) return false;
+    try {
+      await sendText(buildCancelMessage(order));
+      return true;
+    } catch (error) {
+      logger.error(`[telegram] cancel notification failed for ${order.orderId}: ${error.message}`);
+      return false;
+    }
+  }
+
+  // EXPORT the new function
+  return { notifyNewOrder, notifyOrderCancelled, isConfigured: configured };
 }

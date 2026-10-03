@@ -1,11 +1,11 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { ADMIN_COOKIE, SESSION_TTL_SECONDS, adminCookieOptions, signAdminToken } from '../middleware/auth.js';
-import { getOrder, listCustomers, listOrders, markDelivered, saveBilling } from '../services/adminOrderService.js';
+// ADDED cancelOrder to imports
+import { getOrder, listCustomers, listOrders, markDelivered, saveBilling, cancelOrder } from '../services/adminOrderService.js';
 import { getSettings, toAdminSettings, updateSettings } from '../services/settingsService.js';
 import { unauthorized } from '../utils/AppError.js';
 
-// Compared when the username is wrong so response time does not reveal valid usernames.
 const DUMMY_HASH = '$2b$12$u0YK1PBfuuKz2KrcYy.BU.iG011BDU6ZzkEpa/Qv5mfcyu0dPUzui';
 
 function safeEqual(a, b) {
@@ -14,7 +14,8 @@ function safeEqual(a, b) {
   return timingSafeEqual(hashA, hashB);
 }
 
-export function createAdminController({ env }) {
+// UPDATED: Accepting notifier
+export function createAdminController({ env, notifier }) {
   return {
     async login(req, res) {
       const { username, password } = req.body;
@@ -52,6 +53,16 @@ export function createAdminController({ env }) {
 
     async markDelivered(req, res) {
       res.json({ success: true, order: await markDelivered(req.params.id) });
+    },
+
+    // NEW: Cancel Order Controller
+    async cancelOrder(req, res) {
+      const order = await cancelOrder(req.params.id, req.body.cancelReason);
+      // Notify admin on Telegram that order was cancelled successfully
+      if (notifier && notifier.isConfigured) {
+        notifier.notifyOrderCancelled(order).catch(console.error);
+      }
+      res.json({ success: true, order });
     },
 
     async listCustomers(req, res) {

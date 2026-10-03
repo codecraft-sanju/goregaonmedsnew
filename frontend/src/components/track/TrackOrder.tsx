@@ -1,9 +1,10 @@
+// TrackOrder.tsx
 'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PackageSearch, SearchX } from 'lucide-react';
+import { PackageSearch, SearchX, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -85,17 +86,28 @@ export function TrackOrder() {
             <p className="font-mono text-sm font-semibold text-ink-soft">{result.order.orderId}</p>
             <div className="mt-3 flex items-center gap-3">
               <span className="relative flex h-3.5 w-3.5">
-                {result.order.status === 'Pending' && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />}
-                <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${result.order.status === 'Pending' ? 'bg-red-500' : 'bg-brand-500'}`} />
+                {result.order.status === 'Pending' && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />}
+                <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${result.order.status === 'Pending' ? 'bg-amber-500' : result.order.status === 'Cancelled' ? 'bg-red-500' : 'bg-brand-500'}`} />
               </span>
-              <p className="font-display text-xl font-bold">{result.order.status === 'Pending' ? 'Order Received & Processing' : 'Delivered'}</p>
+              <p className="font-display text-xl font-bold">
+                {result.order.status === 'Pending' ? 'Processing' : result.order.status === 'Cancelled' ? 'Order Cancelled' : 'Delivered'}
+              </p>
             </div>
+            
+            {/* CANCELLED MESSAGE BOX FOR CUSTOMER */}
+            {result.order.status === 'Cancelled' && (
+              <div className="mt-4 rounded-2xl bg-red-50 p-4 ring-1 ring-red-100">
+                <p className="flex items-center gap-1.5 text-sm font-bold text-red-800"><AlertCircle className="h-4 w-4" /> Cancellation Reason</p>
+                <p className="mt-1 text-sm text-red-700">{result.order.cancelReason}</p>
+              </div>
+            )}
+
             <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
               <div><dt className="text-ink-soft">Placed</dt><dd className="font-medium">{formatDateTime(result.order.placedAt)}</dd></div>
               {result.order.deliveredAt && <div><dt className="text-ink-soft">Delivered</dt><dd className="font-medium">{formatDateTime(result.order.deliveredAt)}</dd></div>}
               <div><dt className="text-ink-soft">Order type</dt><dd className="font-medium">{result.order.orderType === 'manual_text' ? `${result.order.itemCount} item(s)` : 'Prescription'}</dd></div>
               <div><dt className="text-ink-soft">Payment</dt><dd className="font-medium">Cash / UPI at delivery</dd></div>
-              {result.order.finalAmount !== null && <div><dt className="text-ink-soft">Bill amount</dt><dd className="font-medium">{formatRupees(result.order.finalAmount)}</dd></div>}
+              {result.order.finalAmount !== null && result.order.status !== 'Cancelled' && <div><dt className="text-ink-soft">Bill amount</dt><dd className="font-medium">{formatRupees(result.order.finalAmount)}</dd></div>}
             </dl>
             <p className="mt-5 text-xs text-ink-soft">Questions? Call <a href={SUPPORT_PHONE_TEL} className="font-semibold text-brand-700">{SUPPORT_PHONE_DISPLAY}</a></p>
           </motion.div>

@@ -24,7 +24,9 @@ export function createApp({ env, notifier, logger = console }) {
 
   app.get('/api/health', (_req, res) => res.json({ success: true, status: 'ok' }));
   app.use('/api', createPublicRouter({ controller: createPublicController({ env, notifier: telegram, logger }), limiters }));
-  app.use('/api/admin', createAdminRouter({ env, controller: createAdminController({ env }), limiters }));
+  
+  //Passed notifier (telegram) to admin controller here
+  app.use('/api/admin', createAdminRouter({ env, controller: createAdminController({ env, notifier: telegram }), limiters }));
 
   app.use(notFoundHandler);
   app.use(createErrorHandler(logger));
