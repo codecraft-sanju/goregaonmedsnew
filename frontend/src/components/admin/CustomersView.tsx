@@ -87,8 +87,8 @@ export function CustomersView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-100">
-                  {data.customers.map((customer) => (
-                    <tr key={customer.mobileNumber}>
+                 {data.customers.map((customer, index) => (
+  <tr key={index}>
                       <td className="px-4 py-3 font-medium">{customer.fullName}</td>
                       <td className="px-4 py-3"><a href={`tel:+91${customer.mobileNumber}`} className="text-brand-700">{formatMobile(customer.mobileNumber)}</a></td>
                       <td className="px-4 py-3 text-right tabular-nums">{customer.totalOrders}</td>
@@ -102,8 +102,8 @@ export function CustomersView() {
               </table>
             </div>
             <ul className="space-y-3 md:hidden">
-              {data.customers.map((customer) => (
-                <li key={customer.mobileNumber} className="card p-4 text-sm">
+             {data.customers.map((customer, index) => (
+  <li key={index} className="card p-4 text-sm">
                   <div className="flex justify-between gap-2">
                     <p className="font-semibold">{customer.fullName}</p>
                     {customer.offerClaimed && <span className="rounded-full bg-gift-100 px-2 py-0.5 text-xs font-semibold text-gift-600">Gift claimed</span>}
