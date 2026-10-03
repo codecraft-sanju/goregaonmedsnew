@@ -1,6 +1,6 @@
-// types.ts
+// lib/types.ts
 export type OrderType = 'manual_text' | 'prescription_image';
-// ADDED: 'Cancelled' to OrderStatus
+
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
 export interface MedicineItem {

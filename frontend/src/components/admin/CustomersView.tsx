@@ -1,3 +1,4 @@
+//src/components/admin/CustomersView.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
