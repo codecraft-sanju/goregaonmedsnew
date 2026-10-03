@@ -1,3 +1,4 @@
+//components/admin/CompactOrderCard.tsx
 'use client';
 
 import { memo } from 'react';
