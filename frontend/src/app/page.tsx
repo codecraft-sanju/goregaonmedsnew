@@ -1,8 +1,7 @@
-//src/app/page.tsx
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Hero } from '@/components/home/Hero';
-import { OfferBanner } from '@/components/home/OfferBanner';
+import { OfferPopup } from '@/components/home/OfferPopup';
 import { OrderMethods } from '@/components/home/OrderMethods';
 import { WhyChoose } from '@/components/home/WhyChoose';
 import { Highlight24x7 } from '@/components/home/Highlight24x7';
@@ -21,7 +20,6 @@ export default function HomePage() {
       <Navbar />
       <main>
         <Hero />
-        <OfferBanner />
         <OrderMethods />
         <WhyChoose />
         <Highlight24x7 />
@@ -35,6 +33,7 @@ export default function HomePage() {
         </div>
       </main>
       <Footer />
+      <OfferPopup />
     </>
   );
 }

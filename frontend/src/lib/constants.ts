@@ -1,4 +1,4 @@
-// constant.ts
+//src/lib/constant.ts
 
 export const SUPPORT_PHONE_DISPLAY = '+91 84338 18771';
 export const SUPPORT_PHONE_TEL = 'tel:+918433818771';
@@ -9,6 +9,7 @@ export const GIFT = {
   name: 'Dr. Morepen GlucoOne BG-03',
   shortName: 'GlucoOne BG-03',
   mrp: 650,
+  image: '/glucoone-bg03.png',
 } as const;
 
 export const DEFAULT_PUBLIC_SETTINGS = {
