@@ -80,11 +80,45 @@ const amount = (label) =>
     .max(MAX_BILL_AMOUNT, `${label} is too large`)
     .refine((value) => Number.isInteger(Math.round(value * 100 * 1e6) / 1e6), `${label} can have at most 2 decimals`);
 
-// Only the two subtotals (and the gift checkbox) are accepted; delivery and final amount are server-computed.
+// // Only the two subtotals (and the gift checkbox) are accepted; delivery and final amount are server-computed.
+// export const billingSchema = z
+//   .object({
+//     medicineSubtotal: amount('Medicine subtotal'),
+//     nonMedicineSubtotal: amount('Other items subtotal'),
+//     offerApplied: z.boolean().default(false),
+//   })
+//   .strict();
+
+// Only nonMedicineSubtotal, discount, offerApplied and item prices are accepted.
+// medicineSubtotal, deliveryCharge, and finalAmount are purely server-computed.
+// export const billingSchema = z
+//   .object({
+//     medicines: z.array(
+//       z.object({
+//         _id: z.string(),
+//         price: z.number().min(0, 'Price cannot be negative').default(0),
+//         isAvailable: z.boolean().default(true),
+//       })
+//     ).optional().default([]),
+//     nonMedicineSubtotal: amount('Other items subtotal'),
+//     discount: amount('Discount').default(0),
+//     offerApplied: z.boolean().default(false),
+//   })
+//   .strict();
+
+// Only nonMedicineSubtotal, discount, offerApplied and item prices are accepted.
+// medicineSubtotal, deliveryCharge, and finalAmount are purely server-computed.
 export const billingSchema = z
   .object({
-    medicineSubtotal: amount('Medicine subtotal'),
+    medicines: z.array(
+      z.object({
+        _id: z.string().optional(), // <-- Made optional for older orders
+        price: z.number().min(0, 'Price cannot be negative').default(0),
+        isAvailable: z.boolean().default(true),
+      })
+    ).optional().default([]),
     nonMedicineSubtotal: amount('Other items subtotal'),
+    discount: amount('Discount').default(0),
     offerApplied: z.boolean().default(false),
   })
   .strict();

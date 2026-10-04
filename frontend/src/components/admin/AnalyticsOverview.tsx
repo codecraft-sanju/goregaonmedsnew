@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-// FIX 1: Removed unused imports (Calendar, Filter, Loader2)
+
 import { ShoppingBag, TrendingUp } from 'lucide-react'; 
 import { adminRequest } from '@/lib/adminApi';
 import { formatRupees } from '@/lib/format';

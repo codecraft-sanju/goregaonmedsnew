@@ -1,7 +1,6 @@
 //src/models/Order.js
 import mongoose from 'mongoose';
 
-
 export const ORDER_STATUSES = Object.freeze(['Pending', 'Delivered', 'Cancelled']);
 export const ORDER_TYPES = Object.freeze(['manual_text', 'prescription_image']);
 export const PAYMENT_METHOD = 'Pay at Delivery (Cash/UPI)';
@@ -10,8 +9,10 @@ const medicineSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 120 },
     quantity: { type: String, required: true, trim: true, maxlength: 60 },
-  },
-  { _id: false },
+    isAvailable: { type: Boolean, default: true },
+    price: { type: Number, default: 0, min: 0 },
+  }
+  // Removed { _id: false } to allow item-level tracking via _id
 );
 
 const money = { type: Number, default: 0, min: 0 };
@@ -35,6 +36,7 @@ const orderSchema = new mongoose.Schema(
     medicineSubtotal: money,
     nonMedicineSubtotal: money,
     deliveryCharge: money,
+    discount: money, // NEW: Added global order discount
     finalAmount: money,
     billedAt: { type: Date, default: null },
 

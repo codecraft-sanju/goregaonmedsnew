@@ -117,6 +117,22 @@ const STATUS_LABELS = {
   Delivered: 'Delivered',
 };
 
+// /** Returns only what a customer needs, and the same "not found" for a wrong ID or wrong number. */
+// export async function trackOrder({ orderId, mobileLast4 }) {
+//   const order = await Order.findOne({ orderId }).lean();
+//   if (!order || order.mobileNumber.slice(-4) !== mobileLast4) return null;
+//   return {
+//     orderId: order.orderId,
+//     status: order.status,
+//     statusLabel: STATUS_LABELS[order.status],
+//     orderType: order.orderType,
+//     itemCount: order.medicines.length,
+//     placedAt: order.createdAt,
+//     deliveredAt: order.deliveredAt,
+//     paymentMethod: order.paymentMethod,
+//     finalAmount: order.billedAt ? order.finalAmount : null,
+//   };
+// }
 /** Returns only what a customer needs, and the same "not found" for a wrong ID or wrong number. */
 export async function trackOrder({ orderId, mobileLast4 }) {
   const order = await Order.findOne({ orderId }).lean();
@@ -130,6 +146,13 @@ export async function trackOrder({ orderId, mobileLast4 }) {
     placedAt: order.createdAt,
     deliveredAt: order.deliveredAt,
     paymentMethod: order.paymentMethod,
+    
+    // NEW: Complete Billing Transparency for User
+    medicines: order.medicines,
+    medicineSubtotal: order.medicineSubtotal,
+    nonMedicineSubtotal: order.nonMedicineSubtotal,
+    deliveryCharge: order.deliveryCharge,
+    discount: order.discount,
     finalAmount: order.billedAt ? order.finalAmount : null,
   };
 }

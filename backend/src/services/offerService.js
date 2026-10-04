@@ -1,3 +1,4 @@
+//src/services/offerService.js
 import { roundMoney } from '../utils/money.js';
 
 /**
@@ -28,14 +29,23 @@ export function evaluateOfferEligibility({ settings, firstOrderAtCreation, userO
   };
 }
 
-export function calculateBill({ medicineSubtotal, nonMedicineSubtotal, deliveryCharge }) {
+// UPDATE: Added discount parameter and safe calculation
+export function calculateBill({ medicineSubtotal, nonMedicineSubtotal, deliveryCharge, discount = 0 }) {
   const medicine = roundMoney(medicineSubtotal);
   const nonMedicine = roundMoney(nonMedicineSubtotal);
   const delivery = roundMoney(deliveryCharge);
+  const appliedDiscount = roundMoney(discount);
+
+  const grossAmount = medicine + nonMedicine + delivery;
+  
+  // Validation: Discount cannot be more than the gross amount
+  const safeDiscount = appliedDiscount > grossAmount ? grossAmount : appliedDiscount;
+
   return {
     medicineSubtotal: medicine,
     nonMedicineSubtotal: nonMedicine,
     deliveryCharge: delivery,
-    finalAmount: roundMoney(medicine + nonMedicine + delivery),
+    discount: safeDiscount,
+    finalAmount: roundMoney(grossAmount - safeDiscount),
   };
 }
