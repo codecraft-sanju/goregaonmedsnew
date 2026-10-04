@@ -1,3 +1,4 @@
+//src/models/Settings.js
 import mongoose from 'mongoose';
 
 export const SETTINGS_SINGLETON_ID = 'config';

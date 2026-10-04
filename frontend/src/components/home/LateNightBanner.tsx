@@ -19,7 +19,7 @@ export function LateNightBanner() {
   return (
     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="bg-brand-950 text-brand-50" role="note">
       <p className="container-app py-2.5 text-center text-sm">
-        🌙 <strong>Ordering late?</strong> Healthzone &amp; Cosmetic is Open 24x7. You can still place your medicine request now.
+         <strong>Ordering late?</strong> Healthzone &amp; Cosmetic is Open 24x7. You can still place your medicine request now.
       </p>
     </motion.div>
   );

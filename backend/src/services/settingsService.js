@@ -1,3 +1,4 @@
+//src/services/settingsService.js 
 import { Settings, SETTINGS_SINGLETON_ID } from '../models/Settings.js';
 
 /** Always reads from MongoDB: delivery charge and offer settings are authoritative server-side. */

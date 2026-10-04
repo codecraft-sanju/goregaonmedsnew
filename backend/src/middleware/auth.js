@@ -1,3 +1,4 @@
+//src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 import { forbidden, unauthorized } from '../utils/AppError.js';
 

@@ -1,6 +1,7 @@
+//src/models/Order.js
 import mongoose from 'mongoose';
 
-// UPDATED: Added 'Cancelled' to allowed statuses
+
 export const ORDER_STATUSES = Object.freeze(['Pending', 'Delivered', 'Cancelled']);
 export const ORDER_TYPES = Object.freeze(['manual_text', 'prescription_image']);
 export const PAYMENT_METHOD = 'Pay at Delivery (Cash/UPI)';

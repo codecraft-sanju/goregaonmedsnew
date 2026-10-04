@@ -1,3 +1,4 @@
+//src/routes/adminRoutes.js
 import { Router } from 'express';
 import { requireAdmin, requireTrustedOrigin } from '../middleware/auth.js';
 import { validateBody, validateQuery } from '../middleware/validate.js';

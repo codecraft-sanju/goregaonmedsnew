@@ -1,3 +1,4 @@
+//src/server.js
 import { loadEnv } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { createApp } from './app.js';
