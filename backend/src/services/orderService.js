@@ -35,12 +35,11 @@ async function registerCustomerOrder(mobileNumber, fullName) {
     try {
       const previous = await User.findOneAndUpdate(
         { mobileNumber },
-        { $inc: { totalOrders: 1 }, $set: { fullName } },
+        { $inc: { totalOrders: 1 },$set: { fullName } },
         { upsert: true, new: false, lean: true },
       );
       return previous?.totalOrders ?? 0;
     } catch (error) {
-      // Two simultaneous first orders for one number: the losing upsert retries as an update.
       if (duplicateKeyField(error) !== 'mobileNumber' || attempt > 0) throw error;
     }
   }
@@ -85,8 +84,7 @@ export async function createOrder(input, { notifier, logger = console }) {
       telegramNotificationSent: false,
     });
   } catch (error) {
-    // Undo the customer counter so a failed insert does not consume their first order.
-    await User.updateOne({ mobileNumber: input.mobileNumber, totalOrders: { $gt: 0 } }, { $inc: { totalOrders: -1 } });
+    await User.updateOne({ mobileNumber: input.mobileNumber, totalOrders: { $gt: 0 } }, {$inc: { totalOrders: -1 } });
     if (duplicateKeyField(error) === 'clientRequestId') {
       const raced = await findReplay(input.clientRequestId, input.mobileNumber);
       if (raced) return toCreateResponse(raced);
@@ -115,25 +113,9 @@ export async function createOrder(input, { notifier, logger = console }) {
 const STATUS_LABELS = {
   Pending: 'Order Received & Processing',
   Delivered: 'Delivered',
+  Cancelled: 'Cancelled', // Added Cancelled label just in case
 };
 
-// /** Returns only what a customer needs, and the same "not found" for a wrong ID or wrong number. */
-// export async function trackOrder({ orderId, mobileLast4 }) {
-//   const order = await Order.findOne({ orderId }).lean();
-//   if (!order || order.mobileNumber.slice(-4) !== mobileLast4) return null;
-//   return {
-//     orderId: order.orderId,
-//     status: order.status,
-//     statusLabel: STATUS_LABELS[order.status],
-//     orderType: order.orderType,
-//     itemCount: order.medicines.length,
-//     placedAt: order.createdAt,
-//     deliveredAt: order.deliveredAt,
-//     paymentMethod: order.paymentMethod,
-//     finalAmount: order.billedAt ? order.finalAmount : null,
-//   };
-// }
-/** Returns only what a customer needs, and the same "not found" for a wrong ID or wrong number. */
 export async function trackOrder({ orderId, mobileLast4 }) {
   const order = await Order.findOne({ orderId }).lean();
   if (!order || order.mobileNumber.slice(-4) !== mobileLast4) return null;
@@ -147,7 +129,6 @@ export async function trackOrder({ orderId, mobileLast4 }) {
     deliveredAt: order.deliveredAt,
     paymentMethod: order.paymentMethod,
     
-    // NEW: Complete Billing Transparency for User
     medicines: order.medicines,
     medicineSubtotal: order.medicineSubtotal,
     nonMedicineSubtotal: order.nonMedicineSubtotal,
@@ -155,4 +136,46 @@ export async function trackOrder({ orderId, mobileLast4 }) {
     discount: order.discount,
     finalAmount: order.billedAt ? order.finalAmount : null,
   };
+}
+
+// --- UPDATED FUNCTIONS FOR HISTORY & RECOVERY ---
+
+export async function fetchOrderHistory(orderIds) {
+  if (!orderIds || orderIds.length === 0) return [];
+
+  const orders = await Order.find({ orderId: { $in: orderIds } })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return orders.map((order) => ({
+    orderId: order.orderId,
+    status: order.status,
+    statusLabel: STATUS_LABELS[order.status] || order.status,
+    orderType: order.orderType,
+    itemCount: order.medicines.length,
+    placedAt: order.createdAt,
+    deliveredAt: order.deliveredAt,
+    finalAmount: order.billedAt ? order.finalAmount : null,
+    
+    // NEW: Complete billing transparency for inline profile receipt
+    medicines: order.medicines,
+    medicineSubtotal: order.medicineSubtotal,
+    nonMedicineSubtotal: order.nonMedicineSubtotal,
+    deliveryCharge: order.deliveryCharge,
+    discount: order.discount,
+    cancelReason: order.cancelReason,
+  }));
+}
+
+export async function recoverOrderIds({ mobileNumber, orderId }) {
+  const isValid = await Order.exists({ mobileNumber, orderId });
+  
+  if (!isValid) return null;
+
+  const userOrders = await Order.find({ mobileNumber })
+    .sort({ createdAt: -1 })
+    .select('orderId -_id')
+    .lean();
+
+  return userOrders.map((o) => o.orderId);
 }

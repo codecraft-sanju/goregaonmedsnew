@@ -1,3 +1,4 @@
+//src/components/layout/Navbar.tsx
 import Link from 'next/link';
 import { Phone } from 'lucide-react';
 import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
@@ -6,6 +7,7 @@ import { Logo } from './Logo';
 const links = [
   { href: '/order', label: 'Order' },
   { href: '/track', label: 'Track' },
+  { href: '/profile', label: 'My Orders' }, // <-- NEW: Added My Orders Link
   { href: '/#locations', label: 'Pharmacies' },
   { href: '/#faq', label: 'FAQ' },
 ];
@@ -26,6 +28,9 @@ export function Navbar() {
           <a href={SUPPORT_PHONE_TEL} className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 sm:flex">
             <Phone className="h-4 w-4" aria-hidden /> {SUPPORT_PHONE_DISPLAY}
           </a>
+          <Link href="/profile" className="rounded-xl px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 md:hidden">
+            Orders
+          </Link>
           <Link href="/track" className="rounded-xl px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 md:hidden">
             Track
           </Link>

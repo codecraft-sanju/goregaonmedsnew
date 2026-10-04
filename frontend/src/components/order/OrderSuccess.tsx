@@ -1,10 +1,11 @@
+//src/components/order/OrderSuccess.tsx
 'use client';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Check, Copy, Home, PackageSearch, Phone } from 'lucide-react';
+import { AlertTriangle, Camera, Check, Copy, Home, PackageSearch, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { ORDER_ID_PATTERN, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
@@ -34,6 +35,21 @@ export function OrderSuccess() {
   const rawId = (params.get('id') ?? '').toUpperCase();
   const orderId = ORDER_ID_PATTERN.test(rawId) ? rawId : null;
   const notificationDelayed = params.get('notified') === '0';
+
+  // NEW: Auto-save Order ID to localStorage for seamless Profile History
+  useEffect(() => {
+    if (orderId) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('gmed_orders') || '[]');
+        if (!saved.includes(orderId)) {
+          saved.unshift(orderId); // Add new order to the beginning
+          localStorage.setItem('gmed_orders', JSON.stringify(saved.slice(0, 50))); // Keep last 50
+        }
+      } catch (err) {
+        console.error('Failed to save order ID to local storage');
+      }
+    }
+  }, [orderId]);
 
   if (!orderId) {
     return (
@@ -73,6 +89,15 @@ export function OrderSuccess() {
           </div>
         </motion.div>
       )}
+
+      {/* NEW: Explicit Screenshot Alert Box */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-3 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-200" role="alert">
+        <Camera className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" aria-hidden />
+        <div className="text-sm">
+          <p className="font-bold text-amber-900 text-base">Please take a screenshot!</p>
+          <p className="mt-1 text-amber-800">Your Order ID is required to track this order and access your future order history. Keep it safe!</p>
+        </div>
+      </motion.div>
 
       <div className="card p-8 text-center">
         <motion.div

@@ -1,5 +1,5 @@
-//src/controller/publicController.js
-import { createOrder, trackOrder } from '../services/orderService.js';
+//src/controllers/publicController.js
+import { createOrder, trackOrder, fetchOrderHistory, recoverOrderIds } from '../services/orderService.js';
 import { getSettings, toPublicSettings } from '../services/settingsService.js';
 import { createUploadSignature, isTrustedPrescriptionUrl } from '../services/cloudinaryService.js';
 import { badRequest, notFound } from '../utils/AppError.js';
@@ -26,6 +26,21 @@ export function createPublicController({ env, notifier, logger }) {
       const order = await trackOrder(req.body);
       if (!order) throw notFound('No order matches that Order ID and mobile number.');
       res.json({ success: true, order });
+    },
+
+    // --- NEW METHODS FOR HISTORY & RECOVERY ---
+    
+    async fetchHistory(req, res) {
+      const orders = await fetchOrderHistory(req.body.orderIds);
+      res.json({ success: true, orders });
+    },
+
+    async recoverHistory(req, res) {
+      const orderIds = await recoverOrderIds(req.body);
+      if (!orderIds) {
+        throw notFound('No matching order found for this mobile number and Order ID combination.');
+      }
+      res.json({ success: true, orderIds });
     },
 
     async publicSettings(_req, res) {

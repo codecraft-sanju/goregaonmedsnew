@@ -1,3 +1,4 @@
+//src/components/home/Faq.tsx
 import { ChevronDown } from 'lucide-react';
 import { SUPPORT_PHONE_DISPLAY } from '@/lib/constants';
 

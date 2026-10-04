@@ -1,4 +1,3 @@
-//src/validation/schemas.js
 import { z } from 'zod';
 import { ORDER_STATUSES, ORDER_TYPES } from '../models/Order.js';
 import { normalizeIndianMobile } from '../utils/phone.js';
@@ -32,8 +31,6 @@ const medicine = z.object({
   quantity: text(1, 60, 'Quantity'),
 });
 
-// Pricing, eligibility and status fields are intentionally absent: anything the browser sends
-// for them is stripped and never read.
 export const createOrderSchema = z
   .object({
     clientRequestId: z.string().uuid('Invalid request id'),
@@ -80,39 +77,11 @@ const amount = (label) =>
     .max(MAX_BILL_AMOUNT, `${label} is too large`)
     .refine((value) => Number.isInteger(Math.round(value * 100 * 1e6) / 1e6), `${label} can have at most 2 decimals`);
 
-// // Only the two subtotals (and the gift checkbox) are accepted; delivery and final amount are server-computed.
-// export const billingSchema = z
-//   .object({
-//     medicineSubtotal: amount('Medicine subtotal'),
-//     nonMedicineSubtotal: amount('Other items subtotal'),
-//     offerApplied: z.boolean().default(false),
-//   })
-//   .strict();
-
-// Only nonMedicineSubtotal, discount, offerApplied and item prices are accepted.
-// medicineSubtotal, deliveryCharge, and finalAmount are purely server-computed.
-// export const billingSchema = z
-//   .object({
-//     medicines: z.array(
-//       z.object({
-//         _id: z.string(),
-//         price: z.number().min(0, 'Price cannot be negative').default(0),
-//         isAvailable: z.boolean().default(true),
-//       })
-//     ).optional().default([]),
-//     nonMedicineSubtotal: amount('Other items subtotal'),
-//     discount: amount('Discount').default(0),
-//     offerApplied: z.boolean().default(false),
-//   })
-//   .strict();
-
-// Only nonMedicineSubtotal, discount, offerApplied and item prices are accepted.
-// medicineSubtotal, deliveryCharge, and finalAmount are purely server-computed.
 export const billingSchema = z
   .object({
     medicines: z.array(
       z.object({
-        _id: z.string().optional(), // <-- Made optional for older orders
+        _id: z.string().optional(),
         price: z.number().min(0, 'Price cannot be negative').default(0),
         isAvailable: z.boolean().default(true),
       })
@@ -147,7 +116,23 @@ export const listCustomersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
-
 export const cancelOrderSchema = z.object({
   cancelReason: z.string().min(1, 'Reason is required').max(300, 'Reason is too long').transform(cleanText),
 }).strict();
+
+
+
+export const fetchHistorySchema = z.object({
+  orderIds: z.array(
+    z.string().transform((value) => value.trim().toUpperCase()).pipe(z.string().regex(ORDER_ID_PATTERN, 'Invalid Order ID'))
+  ).max(100, 'Too many orders requested').default([]),
+});
+
+export const recoverHistorySchema = z.object({
+  mobileNumber, 
+  orderId: z
+    .string()
+    .max(20)
+    .transform((value) => value.trim().toUpperCase())
+    .pipe(z.string().regex(ORDER_ID_PATTERN, 'Enter a valid Order ID, e.g. GMED-X8P2K7')),
+});
