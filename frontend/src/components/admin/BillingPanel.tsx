@@ -108,11 +108,12 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
     if (!preview.eligible) setGiftIncluded(false);
   }, [preview.eligible]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const updateMedicine = (index: number, field: string, value: any) => {
     setMedicinesData(prev => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
+     
+      copy[index] = { ...copy[index], [field]: value } as any; 
       return copy;
     });
   };
