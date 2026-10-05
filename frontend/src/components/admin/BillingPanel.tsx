@@ -119,7 +119,7 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   const updateMedicine = <K extends keyof MedicineInput>(index: number, field: K, value: MedicineInput[K]) => {
     setMedicinesData(prev => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value }; 
+    copy[index] = { ...copy[index], [field]: value } as MedicineInput;
       return copy;
     });
   };

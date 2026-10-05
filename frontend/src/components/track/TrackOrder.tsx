@@ -36,7 +36,7 @@ export function TrackOrder() {
       });
       setOrders(res.orders);
       if (res.orders.length > 0) {
-        setExpandedId(prev => prev || res.orders[0].orderId);
+      setExpandedId(prev => prev || res.orders[0]?.orderId || null);
       }
       setViewState('list');
     } catch {
