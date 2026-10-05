@@ -1,8 +1,7 @@
-//components/admin/AnalyticsOverview.tsx
+// components/admin/AnalyticsOverview.tsx
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-
 import { ShoppingBag, TrendingUp } from 'lucide-react'; 
 import { adminRequest } from '@/lib/adminApi';
 import { formatRupees } from '@/lib/format';
@@ -46,6 +45,11 @@ export function AnalyticsOverview() {
     // Fallback if custom dates are incomplete
     return { startDate: today, endDate: today };
   }, [dateRangeType, customStartDate, customEndDate]);
+
+  // Dynamic label for the UI cards based on the selected date filter
+  const dateRangeLabel = 
+    dateRangeType === 'today' ? "Today's" : 
+    dateRangeType === 'yesterday' ? "Yesterday's" : "Selected Date's";
 
   // Fetch data whenever the computed dates change
   useEffect(() => {
@@ -94,7 +98,6 @@ export function AnalyticsOverview() {
           <select 
             className="h-10 rounded-xl bg-white px-3 text-sm font-medium ring-1 ring-brand-100 outline-none focus:ring-2 focus:ring-brand-500"
             value={dateRangeType}
-            // FIX 2: Replaced `as any` with the exact literal types expected by state
             onChange={(e) => setDateRangeType(e.target.value as 'today' | 'yesterday' | 'custom')}
           >
             <option value="today">Today</option>
@@ -137,11 +140,11 @@ export function AnalyticsOverview() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           
-      
+          {/* Sales Card */}
           <div className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ink-soft">
               <TrendingUp className="h-4 w-4 text-brand-600" />
-              Total Sales
+              {dateRangeLabel} Sales
             </div>
             <div className="mt-2 text-3xl font-display font-bold text-brand-900">
               {formatRupees(data?.totalSales ?? 0)}
@@ -153,7 +156,7 @@ export function AnalyticsOverview() {
           <div className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ink-soft">
               <ShoppingBag className="h-4 w-4 text-brand-600" />
-              Total Orders
+              {dateRangeLabel} Orders
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="text-3xl font-display font-bold text-brand-900">{data?.totalOrders ?? 0}</span>
