@@ -4,8 +4,11 @@ export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
 export interface MedicineItem {
+  _id?: string;
   name: string;
   quantity: string;
+  price?: number;
+  isAvailable?: boolean;
 }
 
 export interface Address {
@@ -52,8 +55,12 @@ export interface TrackedOrder {
   deliveredAt: string | null;
   paymentMethod: string;
   finalAmount: number | null;
-  // ADDED: cancelReason for the tracking page
   cancelReason: string | null;
+  medicines?: MedicineItem[];
+  medicineSubtotal?: number;
+  nonMedicineSubtotal?: number;
+  deliveryCharge?: number;
+  discount?: number;
 }
 
 export interface OfferEvaluation {
@@ -91,6 +98,7 @@ export interface AdminOrder {
   medicineSubtotal: number;
   nonMedicineSubtotal: number;
   deliveryCharge: number;
+  discount?: number;
   finalAmount: number;
   billedAt: string | null;
   offerOptIn: boolean;
@@ -104,7 +112,6 @@ export interface AdminOrder {
   createdAt: string;
   deliveredAt: string | null;
   customer: CustomerSummary | null;
-
   cancelReason: string | null;
 }
 

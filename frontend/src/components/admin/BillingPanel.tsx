@@ -33,14 +33,20 @@ interface Props {
   actionsTarget?: HTMLElement | null;
 }
 
+interface MedicineInput {
+  _id?: string;
+  name: string;
+  quantity: string;
+  price: string;
+  isAvailable: boolean;
+}
+
 export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, actionsTarget }: Props) {
   const toast = useToast();
   const billed = Boolean(order.billedAt);
   
-  // NEW: State for item-wise medicines
-  const [medicinesData, setMedicinesData] = useState(() => 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    order.medicines.map((m: any) => ({
+  const [medicinesData, setMedicinesData] = useState<MedicineInput[]>(() => 
+    order.medicines.map((m) => ({
       _id: m._id,
       name: m.name,
       quantity: m.quantity,
@@ -50,14 +56,12 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   );
 
   const [other, setOther] = useState(toInput(order.nonMedicineSubtotal, billed));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [discount, setDiscount] = useState(toInput((order as any).discount ?? 0, billed)); // NEW: Discount field
+  const [discount, setDiscount] = useState(toInput(order.discount ?? 0, billed));
   const [giftIncluded, setGiftIncluded] = useState(order.offerApplied);
   const [saving, setSaving] = useState(false);
   const [confirmDelivery, setConfirmDelivery] = useState(false);
   const [delivering, setDelivering] = useState(false);
 
-  // NEW: Auto-calculate medicine subtotal from items
   const medicineValue = useMemo(() => {
     return medicinesData.reduce((total, item) => {
       if (item.isAvailable) {
@@ -71,7 +75,6 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   const otherValue = other.trim() === '' ? 0 : parseAmount(other);
   const discountValue = discount.trim() === '' ? 0 : parseAmount(discount);
   
-  // Validate that all available medicines have valid numeric strings
   const medicinesValid = medicinesData.every(m => !m.isAvailable || (m.price.trim() !== '' && parseAmount(m.price) !== null));
   const valid = medicinesValid && otherValue !== null && discountValue !== null;
 
@@ -81,7 +84,6 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
       meetsMedicineThreshold: medicineValue !== null && medicineValue >= order.offer.requiredMedicineAmount,
     };
     
-    // Prevent discount from making final amount negative
     const gross = (medicineValue ?? 0) + (otherValue ?? 0) + deliveryCharge;
     const safeDiscount = (discountValue ?? 0) > gross ? gross : (discountValue ?? 0);
     
@@ -93,27 +95,31 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
     };
   }, [order.offer, medicineValue, otherValue, discountValue, valid, deliveryCharge]);
 
+  // const dirty =
+  //   !billed ||
+  //   medicineValue !== order.medicineSubtotal ||
+  //   (otherValue ?? -1) !== order.nonMedicineSubtotal ||
+  //   (discountValue ?? -1) !== (order.discount ?? 0) ||
+  //   giftIncluded !== order.offerApplied ||
+  //   deliveryCharge !== order.deliveryCharge ||
+  //   medicinesData.some((m, i) => m.isAvailable !== (order.medicines[i].isAvailable ?? true));
   const dirty =
     !billed ||
     medicineValue !== order.medicineSubtotal ||
     (otherValue ?? -1) !== order.nonMedicineSubtotal ||
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (discountValue ?? -1) !== (order as any).discount ||
+    (discountValue ?? -1) !== (order.discount ?? 0) ||
     giftIncluded !== order.offerApplied ||
     deliveryCharge !== order.deliveryCharge ||
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    medicinesData.some((m, i) => m.isAvailable !== (order.medicines[i] as any).isAvailable);
+    medicinesData.some((m, i) => m.isAvailable !== (order.medicines[i]?.isAvailable ?? true));
 
   useEffect(() => {
     if (!preview.eligible) setGiftIncluded(false);
   }, [preview.eligible]);
 
-
-  const updateMedicine = (index: number, field: string, value: any) => {
+  const updateMedicine = <K extends keyof MedicineInput>(index: number, field: K, value: MedicineInput[K]) => {
     setMedicinesData(prev => {
       const copy = [...prev];
-     
-      copy[index] = { ...copy[index], [field]: value } as any; 
+      copy[index] = { ...copy[index], [field]: value }; 
       return copy;
     });
   };
@@ -208,11 +214,9 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   return (
     <div className="space-y-4">
       
-      {/* NEW: Itemized Medicine List */}
       <div className="space-y-3">
         <h4 className="text-xs font-semibold text-ink">Medicines ({medicinesData.length})</h4>
         {medicinesData.map((med, index) => (
-          // <div key={med._id} className={cn("p-3 rounded-xl border transition-colors", med.isAvailable ? "bg-white border-brand-100" : "bg-surface border-transparent opacity-80")}>
           <div key={med._id || `legacy-med-${index}`} className={cn("p-3 rounded-xl border transition-colors", med.isAvailable ? "bg-white border-brand-100" : "bg-surface border-transparent opacity-80")}>
             <div className="flex justify-between items-start gap-2">
               <div className="flex-1 min-w-0">

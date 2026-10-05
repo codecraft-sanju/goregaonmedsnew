@@ -2,7 +2,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PackageSearch, AlertCircle, ReceiptText, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -12,14 +12,14 @@ import { ApiError, apiRequest } from '@/lib/api';
 import { ORDER_ID_PATTERN, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
 import { formatDateTime, formatRupees } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import type { TrackedOrder } from '@/lib/types';
 
 export function TrackOrder() {
   const params = useSearchParams();
   const urlId = (params.get('id') ?? '').toUpperCase().slice(0, 11);
   
   const [viewState, setViewState] = useState<'loading' | 'form' | 'list'>('loading');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<TrackedOrder[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Form States
@@ -28,7 +28,22 @@ export function TrackOrder() {
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchOrderDetails = useCallback(async (ids: string[]) => {
+    try {
+      const res = await apiRequest<{ orders: TrackedOrder[] }>('/orders/history', {
+        method: 'POST',
+        body: { orderIds: ids },
+      });
+      setOrders(res.orders);
+      if (res.orders.length > 0) {
+        setExpandedId(prev => prev || res.orders[0].orderId);
+      }
+      setViewState('list');
+    } catch {
+      setViewState('form'); 
+    }
+  }, []);
+
   useEffect(() => {
     const savedIds = JSON.parse(localStorage.getItem('gmed_orders') || '[]');
     
@@ -40,24 +55,7 @@ export function TrackOrder() {
     } else {
       setViewState('form');
     }
-  }, [urlId]);
-
-  const fetchOrderDetails = async (ids: string[]) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await apiRequest<{ orders: any[] }>('/orders/history', {
-        method: 'POST',
-        body: { orderIds: ids },
-      });
-      setOrders(res.orders);
-      if (res.orders.length > 0 && !expandedId) {
-        setExpandedId(res.orders[0].orderId);
-      }
-      setViewState('list');
-    } catch {
-      setViewState('form'); 
-    }
-  };
+  }, [urlId, fetchOrderDetails]);
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
@@ -222,17 +220,16 @@ export function TrackOrder() {
                               <h3 className="text-sm font-bold text-brand-900">Order Bill</h3>
                             </div>
                             
-                            {order.medicines?.length > 0 && (
+                            {(order.medicines ?? []).length > 0 && (
                               <ul className="divide-y divide-brand-50 px-4">
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                {order.medicines.map((med: any, idx: number) => (
+                                {order.medicines!.map((med, idx) => (
                                   <li key={idx} className="flex justify-between py-3 text-sm">
-                                    <div className={cn("pr-4", !med.isAvailable && "opacity-50 line-through")}>
+                                    <div className={cn("pr-4", !(med.isAvailable ?? true) && "opacity-50 line-through")}>
                                       <p className="font-semibold text-ink leading-tight">{med.name}</p>
                                       <p className="text-xs text-ink-muted mt-0.5">{med.quantity}</p>
                                     </div>
-                                    <span className={cn("shrink-0 font-medium", !med.isAvailable ? "text-red-600 text-xs mt-0.5" : "text-ink")}>
-                                      {med.isAvailable ? formatRupees(med.price) : 'Out of Stock'}
+                                    <span className={cn("shrink-0 font-medium", !(med.isAvailable ?? true) ? "text-red-600 text-xs mt-0.5" : "text-ink")}>
+                                      {(med.isAvailable ?? true) ? formatRupees(med.price ?? 0) : 'Out of Stock'}
                                     </span>
                                   </li>
                                 ))}
