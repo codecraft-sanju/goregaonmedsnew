@@ -1,13 +1,13 @@
 // src/components/layout/Navbar.tsx
 
 import Link from 'next/link';
-import { Phone } from 'lucide-react';
+import { Phone, User } from 'lucide-react'; 
 import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
 import { Logo } from './Logo';
 
 const links = [
   { href: '/order', label: 'Order' },
-  { href: '/track', label: 'Track & Orders' },
+  { href: '/profile', label: 'Track & Orders' }, 
   { href: '/#locations', label: 'Pharmacies' },
   { href: '/#faq', label: 'FAQ' },
 ];
@@ -28,9 +28,16 @@ export function Navbar() {
           <a href={SUPPORT_PHONE_TEL} className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 sm:flex">
             <Phone className="h-4 w-4" aria-hidden /> {SUPPORT_PHONE_DISPLAY}
           </a>
-          <Link href="/track" className="rounded-xl px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 md:hidden">
-            Orders
+          
+          {/* Responsive Profile Icon */}
+          <Link 
+            href="/profile" 
+            className="grid h-10 w-10 place-items-center rounded-full text-brand-800 transition-colors hover:bg-brand-50 md:hidden"
+            aria-label="User Profile"
+          >
+            <User className="h-5 w-5" />
           </Link>
+
           <Link href="/order" className="whitespace-nowrap rounded-xl bg-brand-700 px-3.5 py-2 text-sm font-semibold text-white shadow-lift transition-colors hover:bg-brand-800 sm:px-4">
             Order now
           </Link>
