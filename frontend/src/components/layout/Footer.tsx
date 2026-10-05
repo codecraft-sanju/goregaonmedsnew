@@ -1,3 +1,5 @@
+// src/components/layout/Footer.tsx
+
 import Link from 'next/link';
 import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
 import { Logo } from './Logo';
@@ -25,9 +27,14 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-brand-100">
-        <p className="container-app py-5 text-xs text-ink-soft">
-          Prescription medicines are supplied only against a valid prescription where required. © {new Date().getFullYear()} GoregaonMeds.
-        </p>
+        <div className="container-app flex flex-col sm:flex-row items-center justify-between gap-4 py-5 text-xs text-ink-soft">
+          <p>
+            Prescription medicines are supplied only against a valid prescription where required. © {new Date().getFullYear()} GoregaonMeds.
+          </p>
+          <Link href="/admin" className="font-semibold text-brand-700 hover:underline">
+            Admin Login
+          </Link>
+        </div>
       </div>
     </footer>
   );
