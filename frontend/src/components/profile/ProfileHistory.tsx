@@ -1,9 +1,9 @@
-//src/components/profile/profileHistory.tsx
+//src/components/profile/ProfileHistory.tsx 
 'use client';
 
 import { useState, useEffect, type FormEvent } from 'react';
 import Link from 'next/link';
-import { AlertCircle, History, PackageSearch, RefreshCw, ShoppingBag, ReceiptText, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, History, RefreshCw, ShoppingBag, ReceiptText, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -22,6 +22,7 @@ type OrderHistoryItem = {
   deliveredAt: string | null;
   finalAmount: number | null;
   // New fields for inline receipt
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   medicines?: any[];
   medicineSubtotal?: number;
   nonMedicineSubtotal?: number;
@@ -89,6 +90,7 @@ export function ProfileHistory() {
         localStorage.setItem('gmed_orders', JSON.stringify(res.orderIds));
         await loadHistory();
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message || 'Could not recover orders. Please check your details.');
     } finally {
@@ -291,7 +293,7 @@ export function ProfileHistory() {
           <div>
             <h3 className="font-bold text-brand-900">Lost your Order ID?</h3>
             <p className="mt-2 text-sm text-ink-muted leading-relaxed">
-              Don't worry! Just place a new order when you need medicines. Once successful, you can use your <strong>new Order ID</strong> here to unlock your entire past order history!
+              Don&apos;t worry! Just place a new order when you need medicines. Once successful, you can use your <strong>new Order ID</strong> here to unlock your entire past order history!
             </p>
             <Link href="/order" className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-brand-700 px-5 text-sm font-semibold text-white shadow-lift transition hover:bg-brand-800">
               Place a New Order

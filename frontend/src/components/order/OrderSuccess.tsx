@@ -45,7 +45,7 @@ export function OrderSuccess() {
           saved.unshift(orderId); // Add new order to the beginning
           localStorage.setItem('gmed_orders', JSON.stringify(saved.slice(0, 50))); // Keep last 50
         }
-      } catch (err) {
+      } catch {
         console.error('Failed to save order ID to local storage');
       }
     }

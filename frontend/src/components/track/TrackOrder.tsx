@@ -1,5 +1,4 @@
-// src/components/track/TrackOrder.tsx
-
+//src/components/track/TrackOrder.tsx
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -19,6 +18,7 @@ export function TrackOrder() {
   const urlId = (params.get('id') ?? '').toUpperCase().slice(0, 11);
   
   const [viewState, setViewState] = useState<'loading' | 'form' | 'list'>('loading');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [orders, setOrders] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -28,6 +28,7 @@ export function TrackOrder() {
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const savedIds = JSON.parse(localStorage.getItem('gmed_orders') || '[]');
     
@@ -43,6 +44,7 @@ export function TrackOrder() {
 
   const fetchOrderDetails = async (ids: string[]) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await apiRequest<{ orders: any[] }>('/orders/history', {
         method: 'POST',
         body: { orderIds: ids },
@@ -52,7 +54,7 @@ export function TrackOrder() {
         setExpandedId(res.orders[0].orderId);
       }
       setViewState('list');
-    } catch (error) {
+    } catch {
       setViewState('form'); 
     }
   };
@@ -133,7 +135,7 @@ export function TrackOrder() {
           </Button>
 
           <p className="mt-4 text-center text-xs text-ink-soft leading-relaxed">
-            Lost your Order ID? Don't worry! Place a new order when you need medicines. 
+            Lost your Order ID? Don&apos;t worry! Place a new order when you need medicines. 
             Use your new Order ID here to automatically recover your entire past history!
           </p>
         </form>
@@ -222,6 +224,7 @@ export function TrackOrder() {
                             
                             {order.medicines?.length > 0 && (
                               <ul className="divide-y divide-brand-50 px-4">
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 {order.medicines.map((med: any, idx: number) => (
                                   <li key={idx} className="flex justify-between py-3 text-sm">
                                     <div className={cn("pr-4", !med.isAvailable && "opacity-50 line-through")}>
