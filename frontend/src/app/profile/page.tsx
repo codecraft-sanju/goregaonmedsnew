@@ -1,3 +1,4 @@
+//src/app/profile/page.tsx
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { ProfileHistory } from '@/components/profile/ProfileHistory';

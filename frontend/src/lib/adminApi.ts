@@ -1,4 +1,4 @@
-//lib/adminApi.ts
+//src/lib/adminApi.ts
 import { ApiError, apiRequest } from './api';
 
 type Options = Parameters<typeof apiRequest>[1];

@@ -1,3 +1,4 @@
+//src/lib/cloudinaryUpload.ts
 import { apiRequest } from './api';
 
 interface UploadSignature {

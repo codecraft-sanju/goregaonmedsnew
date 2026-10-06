@@ -1,3 +1,4 @@
+//frontend/next.config.mjs
 /** @type {import('next').NextConfig} */
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;

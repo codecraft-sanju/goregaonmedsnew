@@ -1,3 +1,4 @@
+//src/components/home/HowItWorks.tsx
 import { ClipboardCheck, PackageCheck, Send, Wallet } from 'lucide-react';
 import { Reveal } from './Reveal';
 

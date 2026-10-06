@@ -1,3 +1,4 @@
+//src/components/home/WhyChoose.tsx
 import { BadgeCheck, HandCoins, ShieldCheck, Store } from 'lucide-react';
 import { Reveal } from './Reveal';
 

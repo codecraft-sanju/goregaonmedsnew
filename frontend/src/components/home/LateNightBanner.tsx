@@ -1,3 +1,4 @@
+//src/components/home/LateNightBanner.tsx
 'use client';
 
 import { useEffect, useState } from 'react';

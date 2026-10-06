@@ -1,3 +1,4 @@
+//src/lib/uuid.ts
 /** crypto.randomUUID needs a secure context; fall back to an RFC 4122 v4 UUID from getRandomValues. */
 export function createRequestId(): string {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();

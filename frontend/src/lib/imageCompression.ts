@@ -1,3 +1,4 @@
+//src/lib/imageCompression.ts
 const TARGET_BYTES = 1.2 * 1024 * 1024;
 const MAX_DIMENSION = 2400;
 // Below this, small prescription handwriting starts to blur, so we stop shrinking.

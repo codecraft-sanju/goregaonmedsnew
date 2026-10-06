@@ -1,3 +1,4 @@
+//src/components/home/DeliveryBadge.tsx
 'use client';
 
 import { usePublicSettings } from '@/hooks/usePublicSettings';

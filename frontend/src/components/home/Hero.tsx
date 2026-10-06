@@ -1,3 +1,4 @@
+//src/components/home/Hero.tsx
 import Link from 'next/link';
 import { Camera, ClipboardList, Clock3, MapPin, Wallet } from 'lucide-react';
 import { DeliveryBadge } from './DeliveryBadge';

@@ -1,4 +1,4 @@
-//components/ui/Skeleton.tsx
+//src/components/ui/Skeleton.tsx
 import { cn } from '@/lib/cn';
 
 export function Skeleton({ className }: { className?: string }) {

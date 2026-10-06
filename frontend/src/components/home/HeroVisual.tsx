@@ -1,3 +1,4 @@
+//src/components/home/HeroVisual.tsx
 'use client';
 
 import { motion } from 'framer-motion';

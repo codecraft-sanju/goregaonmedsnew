@@ -1,3 +1,4 @@
+//src/components/home/OfferPopup.tsx
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';

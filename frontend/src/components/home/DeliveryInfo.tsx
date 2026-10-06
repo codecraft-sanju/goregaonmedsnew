@@ -1,3 +1,4 @@
+//src/components/home/DeliveryInfo.tsx
 import { Banknote, MapPinned, Truck } from 'lucide-react';
 import { SERVICE_AREA } from '@/lib/constants';
 import { DeliveryBadge } from './DeliveryBadge';

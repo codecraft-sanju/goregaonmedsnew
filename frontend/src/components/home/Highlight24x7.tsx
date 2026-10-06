@@ -1,3 +1,4 @@
+//src/components/home/Highlight24x7.tsx
 import { Moon } from 'lucide-react';
 import { Reveal } from './Reveal';
 

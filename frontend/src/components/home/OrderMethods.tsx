@@ -1,3 +1,4 @@
+//src/components/home/OrderMethods.tsx
 import Link from 'next/link';
 import { ArrowRight, Camera, ClipboardList, FolderOpen, Images } from 'lucide-react';
 import { Reveal } from './Reveal';

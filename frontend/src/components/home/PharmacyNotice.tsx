@@ -1,3 +1,4 @@
+//src/components/home/PharmacyNotice.tsx
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/cn';
 

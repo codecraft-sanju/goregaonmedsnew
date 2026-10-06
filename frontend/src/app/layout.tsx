@@ -1,3 +1,4 @@
+//src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from 'next/font/google';
 import { Providers } from '@/components/Providers';

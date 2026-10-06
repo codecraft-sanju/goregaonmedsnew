@@ -1,4 +1,4 @@
-// Locations.tsx
+// src/components/home/Locations.tsx
 
 import { MapPin, Plus, Navigation, ArrowUpRight } from 'lucide-react';
 import { BRANCHES, TONE_STYLES } from '@/lib/constants';

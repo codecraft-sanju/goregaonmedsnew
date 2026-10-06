@@ -1,3 +1,4 @@
+//src/lib/checkoutStorage.ts
 import type { Address } from './types';
 
 const STORAGE_KEY = 'gmeds:checkout';

@@ -1,4 +1,4 @@
-// lib/types.ts
+// src/lib/types.ts
 export type OrderType = 'manual_text' | 'prescription_image';
 
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';

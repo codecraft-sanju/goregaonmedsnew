@@ -1,3 +1,4 @@
+//src/components/home/Reveal.tsx
 'use client';
 
 import { motion } from 'framer-motion';

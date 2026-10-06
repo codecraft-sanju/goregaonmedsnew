@@ -1,4 +1,4 @@
-// components/admin/AnalyticsOverview.tsx
+// src/components/admin/AnalyticsOverview.tsx
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
