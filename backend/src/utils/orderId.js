@@ -1,3 +1,4 @@
+//src/utils/orderId.js
 import { randomInt } from 'node:crypto';
 
 // Excludes look-alike characters (0/O, 1/I/L) so IDs are easy to read out over the phone.

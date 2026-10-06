@@ -1,3 +1,4 @@
+//src/services/cloudinaryService.js
 import { createHash } from 'node:crypto';
 
 /** Signs a direct browser-to-Cloudinary upload so Express never handles image bytes. */
