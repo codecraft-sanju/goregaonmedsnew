@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, Gift, PackageCheck, Save, XCircle } from 'lucide-react';
+import { CheckCircle2, Gift, PackageCheck, Save, XCircle, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { adminRequest } from '@/lib/adminApi';
@@ -75,7 +75,12 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   const otherValue = other.trim() === '' ? 0 : parseAmount(other);
   const discountValue = discount.trim() === '' ? 0 : parseAmount(discount);
   
-  const medicinesValid = medicinesData.every(m => !m.isAvailable || (m.price.trim() !== '' && parseAmount(m.price) !== null));
+  // Validation: Check if all items have valid prices AND valid names/quantities
+  const medicinesValid = medicinesData.every(m => 
+    (!m.isAvailable || (m.price.trim() !== '' && parseAmount(m.price) !== null)) && 
+    m.name.trim() !== '' && 
+    m.quantity.trim() !== ''
+  );
   const valid = medicinesValid && otherValue !== null && discountValue !== null;
 
   const preview = useMemo(() => {
@@ -95,14 +100,6 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
     };
   }, [order.offer, medicineValue, otherValue, discountValue, valid, deliveryCharge]);
 
-  // const dirty =
-  //   !billed ||
-  //   medicineValue !== order.medicineSubtotal ||
-  //   (otherValue ?? -1) !== order.nonMedicineSubtotal ||
-  //   (discountValue ?? -1) !== (order.discount ?? 0) ||
-  //   giftIncluded !== order.offerApplied ||
-  //   deliveryCharge !== order.deliveryCharge ||
-  //   medicinesData.some((m, i) => m.isAvailable !== (order.medicines[i].isAvailable ?? true));
   const dirty =
     !billed ||
     medicineValue !== order.medicineSubtotal ||
@@ -110,7 +107,12 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
     (discountValue ?? -1) !== (order.discount ?? 0) ||
     giftIncluded !== order.offerApplied ||
     deliveryCharge !== order.deliveryCharge ||
-    medicinesData.some((m, i) => m.isAvailable !== (order.medicines[i]?.isAvailable ?? true));
+    medicinesData.length !== order.medicines.length ||
+    medicinesData.some((m, i) => 
+      m.isAvailable !== (order.medicines[i]?.isAvailable ?? true) || 
+      m.name !== order.medicines[i]?.name ||
+      m.quantity !== order.medicines[i]?.quantity
+    );
 
   useEffect(() => {
     if (!preview.eligible) setGiftIncluded(false);
@@ -119,14 +121,25 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   const updateMedicine = <K extends keyof MedicineInput>(index: number, field: K, value: MedicineInput[K]) => {
     setMedicinesData(prev => {
       const copy = [...prev];
-    copy[index] = { ...copy[index], [field]: value } as MedicineInput;
+      copy[index] = { ...copy[index], [field]: value } as MedicineInput;
       return copy;
     });
   };
 
+  const addMedicine = () => {
+    setMedicinesData(prev => [
+      ...prev,
+      { name: '', quantity: '1', price: '', isAvailable: true }
+    ]);
+  };
+
+  const removeMedicine = (index: number) => {
+    setMedicinesData(prev => prev.filter((_, i) => i !== index));
+  };
+
   const saveBill = async () => {
     if (!valid) {
-      toast.error('Enter valid amounts for all items, other charges, and discount.');
+      toast.error('Enter valid amounts, names, and quantities for all items.');
       return;
     }
     setSaving(true);
@@ -134,6 +147,8 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
       const payload = {
         medicines: medicinesData.map(m => ({
           _id: m._id,
+          name: m.name.trim(), // Sent back to the server correctly now
+          quantity: m.quantity.trim(),
           price: parseAmount(m.price) ?? 0,
           isAvailable: m.isAvailable
         })),
@@ -216,39 +231,91 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
       
       <div className="space-y-3">
         <h4 className="text-xs font-semibold text-ink">Medicines ({medicinesData.length})</h4>
-        {medicinesData.map((med, index) => (
-          <div key={med._id || `legacy-med-${index}`} className={cn("p-3 rounded-xl border transition-colors", med.isAvailable ? "bg-white border-brand-100" : "bg-surface border-transparent opacity-80")}>
-            <div className="flex justify-between items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <p className={cn("text-sm font-semibold truncate", !med.isAvailable && "line-through text-ink-muted")}>{med.name}</p>
-                <p className="text-xs text-ink-soft">{med.quantity}</p>
+        
+        <AnimatePresence initial={false}>
+          {medicinesData.map((med, index) => (
+            <motion.div 
+              key={med._id || `new-med-${index}`} 
+              layout
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={cn("p-3 rounded-xl border transition-colors relative group", med.isAvailable ? "bg-white border-brand-100" : "bg-surface border-transparent opacity-80")}
+            >
+              {/* Added: Trash button to remove newly added medicines */}
+              {!med._id && (
+                <button 
+                  onClick={() => removeMedicine(index)} 
+                  className="absolute -top-2.5 -right-2.5 bg-red-100 text-red-600 p-1.5 rounded-full hover:bg-red-200 transition-transform scale-0 group-hover:scale-100 opacity-0 group-hover:opacity-100 shadow-sm"
+                  title="Remove Medicine"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1 min-w-0 space-y-1">
+                  <input
+                    value={med.name}
+                    onChange={(e) => updateMedicine(index, 'name', e.target.value)}
+                    placeholder="Medicine Name"
+                    className={cn(
+                      "w-full bg-transparent text-sm font-semibold focus:outline-none placeholder:text-ink-muted/50 transition-colors rounded px-1 -mx-1 focus:bg-brand-50/50",
+                      !med.isAvailable && "line-through text-ink-muted"
+                    )}
+                  />
+                  <input
+                    value={med.quantity}
+                    onChange={(e) => updateMedicine(index, 'quantity', e.target.value)}
+                    placeholder="Quantity (e.g. 1 strip)"
+                    className="w-full bg-transparent text-xs text-ink-soft focus:outline-none placeholder:text-ink-muted/50 transition-colors rounded px-1 -mx-1 focus:bg-brand-50/50"
+                  />
+                </div>
+                <label className="flex items-center gap-1.5 cursor-pointer shrink-0 mt-1">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 accent-brand-600 rounded" 
+                    checked={med.isAvailable} 
+                    onChange={(e) => {
+                      updateMedicine(index, 'isAvailable', e.target.checked);
+                      if (!e.target.checked) updateMedicine(index, 'price', '0');
+                    }} 
+                  />
+                  <span className="text-xs font-medium text-ink-muted">In Stock</span>
+                </label>
               </div>
-              <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
-                <input 
-                  type="checkbox" 
-                  className="w-4 h-4 accent-brand-600 rounded" 
-                  checked={med.isAvailable} 
-                  onChange={(e) => {
-                    updateMedicine(index, 'isAvailable', e.target.checked);
-                    if (!e.target.checked) updateMedicine(index, 'price', '0');
-                  }} 
-                />
-                <span className="text-xs font-medium text-ink-muted">In Stock</span>
-              </label>
-            </div>
-            {med.isAvailable && (
-              <div className="mt-3">
-                <AmountInput 
-                  id={`price-${med._id}`} 
-                  label="" 
-                  hint="" 
-                  value={med.price} 
-                  onChange={(val) => updateMedicine(index, 'price', val)} 
-                />
-              </div>
-            )}
-          </div>
-        ))}
+              
+              <AnimatePresence>
+                {med.isAvailable && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: 'auto', opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }} 
+                    className="mt-3 overflow-hidden"
+                  >
+                    <AmountInput 
+                      id={`price-${index}`} 
+                      label="" 
+                      hint="" 
+                      value={med.price} 
+                      onChange={(val) => updateMedicine(index, 'price', val)} 
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* Added: "Add Medicine" button for Prescription Orders */}
+        <Button 
+          variant="ghost" 
+          onClick={addMedicine} 
+          className="w-full border border-dashed border-brand-200 text-brand-700 bg-brand-50/30 hover:bg-brand-50 hover:border-brand-300 transition-colors" 
+          icon={<Plus className="w-4 h-4" />}
+        >
+          Add Medicine
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 pt-2">
@@ -279,14 +346,14 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
         </div>
       </dl>
 
-      <div className={cn('rounded-xl p-3.5 ring-1', status.eligible ? 'bg-brand-50 ring-brand-300' : 'bg-white ring-brand-100')}>
+      <div className={cn('rounded-xl p-3.5 ring-1 transition-colors duration-300', status.eligible ? 'bg-brand-50 ring-brand-300' : 'bg-white ring-brand-100')}>
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">First Order Gift Eligibility</p>
             <p className="mt-0.5 text-sm font-semibold">{formatRupees(order.offer.requiredMedicineAmount)} Medicine Minimum</p>
             <p className="mt-0.5 text-xs text-ink-soft">Medicine subtotal only. Delivery and other items never count.</p>
           </div>
-          <span className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-bold', status.eligible ? 'bg-brand-700 text-white' : 'bg-red-50 text-red-700')}>
+          <span className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors', status.eligible ? 'bg-brand-700 text-white' : 'bg-red-50 text-red-700')}>
             {status.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
           </span>
         </div>
@@ -304,11 +371,11 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
         </ul>
         <label
           className={cn(
-            'mt-3 flex min-h-11 items-center gap-2.5 rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-brand-100',
+            'mt-3 flex min-h-11 items-center gap-2.5 rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-brand-100 transition-opacity',
             preview.eligible ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
           )}
         >
-          <input type="checkbox" className="h-5 w-5 accent-brand-700" checked={giftIncluded} disabled={!preview.eligible} onChange={(event) => setGiftIncluded(event.target.checked)} />
+          <input type="checkbox" className="h-5 w-5 accent-brand-700 rounded" checked={giftIncluded} disabled={!preview.eligible} onChange={(event) => setGiftIncluded(event.target.checked)} />
           <Gift className="h-4 w-4 text-gift-500" aria-hidden /> FREE {GIFT.shortName} Included
         </label>
       </div>
@@ -323,7 +390,7 @@ function AmountInput({ id, label, hint, value, onChange }: { id: string; label?:
   return (
     <div>
       {label && <label htmlFor={id} className="block text-xs font-semibold text-ink">{label}</label>}
-      <div className={cn('flex items-center rounded-xl bg-white ring-1 ring-inset focus-within:ring-2', label && 'mt-1', invalid ? 'ring-red-300 focus-within:ring-red-500' : 'ring-brand-100 focus-within:ring-brand-500')}>
+      <div className={cn('flex items-center rounded-xl bg-white ring-1 ring-inset focus-within:ring-2 transition-shadow', label && 'mt-1', invalid ? 'ring-red-300 focus-within:ring-red-500' : 'ring-brand-100 focus-within:ring-brand-500')}>
         <span className="pl-3 text-sm text-ink-muted">₹</span>
         <input
           id={id}

@@ -20,42 +20,6 @@ function toCustomerSummary(user) {
   };
 }
 
-// function toAdminOrder(order, user, settings) {
-//   return {
-//     id: String(order._id),
-//     orderId: order.orderId,
-//     customerName: order.customerName,
-//     mobileNumber: order.mobileNumber,
-//     orderType: order.orderType,
-//     medicines: order.medicines,
-//     prescriptionUrl: order.prescriptionUrl,
-//     address: order.address,
-//     paymentMethod: order.paymentMethod,
-//     medicineSubtotal: order.medicineSubtotal,
-//     nonMedicineSubtotal: order.nonMedicineSubtotal,
-//     deliveryCharge: order.deliveryCharge,
-//     finalAmount: order.finalAmount,
-//     billedAt: order.billedAt,
-//     offerOptIn: order.offerOptIn,
-//     firstOrderAtCreation: order.firstOrderAtCreation,
-//     previousOrders: order.customerOrderNumber - 1,
-//     offerEligible: order.offerEligible,
-//     offerApplied: order.offerApplied,
-//     offer: evaluateOfferEligibility({
-//       settings,
-//       firstOrderAtCreation: order.firstOrderAtCreation,
-//       userOfferClaimed: Boolean(user?.offerClaimed) && user.offerClaimedOrderId !== order.orderId,
-//       medicineSubtotal: order.medicineSubtotal,
-//     }),
-//     status: order.status,
-//     // NEW: Include cancel details for the frontend
-//     cancelReason: order.cancelReason,
-//     telegramNotificationSent: order.telegramNotificationSent,
-//     createdAt: order.createdAt,
-//     deliveredAt: order.deliveredAt,
-//     customer: toCustomerSummary(user),
-//   };
-// }
 
 function toAdminOrder(order, user, settings) {
   return {
@@ -127,118 +91,43 @@ export async function getOrder(id) {
   return toAdminOrder(order, user, settings);
 }
 
-// export async function saveBilling(id, { medicineSubtotal, nonMedicineSubtotal, offerApplied }) {
-//   const order = await findOrderOrThrow(id);
-//   if (order.status !== 'Pending') throw conflict('Only pending orders can be billed', 'ORDER_LOCKED');
 
-//   const [settings, user] = await Promise.all([getSettings(), User.findOne({ mobileNumber: order.mobileNumber }).lean()]);
-//   const bill = calculateBill({ medicineSubtotal, nonMedicineSubtotal, deliveryCharge: settings.deliveryCharge });
-//   const offer = evaluateOfferEligibility({
-//     settings,
-//     firstOrderAtCreation: order.firstOrderAtCreation,
-//     userOfferClaimed: Boolean(user?.offerClaimed),
-//     medicineSubtotal: bill.medicineSubtotal,
-//   });
-
-//   if (offerApplied && !offer.eligible) {
-//     throw unprocessable('The free GlucoOne cannot be included: this order is not eligible.', 'OFFER_NOT_ELIGIBLE');
-//   }
-
-//   const updated = await Order.findOneAndUpdate(
-//     { _id: order._id, status: 'Pending' },
-//     { $set: { ...bill, offerEligible: offer.eligible, offerApplied: Boolean(offerApplied), billedAt: new Date() } },
-//     { new: true, lean: true },
-//   );
-//   if (!updated) throw conflict('Order was modified while you were billing it', 'ORDER_LOCKED');
-//   return toAdminOrder(updated, user, settings);
-// }
-
-// export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount, offerApplied }) {
-//   const order = await findOrderOrThrow(id);
-//   if (order.status !== 'Pending') throw conflict('Only pending orders can be billed', 'ORDER_LOCKED');
-
-//   const [settings, user] = await Promise.all([getSettings(), User.findOne({ mobileNumber: order.mobileNumber }).lean()]);
-
-//   // 1. Calculate Medicine Subtotal via Item-Level Math
-//   let computedMedicineSubtotal = 0;
-  
-//   const updatedMedicines = order.medicines.map((dbMed) => {
-//     const inputMed = medicines.find((m) => m._id === String(dbMed._id));
-//     const isAvailable = inputMed ? inputMed.isAvailable : dbMed.isAvailable;
-//     const price = (isAvailable && inputMed) ? inputMed.price : 0;
-
-//     if (isAvailable) {
-//       computedMedicineSubtotal += price;
-//     }
-
-//     return { ...dbMed, isAvailable, price: isAvailable ? price : 0 };
-//   });
-
-//   // 2. Use our centralized calculateBill function! (Clean and DRY)
-//   // IMPORT THIS AT THE TOP: import { calculateBill, evaluateOfferEligibility } from './offerService.js';
-//   const bill = calculateBill({
-//     medicineSubtotal: computedMedicineSubtotal,
-//     nonMedicineSubtotal,
-//     deliveryCharge: settings.deliveryCharge,
-//     discount
-//   });
-
-//   // 3. Evaluate Offers using our secure subtotal
-//   const offer = evaluateOfferEligibility({
-//     settings,
-//     firstOrderAtCreation: order.firstOrderAtCreation,
-//     userOfferClaimed: Boolean(user?.offerClaimed),
-//     medicineSubtotal: bill.medicineSubtotal,
-//   });
-
-//   if (offerApplied && !offer.eligible) {
-//     throw unprocessable('The free GlucoOne cannot be included: this order is not eligible.', 'OFFER_NOT_ELIGIBLE');
-//   }
-
-//   // 4. Save Updates
-//   const updated = await Order.findOneAndUpdate(
-//     { _id: order._id, status: 'Pending' },
-//     { $set: { 
-//         ...bill, 
-//         medicines: updatedMedicines,
-//         offerEligible: offer.eligible, 
-//         offerApplied: Boolean(offerApplied), 
-//         billedAt: new Date() 
-//       } 
-//     },
-//     { new: true, lean: true },
-//   );
-  
-//   if (!updated) throw conflict('Order was modified while you were billing it', 'ORDER_LOCKED');
-//   return toAdminOrder(updated, user, settings);
-// }
 export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount, offerApplied }) {
   const order = await findOrderOrThrow(id);
   if (order.status !== 'Pending') throw conflict('Only pending orders can be billed', 'ORDER_LOCKED');
 
   const [settings, user] = await Promise.all([getSettings(), User.findOne({ mobileNumber: order.mobileNumber }).lean()]);
 
-  // 1. Calculate Medicine Subtotal via Item-Level Math
   let computedMedicineSubtotal = 0;
   
-  const updatedMedicines = order.medicines.map((dbMed, index) => {
-    // MATCHING LOGIC: Use _id if available, otherwise fallback to array index for older orders
-    const inputMed = medicines.find((m, i) => 
-      (m._id && dbMed._id) ? String(m._id) === String(dbMed._id) : i === index
-    );
+
+  const updatedMedicines = medicines.map((inputMed, index) => {
+    // Try to find if this medicine already exists in DB
+    let dbMed = null;
+    if (inputMed._id && order.medicines) {
+      dbMed = order.medicines.find((m) => String(m._id) === String(inputMed._id));
+    } else if (order.medicines && order.medicines[index]) {
+      // Fallback for very old orders
+      dbMed = order.medicines[index];
+    }
     
-    const isAvailable = inputMed ? inputMed.isAvailable : dbMed.isAvailable;
-    const price = (isAvailable && inputMed) ? inputMed.price : 0;
+    const isAvailable = inputMed.isAvailable;
+    const price = isAvailable ? inputMed.price : 0;
 
     if (isAvailable) {
       computedMedicineSubtotal += price;
     }
 
-    return { ...dbMed, isAvailable, price: isAvailable ? price : 0 };
+    // Combine old data with new data added by admin
+    return {
+      ...(dbMed ? dbMed : {}),
+      name: inputMed.name || (dbMed ? dbMed.name : 'Prescription Medicine'),
+      quantity: inputMed.quantity || (dbMed ? dbMed.quantity : '1'),
+      isAvailable,
+      price
+    };
   });
 
-  // 2. Use our centralized calculateBill function! (Clean and DRY)
-  // IMPORT THIS AT THE TOP: import { calculateBill, evaluateOfferEligibility } from './offerService.js';
   const bill = calculateBill({
     medicineSubtotal: computedMedicineSubtotal,
     nonMedicineSubtotal,
@@ -246,7 +135,6 @@ export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount
     discount
   });
 
-  // 3. Evaluate Offers using our secure subtotal
   const offer = evaluateOfferEligibility({
     settings,
     firstOrderAtCreation: order.firstOrderAtCreation,
@@ -258,12 +146,11 @@ export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount
     throw unprocessable('The free GlucoOne cannot be included: this order is not eligible.', 'OFFER_NOT_ELIGIBLE');
   }
 
-  // 4. Save Updates
   const updated = await Order.findOneAndUpdate(
     { _id: order._id, status: 'Pending' },
     { $set: { 
         ...bill, 
-        medicines: updatedMedicines,
+        medicines: updatedMedicines, 
         offerEligible: offer.eligible, 
         offerApplied: Boolean(offerApplied), 
         billedAt: new Date() 

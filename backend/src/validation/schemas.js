@@ -83,6 +83,8 @@ export const billingSchema = z
     medicines: z.array(
       z.object({
         _id: z.string().optional(),
+        name: z.string().max(120, 'Name is too long').optional(), // New
+        quantity: z.string().max(60, 'Quantity is too long').optional(), // New
         price: z.number().min(0, 'Price cannot be negative').default(0),
         isAvailable: z.boolean().default(true),
       })
