@@ -16,7 +16,6 @@ export function OrderMethods() {
     <section id="order-methods" className="container-app pb-14 pt-4" aria-labelledby="methods-title">
       <h2 id="methods-title" className="sr-only">Order Methods</h2>
       
-      {/* Grid use kiya hai taaki desktop pe cards fail jayein aur mobile pe stack rahein */}
       <div className="grid gap-4 md:grid-cols-3">
         
         {/* Card 1: Upload Prescription */}
@@ -30,14 +29,14 @@ export function OrderMethods() {
                 Upload<br/>Prescription
               </h3>
               <p className="mt-2 text-xs font-medium leading-relaxed text-[#4a6358]">
-                Take a photo or upload your prescription. We'll take care of the rest.
+            
+                Take a photo or upload your prescription. We&apos;ll take care of the rest.
               </p>
               <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#156253] px-4 py-2 text-[13px] font-semibold text-white shadow-sm">
                 Upload Prescription <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
               </div>
             </div>
 
-            {/* CSS Art: Prescription & Camera */}
             <div className="absolute -right-4 bottom-2 h-32 w-32 pointer-events-none md:bottom-6 md:right-0">
               <div className="absolute right-8 top-2 h-24 w-20 rotate-[12deg] rounded-lg bg-white/50 shadow-sm" />
               <div className="absolute right-4 top-4 h-24 w-20 rotate-3 rounded-lg bg-white p-2 shadow-md">
@@ -70,7 +69,6 @@ export function OrderMethods() {
               </div>
             </div>
 
-            {/* CSS Art: Pills & Blister Pack */}
             <div className="absolute -right-2 bottom-2 h-32 w-32 pointer-events-none md:bottom-6 md:right-0">
               <div className="absolute right-4 top-4 grid h-[76px] w-[60px] -rotate-12 grid-cols-2 gap-2 rounded-xl bg-[#b4c8c8] p-2.5 shadow-inner">
                 {[...Array(6)].map((_, i) => (
@@ -91,7 +89,6 @@ export function OrderMethods() {
           <Reveal delay={0.15}>
             <div className="relative flex min-h-[110px] items-center overflow-hidden rounded-3xl bg-gradient-to-r from-[#fff5e6] to-[#ffebd6] p-4 transition-transform hover:scale-[1.01] md:min-h-[220px] md:flex-col md:items-start md:p-6">
               
-              {/* CSS Art: Gift Box */}
               <div className="relative h-16 w-20 shrink-0 pointer-events-none md:absolute md:bottom-6 md:right-6 md:h-24 md:w-24">
                 <div className="absolute left-1/2 top-1/2 h-12 w-14 -translate-x-1/2 -translate-y-1/2">
                   <div className="absolute bottom-0 h-9 w-14 rounded-md bg-white shadow-sm" />
