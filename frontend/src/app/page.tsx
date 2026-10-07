@@ -1,5 +1,6 @@
- //src/app/page.tsx
+//src/app/page.tsx
 import { Navbar } from '@/components/layout/Navbar';
+import { BottomNav } from '@/components/layout/BottomNav';
 import { Footer } from '@/components/layout/Footer';
 import { Hero } from '@/components/home/Hero';
 import { OfferPopup } from '@/components/home/OfferPopup';
@@ -19,7 +20,8 @@ export default function HomePage() {
     <>
       <LateNightBanner />
       <Navbar />
-      <main>
+      {/* pb-24 add kiya mobile me nav bar ki jagah chhodne ke liye */}
+      <main className="pb-24 md:pb-0"> 
         <Hero />
         <OrderMethods />
         <WhyChoose />
@@ -34,6 +36,7 @@ export default function HomePage() {
         </div>
       </main>
       <Footer />
+      <BottomNav /> 
       <OfferPopup />
     </>
   );

@@ -1,4 +1,4 @@
-//src/components/home/TrackCta.tsx
+// src/components/home/TrackCta.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,8 @@ export function TrackCta() {
   };
 
   return (
-    <section id="track" className="container-app py-6" aria-labelledby="track-title">
+  
+    <section id="track" className="hidden md:block container-app py-6" aria-labelledby="track-title">
       <div className="card flex flex-col gap-6 p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700"><PackageSearch className="h-6 w-6" aria-hidden /></span>

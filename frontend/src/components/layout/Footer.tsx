@@ -6,7 +6,8 @@ import { Logo } from './Logo';
 
 export function Footer() {
   return (
-    <footer className="mt-20 border-t border-brand-100 bg-white">
+  
+    <footer className="hidden md:block mt-20 border-t border-brand-100 bg-white">
       <div className="container-app grid gap-10 py-12 sm:grid-cols-3">
         <div className="space-y-3">
           <Logo />

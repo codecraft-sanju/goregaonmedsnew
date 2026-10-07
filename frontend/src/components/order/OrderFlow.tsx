@@ -1,11 +1,11 @@
-//src/components/order/OrderFlow.tsx
+// src/components/order/OrderFlow.tsx
 'use client';
 
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, ShieldCheck, Wallet, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
@@ -22,7 +22,6 @@ import { DeliveryDetailsForm, type DeliveryDetails } from './DeliveryDetailsForm
 import { MedicineListEditor, type MedicineRow } from './MedicineListEditor';
 import type { UploadState } from './PrescriptionUploader';
 
-// Image compression and upload code only loads for customers who choose the prescription route.
 const PrescriptionUploader = dynamic(() => import('./PrescriptionUploader').then((mod) => mod.PrescriptionUploader), {
   ssr: false,
   loading: () => <Skeleton className="h-56 w-full rounded-3xl" />,
@@ -31,7 +30,6 @@ const PrescriptionUploader = dynamic(() => import('./PrescriptionUploader').then
 const STEPS = ['Your medicines', 'Delivery details', 'Review & place'] as const;
 type Step = 0 | 1 | 2;
 
-// DEFAULT QUANTITY SET TO '1 Strip' INSTEAD OF EMPTY STRING
 const emptyRow = (): MedicineRow => ({ id: createRequestId(), name: '', quantity: '1 Strip' });
 const emptyDetails: DeliveryDetails = { customerName: '', mobileNumber: '', address: { flat: '', area: '', landmark: '' } };
 
@@ -63,7 +61,6 @@ export function OrderFlow() {
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState(1);
   const [method, setMethod] = useState<OrderType>(params.get('method') === 'prescription' ? 'prescription_image' : 'manual_text');
-  // const [rows, setRows] = useState<MedicineRow[]>(() => [emptyRow()]);
   const [rows, setRows] = useState<MedicineRow[]>([{ id: 'initial-row', name: '', quantity: '1 Strip' }]);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
@@ -74,7 +71,6 @@ export function OrderFlow() {
   const [offerOptIn, setOfferOptIn] = useState(params.get('gift') === '1');
   const [submitting, setSubmitting] = useState(false);
 
-  // One id per order attempt: retries after a network error reuse it, so the backend never creates a duplicate.
   const clientRequestId = useRef<string | null>(null);
   const submitLock = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -149,12 +145,10 @@ export function OrderFlow() {
       if (saveDetails) saveCheckout({ customerName: payload.customerName, mobileNumber: payload.mobileNumber, address: payload.address });
       else clearCheckout();
       router.replace(`/order/success?id=${encodeURIComponent(result.orderId)}&notified=${result.telegramNotificationSent ? '1' : '0'}`);
-      // The button stays disabled until the success page loads.
     } catch (error) {
       submitLock.current = false;
       setSubmitting(false);
       if (error instanceof ApiError && (error.status === 400 || error.status === 409)) {
-        // A validation failure means the payload changed meaning; the next attempt is a new order.
         clientRequestId.current = null;
         const fieldErrors: DetailErrors = {};
         for (const issue of error.fields) {
@@ -175,18 +169,19 @@ export function OrderFlow() {
 
   return (
     <div ref={topRef} className="mx-auto w-full max-w-2xl scroll-mt-24">
-      <ol className="mb-6 grid grid-cols-3 gap-2" aria-label="Order progress">
+      {/* iOS Style Step Progress */}
+      <ol className="mb-8 flex justify-between gap-2" aria-label="Order progress">
         {STEPS.map((label, index) => (
-          <li key={label} aria-current={index === step ? 'step' : undefined}>
-            <div className="h-1.5 overflow-hidden rounded-full bg-brand-100">
-              <motion.div className="h-full bg-brand-600" initial={false} animate={{ width: index <= step ? '100%' : '0%' }} transition={{ duration: 0.35 }} />
+          <li key={label} className="w-full text-center" aria-current={index === step ? 'step' : undefined}>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#eaf4f4]">
+              <motion.div className="h-full bg-[#156253]" initial={false} animate={{ width: index <= step ? '100%' : '0%' }} transition={{ duration: 0.35 }} />
             </div>
-            <p className={cn('mt-2 text-xs font-semibold sm:text-sm', index === step ? 'text-brand-800' : 'text-ink-soft')}>{label}</p>
+            <p className={cn('mt-2 text-[11px] font-bold sm:text-xs', index === step ? 'text-[#156253]' : 'text-[#8ba7a7]')}>{label}</p>
           </li>
         ))}
       </ol>
 
-      <div className="card overflow-hidden p-5 sm:p-8">
+      <div className="card overflow-hidden bg-white p-5 shadow-sm sm:p-8">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={step}
@@ -194,15 +189,17 @@ export function OrderFlow() {
             initial={{ opacity: 0, x: direction * 24 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction * -24 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           >
             {step === 0 && (
               <section aria-labelledby="step-items">
-                <h1 id="step-items" className="font-display text-2xl font-bold">What do you need?</h1>
-                <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-surface p-1.5 ring-1 ring-brand-100" role="tablist" aria-label="Ordering method">
+                <h1 id="step-items" className="font-display text-2xl font-extrabold text-ink">What do you need?</h1>
+                
+                {/* Segmented Control / Tabs */}
+                <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-brand-50/70 p-1.5" role="tablist" aria-label="Ordering method">
                   {[
                     { value: 'manual_text' as const, label: 'Enter medicines', icon: ClipboardList },
-                    { value: 'prescription_image' as const, label: 'Upload prescription', icon: Camera },
+                    { value: 'prescription_image' as const, label: 'Upload Rx', icon: Camera },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -210,14 +207,15 @@ export function OrderFlow() {
                       role="tab"
                       aria-selected={method === option.value}
                       onClick={() => setMethod(option.value)}
-                      className={cn('relative flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-colors', method === option.value ? 'text-white' : 'text-ink-muted hover:text-ink')}
+                      className={cn('relative flex h-12 items-center justify-center gap-2 rounded-xl text-[13px] font-bold transition-all duration-200', method === option.value ? 'text-[#156253]' : 'text-ink-muted hover:text-ink')}
                     >
-                      {method === option.value && <motion.span layoutId="method-pill" className="absolute inset-0 rounded-xl bg-brand-700" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+                      {method === option.value && <motion.span layoutId="method-pill" className="absolute inset-0 rounded-xl bg-white shadow-sm border border-brand-100/50" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
                       <option.icon className="relative h-4 w-4" aria-hidden />
                       <span className="relative">{option.label}</span>
                     </button>
                   ))}
                 </div>
+                
                 <div className="mt-6">
                   {method === 'manual_text' ? (
                     <MedicineListEditor rows={rows} errors={rowErrors} onChange={setRows} onAdd={() => setRows((current) => [...current, emptyRow()])} />
@@ -237,8 +235,8 @@ export function OrderFlow() {
 
             {step === 1 && (
               <section aria-labelledby="step-details">
-                <h1 id="step-details" className="font-display text-2xl font-bold">Where should we deliver?</h1>
-                <p className="mt-1 text-sm text-ink-muted">We deliver across Goregaon East, Mumbai.</p>
+                <h1 id="step-details" className="font-display text-2xl font-extrabold text-ink">Delivery details</h1>
+                <p className="mt-1 text-sm font-medium text-ink-muted">We deliver safely across Goregaon East, Mumbai.</p>
                 <div className="mt-6">
                   <DeliveryDetailsForm value={details} errors={detailErrors} saveDetails={saveDetails} onChange={setDetails} onSaveDetailsChange={setSaveDetails} />
                 </div>
@@ -247,70 +245,70 @@ export function OrderFlow() {
 
             {step === 2 && (
               <section aria-labelledby="step-review" className="space-y-5">
-                <h1 id="step-review" className="font-display text-2xl font-bold">Review your order</h1>
+                <h1 id="step-review" className="font-display text-2xl font-extrabold text-ink">Review your order</h1>
 
                 <div className="rounded-3xl bg-surface p-5 ring-1 ring-brand-100">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-ink-muted">{method === 'manual_text' ? 'Medicines' : 'Prescription'}</p>
-                    <button type="button" onClick={() => go(0)} className="text-sm font-semibold text-brand-700">Edit</button>
+                    <p className="text-sm font-bold text-ink-muted">{method === 'manual_text' ? 'Medicines' : 'Prescription'}</p>
+                    <button type="button" onClick={() => go(0)} className="text-[13px] font-bold text-[#156253] hover:underline">Edit</button>
                   </div>
                   {method === 'manual_text' ? (
-                    <ul className="mt-3 space-y-2">
+                    <ul className="mt-4 space-y-3">
                       {filledRows.map((row) => (
                         <li key={row.id} className="flex justify-between gap-4 text-sm">
-                          <span className="font-medium">{row.name}</span>
-                          <span className="text-ink-muted">{row.quantity}</span>
+                          <span className="font-semibold text-ink">{row.name}</span>
+                          <span className="font-medium text-ink-muted">{row.quantity}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
                     upload.status === 'done' && (
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="mt-4 flex items-center gap-4 rounded-2xl bg-white p-3 ring-1 ring-brand-50">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={upload.previewUrl} alt="Your prescription" className="h-16 w-14 rounded-xl object-cover" />
-                        <p className="text-sm text-ink-muted">The pharmacy will read your prescription and confirm the medicines with you.</p>
+                        <img src={upload.previewUrl} alt="Your prescription" className="h-16 w-14 shrink-0 rounded-xl object-cover shadow-sm" />
+                        <p className="text-xs font-medium leading-relaxed text-ink-muted">The pharmacy will review your prescription and confirm medicines with you.</p>
                       </div>
                     )
                   )}
                 </div>
 
                 <div className="rounded-3xl bg-surface p-5 ring-1 ring-brand-100">
-                  <div className="flex items-center justify-between">
-                    <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted"><MapPin className="h-4 w-4" aria-hidden /> Delivery</p>
-                    <button type="button" onClick={() => go(1)} className="text-sm font-semibold text-brand-700">Edit</button>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="flex items-center gap-1.5 text-sm font-bold text-ink-muted"><MapPin className="h-4 w-4" aria-hidden /> Delivery to</p>
+                    <button type="button" onClick={() => go(1)} className="text-[13px] font-bold text-[#156253] hover:underline">Edit</button>
                   </div>
-                  <p className="mt-3 text-sm font-semibold">{details.customerName}</p>
-                  <p className="text-sm text-ink-muted">{formatMobile(normalizeMobile(details.mobileNumber) ?? '')}</p>
-                  <p className="mt-1 text-sm text-ink-muted">{[details.address.flat, details.address.area, details.address.landmark].filter(Boolean).join(', ')}</p>
+                  <p className="text-sm font-bold text-ink">{details.customerName}</p>
+                  <p className="text-sm font-medium text-ink-muted">{formatMobile(normalizeMobile(details.mobileNumber) ?? '')}</p>
+                  <p className="mt-1 text-sm font-medium text-ink-muted">{[details.address.flat, details.address.area, details.address.landmark].filter(Boolean).join(', ')}</p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-start gap-3 rounded-3xl p-4 ring-1 ring-brand-100">
-                    <Wallet className="mt-0.5 h-5 w-5 text-brand-600" aria-hidden />
-                    <p className="text-sm"><span className="font-semibold">Payment</span><br /><span className="text-ink-muted">{PAYMENT_LABEL}</span></p>
+                  <div className="flex items-start gap-3 rounded-3xl bg-white p-4 ring-1 ring-brand-100">
+                    <Wallet className="mt-0.5 h-5 w-5 text-[#156253]" aria-hidden />
+                    <p className="text-sm"><span className="font-bold text-ink">Payment</span><br /><span className="font-medium text-ink-muted">{PAYMENT_LABEL}</span></p>
                   </div>
-                  <div className="flex items-start gap-3 rounded-3xl p-4 ring-1 ring-brand-100">
-                    <ShieldCheck className="mt-0.5 h-5 w-5 text-brand-600" aria-hidden />
+                  <div className="flex items-start gap-3 rounded-3xl bg-white p-4 ring-1 ring-brand-100">
+                    <ShieldCheck className="mt-0.5 h-5 w-5 text-[#156253]" aria-hidden />
                     <p className="text-sm">
-                      <span className="font-semibold">{settings.deliveryCharge === 0 ? 'FREE Delivery' : `Delivery ${formatRupees(settings.deliveryCharge)}`}</span>
+                      <span className="font-bold text-ink">{settings.deliveryCharge === 0 ? 'FREE Delivery' : `Delivery ${formatRupees(settings.deliveryCharge)}`}</span>
                       <br />
-                      <span className="text-ink-muted">Final amount confirmed after billing</span>
+                      <span className="font-medium text-ink-muted">Final amount confirmed after billing</span>
                     </p>
                   </div>
                 </div>
 
                 {giftAvailable && (
-                  <label className={cn('flex cursor-pointer items-start gap-3 rounded-3xl p-4 ring-1 transition-colors', offerOptIn ? 'bg-gift-50 ring-gift-400' : 'ring-brand-100')}>
-                    <input type="checkbox" checked={offerOptIn} onChange={(event) => setOfferOptIn(event.target.checked)} className="mt-1 h-4 w-4 accent-gift-500" />
+                  <label className={cn('flex cursor-pointer items-start gap-3 rounded-3xl p-4 ring-1 transition-colors', offerOptIn ? 'bg-[#fff5e6] ring-[#dfa442]/50' : 'bg-white ring-brand-100')}>
+                    <input type="checkbox" checked={offerOptIn} onChange={(event) => setOfferOptIn(event.target.checked)} className="mt-1 h-4 w-4 accent-[#dfa442]" />
                     <span className="text-sm">
-                      <span className="flex items-center gap-1.5 font-semibold"><Gift className="h-4 w-4 text-gift-500" aria-hidden /> Claim my first-order gift: FREE {GIFT.shortName}</span>
-                      <span className="mt-1 block text-ink-muted">
-                        For first orders with {threshold} or more in medicines after discounts. Cosmetics, FMCG, general items and delivery do not count. Eligibility is confirmed after pharmacy billing.
+                      <span className="flex items-center gap-1.5 font-bold text-ink"><Gift className="h-4 w-4 text-[#dfa442]" aria-hidden /> Claim FREE {GIFT.shortName}</span>
+                      <span className="mt-1 block text-xs font-medium text-[#7a6441] leading-relaxed">
+                        For first orders over {threshold} in medicines (after discounts). Final eligibility is confirmed upon billing.
                       </span>
                     </span>
                   </label>
                 )}
-
+                
                 <PharmacyNotice />
               </section>
             )}
@@ -319,16 +317,16 @@ export function OrderFlow() {
 
         <div className="mt-8 flex gap-3">
           {step > 0 && (
-            <Button variant="secondary" size="lg" onClick={() => go((step - 1) as Step)} disabled={submitting} icon={<ArrowLeft className="h-4 w-4" />}>
-              Back
+            <Button variant="secondary" size="lg" onClick={() => go((step - 1) as Step)} disabled={submitting} className="px-4">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
           {step < 2 ? (
-            <Button size="lg" className="flex-1" onClick={next}>
+            <Button size="lg" className="flex-1 bg-[#156253] hover:bg-[#0f4b3f]" onClick={next}>
               Continue <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
           ) : (
-            <Button size="lg" className="flex-1" onClick={placeOrder} loading={submitting}>
+            <Button size="lg" className="flex-1 bg-[#156253] hover:bg-[#0f4b3f]" onClick={placeOrder} loading={submitting}>
               {submitting ? 'Placing order…' : 'Place Order'}
             </Button>
           )}
