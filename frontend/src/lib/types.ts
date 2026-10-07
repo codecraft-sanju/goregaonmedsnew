@@ -1,4 +1,3 @@
-//src/lib/types.ts
 export type OrderType = 'manual_text' | 'prescription_image';
 
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
@@ -61,6 +60,7 @@ export interface TrackedOrder {
   nonMedicineSubtotal?: number;
   deliveryCharge?: number;
   discount?: number;
+  offerApplied?: boolean; // <-- Added to fix the build error
 }
 
 export interface OfferEvaluation {

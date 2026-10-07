@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Check, Copy, Home, PackageSearch, Phone } from 'lucide-react';
+import { Camera, Check, Copy, Home, PackageSearch } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { ORDER_ID_PATTERN, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
