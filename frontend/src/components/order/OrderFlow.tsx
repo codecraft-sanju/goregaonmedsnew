@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, ShieldCheck, Wallet, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, ShieldCheck, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';

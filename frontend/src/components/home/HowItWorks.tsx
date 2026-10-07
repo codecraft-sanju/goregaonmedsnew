@@ -1,4 +1,4 @@
-//src/components/home/HowItWorks.tsx
+// src/components/home/HowItWorks.tsx
 import { ClipboardCheck, PackageCheck, Send, Wallet } from 'lucide-react';
 import { Reveal } from './Reveal';
 
@@ -11,7 +11,8 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="container-app py-14" aria-labelledby="how-title">
+
+    <section id="how-it-works" className="hidden md:block container-app py-14" aria-labelledby="how-title">
       <p className="eyebrow">How ordering works</p>
       <h2 id="how-title" className="section-title mt-2">Four simple steps</h2>
       <ol className="mt-8 grid gap-4 md:grid-cols-4">

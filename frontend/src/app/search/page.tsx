@@ -41,9 +41,9 @@ export default function SearchPage() {
         {query.length > 0 ? (
           <div className="text-center p-6 bg-white rounded-2xl ring-1 ring-brand-100 shadow-sm mt-4">
             <PackagePlus className="h-10 w-10 text-[#156253] mx-auto mb-3 opacity-80" />
-            <h2 className="text-lg font-bold text-ink mb-1">Order "{query}" Manually</h2>
+            <h2 className="text-lg font-bold text-ink mb-1">Order &quot;{query}&quot; Manually</h2>
             <p className="text-sm text-ink-muted mb-5">
-              We don't display a full catalog yet, but we have almost everything in stock! You can directly send us this name.
+              We don&apos;t display a full catalog yet, but we have almost everything in stock! You can directly send us this name.
             </p>
             <Link href={`/order?method=manual`} className="w-full inline-block">
               <Button className="w-full">Order via Text</Button>
@@ -51,7 +51,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="text-center mt-12 px-4">
-            <h3 className="text-sm font-bold text-ink-muted uppercase tracking-wide mb-2">Can't find something?</h3>
+            <h3 className="text-sm font-bold text-ink-muted uppercase tracking-wide mb-2">Can&apos;t find something?</h3>
             <p className="text-sm text-ink-soft mb-6">
               Skip the search. Just upload your prescription or type the medicine names directly on our order page.
             </p>
