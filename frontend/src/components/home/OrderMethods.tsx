@@ -1,13 +1,25 @@
-//src//components/home/OrderMethods.tsx
+// src/components/home/OrderMethods.tsx
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Clock3, Gift, MapPin, Search, X } from 'lucide-react';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { 
+  ArrowRight, 
+  Clock3, 
+  Gift, 
+  MapPin, 
+  Search, 
+  X, 
+  ArrowUpRight, 
+  Headphones, 
+  ShieldCheck, 
+  Truck,
+  Mic
+} from 'lucide-react';
 import { usePublicSettings } from '@/hooks/usePublicSettings';
-import { GIFT, SERVICE_AREA } from '@/lib/constants';
+import { GIFT, SERVICE_AREA, BRANCHES, SUPPORT_PHONE_TEL } from '@/lib/constants';
 import styles from './HomeExperience.module.css';
 
 const currency = new Intl.NumberFormat('en-IN', {
@@ -18,26 +30,71 @@ function Entrance({ children, delay = 0, className }: {
   children: ReactNode; delay?: number; className?: string;
 }) {
   const reduced = useReducedMotion();
-  return <motion.div className={className} initial={false}
-    animate={{ opacity: 1, y: 0 }}
-    whileInView={reduced ? undefined : { y: [8, 0] }} viewport={{ once: true, amount: 0.1 }}
-    transition={{ duration: reduced ? 0 : 0.35, delay }}>{children}</motion.div>;
+  return (
+    <motion.div className={className} initial={false}
+      animate={{ opacity: 1, y: 0 }}
+      whileInView={reduced ? undefined : { y: [8, 0] }} viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: reduced ? 0 : 0.35, delay }}>
+      {children}
+    </motion.div>
+  );
 }
 
 function GiftImage({ className }: { className?: string }) {
   const [failed, setFailed] = useState(false);
-  return <Image src={failed ? '/home/glucose-meter.svg' : GIFT.image}
-    alt={failed ? `Illustration of a glucose meter; offer product: ${GIFT.name}` : GIFT.name}
-    width={420} height={360} sizes="(min-width: 768px) 320px, 150px"
-    className={className} onError={() => setFailed(true)} />;
+  return (
+    <Image src={failed ? '/home/glucose-meter.svg' : GIFT.image}
+      alt={failed ? `Illustration of a glucose meter; offer product: ${GIFT.name}` : GIFT.name}
+      width={420} height={360} sizes="(min-width: 768px) 320px, 150px"
+      className={className} onError={() => setFailed(true)} 
+    />
+  );
 }
 
-/** Existing settings and routes remain authoritative. onOpenOffer can reuse a parent-owned popup. */
+/** HomeSupport Sub-Component */
+function HomeSupport() {
+  return (
+    <div className={styles.support}>
+      <section className={styles.benefits} aria-label="Your neighbourhood pharmacy service">
+        <div><span><Clock3 size={23} aria-hidden /></span><h2>24×7 Pharmacy</h2><p>Always here<br />around the clock</p></div>
+        <div><span><Truck size={23} aria-hidden /></span><h2>Local delivery</h2><p>Goregaon East<br />& nearby areas</p></div>
+        <div><span><ShieldCheck size={23} aria-hidden /></span><h2>Genuine medicines</h2><p>Care you can<br />count on</p></div>
+        <a href={SUPPORT_PHONE_TEL}><span><Headphones size={23} aria-hidden /></span><h2>Need help?</h2><p>Talk to your<br />local pharmacy</p></a>
+      </section>
+      <section id="locations" className={styles.locations} aria-labelledby="pharmacies-title">
+        <div className={styles.sectionHeading}><div><p>Good care. Close to home.</p><h2 id="pharmacies-title">Our pharmacies</h2></div><span>Goregaon East</span></div>
+        <div className={styles.branchGrid}>
+          {BRANCHES.map((branch) => (
+            <a key={branch.name}
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name},${branch.address}`)}`}
+              className={styles.branch} target="_blank" rel="noopener noreferrer" aria-label={`${branch.name}, ${branch.address}. Open map in a new tab.`}>
+              <div className={styles.branchArt}>
+                <Image src={`/home/pharmacy-${branch.tone}.svg`} alt={`Illustrated storefront for ${branch.name}`}
+                  width={480} height={260} sizes="(min-width: 768px) 360px, 250px" />
+                {branch.open24x7 && <span>Open 24×7</span>}
+              </div>
+              <div className={styles.branchInfo}>
+                <MapPin size={19} aria-hidden />
+                <div><h3>{branch.name}</h3><p>{branch.area}</p><small>{branch.address}</small></div>
+                <ArrowUpRight size={17} aria-hidden />
+              </div>
+            </a>
+          ))}
+        </div>
+        <p className={styles.artNote}>Storefront illustrations · Tap a pharmacy for its location.</p>
+      </section>
+    </div>
+  );
+}
+
+/** Main OrderMethods Component */
 export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {}) {
   const { settings, loading } = usePublicSettings();
   const reduced = useReducedMotion();
   const showOffer = !loading && settings.firstOrderOfferEnabled;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(''); // Search typing state
+  
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -60,82 +117,131 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
 
   useEffect(() => { if (!showOffer) setDetailsOpen(false); }, [showOffer]);
 
-  return <section id="order-methods" className={styles.home} aria-labelledby="methods-title">
-    <Entrance className={styles.hero}>
-      <div className={styles.heroCopy}>
-        <a href="/#locations" className={styles.location}><MapPin size={13} aria-hidden />{SERVICE_AREA}</a>
-        <p className={styles.greeting}>Namaste <span aria-hidden>👋</span></p>
-        <h1 id="methods-title">What do you<br />need today?</h1>
-        <p className={styles.intro}>Order your medicines quickly and easily.</p>
-      </div>
-      <div className={styles.heroArt} aria-hidden="true">
-        <Image src="/home/hero-pharmacy.svg" alt="" width={520} height={440}
-          priority sizes="(min-width: 768px) 450px, 190px" />
-        <span className={styles.hours}><Clock3 size={19} /><span><strong>24×7</strong>Pharmacy</span></span>
-      </div>
-      <Link href="/search" className={styles.search}>
-        <Search size={22} aria-hidden /><span>Search for medicines, vitamins, wellness…</span>
-        <span className={styles.searchArrow}><ArrowRight size={20} aria-hidden /></span>
-      </Link>
-    </Entrance>
+  return (
+    <>
+      <section id="order-methods" className={styles.home} aria-labelledby="methods-title">
+        <Entrance className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <a href="/#locations" className={styles.location}><MapPin size={13} aria-hidden />{SERVICE_AREA}</a>
+            <p className={styles.greeting}>Namaste <span aria-hidden>👋</span></p>
+            <h1 id="methods-title">What do you<br />need today?</h1>
+            <p className={styles.intro}>Order your medicines quickly and easily.</p>
+          </div>
+          <div className={styles.heroArt} aria-hidden="true">
+            <Image src="/home/hero-pharmacy.svg" alt="" width={520} height={440}
+              priority sizes="(min-width: 768px) 450px, 190px" />
+            <span className={styles.hours}><Clock3 size={19} /><span><strong>24×7</strong>Pharmacy</span></span>
+          </div>
+          
+          {/* Animated Interactive Search Form */}
+          <form action="/search" className={styles.search}>
+            <Search size={21} aria-hidden />
+            <input 
+              type="text" 
+              name="q"
+              placeholder="Search for medicines, vitamins, wellness…" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+            <div className={styles.searchAction}>
+              <AnimatePresence>
+                {searchQuery.trim().length > 0 ? (
+                  <motion.button
+                    key="send"
+                    type="submit"
+                    initial={{ scale: 0.3, opacity: 0, rotate: -45 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    exit={{ scale: 0.3, opacity: 0, rotate: 45 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className={styles.searchArrow}
+                    aria-label="Search"
+                  >
+                    <ArrowRight size={18} strokeWidth={2.5} />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    key="mic"
+                    type="button"
+                    initial={{ scale: 0.3, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.3, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className={styles.searchMic}
+                    aria-label="Voice Search"
+                  >
+                    <Mic size={18} strokeWidth={2.5} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </form>
+        </Entrance>
 
-    {loading && <div className={styles.offerSkeleton} role="status" aria-label="Loading offer settings" />}
-    {showOffer && <Entrance delay={0.05}>
-      <motion.div className={styles.offer} whileHover={reduced ? undefined : { y: -3 }}>
-        <div className={styles.offerCopy}>
-          <span className={styles.eyebrow}><Gift size={14} aria-hidden />First order gift</span>
-          <h2><span>FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
-          <p>On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
-          <p className={styles.mrp}>Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
-          <button ref={opener} className={styles.knowMore} type="button"
-            aria-haspopup="dialog" onClick={() => onOpenOffer ? onOpenOffer() : setDetailsOpen(true)}>
-            Know more <ArrowRight size={17} aria-hidden />
-          </button>
+        {loading && <div className={styles.offerSkeleton} role="status" aria-label="Loading offer settings" />}
+        {showOffer && (
+          <Entrance delay={0.05}>
+            <motion.div className={styles.offer} whileHover={reduced ? undefined : { y: -3 }}>
+              <div className={styles.offerCopy}>
+                <span className={styles.eyebrow}><Gift size={14} aria-hidden />First order gift</span>
+                <h2><span>FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
+                <p>On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
+                <p className={styles.mrp}>Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
+                <button ref={opener} className={styles.knowMore} type="button"
+                  aria-haspopup="dialog" onClick={() => onOpenOffer ? onOpenOffer() : setDetailsOpen(true)}>
+                  Know more <ArrowRight size={17} aria-hidden />
+                </button>
+              </div>
+              <GiftImage className={styles.giftArt} />
+              <span className={styles.giftSeal} aria-hidden="true"><Gift size={18} />FREE<br />GIFT</span>
+            </motion.div>
+          </Entrance>
+        )}
+
+        <div className={styles.methods}>
+          <Entrance delay={0.1}>
+            <Link href="/order?method=prescription" className={`${styles.method} ${styles.prescription}`}>
+              <span className={styles.recommended}>Recommended</span>
+              <h2>Upload<br />Prescription</h2>
+              <p>Take a photo or upload your prescription. We’ll take care of the rest.</p>
+              <Image className={styles.methodArt} src="/home/prescription-art.svg" alt=""
+                width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
+              <span className={styles.methodCta}>Upload prescription <ArrowRight size={17} aria-hidden /></span>
+            </Link>
+          </Entrance>
+          <Entrance delay={0.15}>
+            <Link href="/order?method=manual" className={`${styles.method} ${styles.manual}`}>
+              <span className={styles.methodKicker}>A few words. All sorted.</span>
+              <h2>Order<br />via Text</h2>
+              <p>Enter medicine names and quantities (e.g. 1 strip, 10 tablets).</p>
+              <Image className={styles.methodArt} src="/home/text-order-art.svg" alt=""
+                width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
+              <span className={styles.methodCta}>Order via text <ArrowRight size={17} aria-hidden /></span>
+            </Link>
+          </Entrance>
         </div>
-        <GiftImage className={styles.giftArt} />
-        <span className={styles.giftSeal} aria-hidden="true"><Gift size={18} />FREE<br />GIFT</span>
-      </motion.div>
-    </Entrance>}
 
-    <div className={styles.methods}>
-      <Entrance delay={0.1}>
-        <Link href="/order?method=prescription" className={`${styles.method} ${styles.prescription}`}>
-          <span className={styles.recommended}>Recommended</span>
-          <h2>Upload<br />Prescription</h2>
-          <p>Take a photo or upload your prescription. We’ll take care of the rest.</p>
-          <Image className={styles.methodArt} src="/home/prescription-art.svg" alt=""
-            width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
-          <span className={styles.methodCta}>Upload prescription <ArrowRight size={17} aria-hidden /></span>
-        </Link>
-      </Entrance>
-      <Entrance delay={0.15}>
-        <Link href="/order?method=manual" className={`${styles.method} ${styles.manual}`}>
-          <span className={styles.methodKicker}>A few words. All sorted.</span>
-          <h2>Order<br />via Text</h2>
-          <p>Enter medicine names and quantities (e.g. 1 strip, 10 tablets).</p>
-          <Image className={styles.methodArt} src="/home/text-order-art.svg" alt=""
-            width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
-          <span className={styles.methodCta}>Order via text <ArrowRight size={17} aria-hidden /></span>
-        </Link>
-      </Entrance>
-    </div>
+        {/* --- Dialog Code unchanged --- */}
+        <dialog ref={dialog} className={styles.dialog} aria-labelledby="gift-title" aria-describedby="gift-description"
+          onCancel={() => setDetailsOpen(false)} onClose={() => setDetailsOpen(false)}
+          onClick={(event) => {
+            if (event.target !== event.currentTarget) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) setDetailsOpen(false);
+          }}>
+          <button ref={closeButton} className={styles.close} aria-label="Close offer details" type="button" onClick={() => setDetailsOpen(false)}><X size={21} /></button>
+          <div className={styles.dialogArt}><GiftImage /></div>
+          <div className={styles.dialogCopy}>
+            <span className={styles.eyebrow}>A little care, on us</span>
+            <h2 id="gift-title">Your first order.<br />An extra reason to smile.</h2>
+            <p id="gift-description">Get a <strong>{GIFT.name}</strong> free with your first qualifying medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)} or more</strong>.</p>
+            <ul><li>The minimum applies to medicines only.</li><li>A one-time gift for eligible first orders.</li><li>Final eligibility is confirmed with your order.</li></ul>
+            <Link href="/order" className={styles.solidButton} onClick={() => setDetailsOpen(false)}>Order medicines <ArrowRight size={18} aria-hidden /></Link>
+          </div>
+        </dialog>
+      </section>
 
-    <dialog ref={dialog} className={styles.dialog} aria-labelledby="gift-title" aria-describedby="gift-description"
-      onCancel={() => setDetailsOpen(false)} onClose={() => setDetailsOpen(false)}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) setDetailsOpen(false);
-      }}>
-      <button ref={closeButton} className={styles.close} aria-label="Close offer details" type="button" onClick={() => setDetailsOpen(false)}><X size={21} /></button>
-      <div className={styles.dialogArt}><GiftImage /></div>
-      <div className={styles.dialogCopy}>
-        <span className={styles.eyebrow}>A little care, on us</span>
-        <h2 id="gift-title">Your first order.<br />An extra reason to smile.</h2>
-        <p id="gift-description">Get a <strong>{GIFT.name}</strong> free with your first qualifying medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)} or more</strong>.</p>
-        <ul><li>The minimum applies to medicines only.</li><li>A one-time gift for eligible first orders.</li><li>Final eligibility is confirmed with your order.</li></ul>
-        <Link href="/order" className={styles.solidButton} onClick={() => setDetailsOpen(false)}>Order medicines <ArrowRight size={18} aria-hidden /></Link>
-      </div>
-    </dialog>
-  </section>;
+      <HomeSupport />
+    </>
+  );
 }

@@ -1,3 +1,4 @@
+//src/components/home/HomeSupport.tsx
 import Image from 'next/image';
 import { ArrowUpRight, Clock3, Headphones, MapPin, ShieldCheck, Truck } from 'lucide-react';
 import { BRANCHES, SUPPORT_PHONE_TEL } from '@/lib/constants';
