@@ -122,7 +122,9 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
       <section id="order-methods" className={styles.home} aria-labelledby="methods-title">
         <Entrance className={styles.hero}>
           <div className={styles.heroCopy}>
-            <a href="/#locations" className={styles.location}><MapPin size={13} aria-hidden />{SERVICE_AREA}</a>
+          <Link href="/#locations" className={styles.location}>
+  <MapPin size={13} aria-hidden />{SERVICE_AREA}
+</Link>
             <p className={styles.greeting}>Namaste <span aria-hidden>👋</span></p>
             <h1 id="methods-title">What do you<br />need today?</h1>
             <p className={styles.intro}>Order your medicines quickly and easily.</p>
