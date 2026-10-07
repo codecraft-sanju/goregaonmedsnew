@@ -35,7 +35,7 @@ function toAdminOrder(order, user, settings) {
     medicineSubtotal: order.medicineSubtotal,
     nonMedicineSubtotal: order.nonMedicineSubtotal,
     deliveryCharge: order.deliveryCharge,
-    discount: order.discount, // NEW
+    discount: order.discount, 
     finalAmount: order.finalAmount,
     billedAt: order.billedAt,
     offerOptIn: order.offerOptIn,

@@ -5,18 +5,36 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   User, MapPin, PackageSearch, HelpCircle, Shield, 
-  FileText, Phone, Trash2, ChevronRight, CheckCircle2 
+  FileText, Phone, Trash2, ChevronRight, CheckCircle2, Plus, Edit2
 } from 'lucide-react';
-import { loadCheckout, clearCheckout, type SavedCheckout } from '@/lib/checkoutStorage';
+import { loadCheckout, clearCheckout, saveCheckout, type SavedCheckout } from '@/lib/checkoutStorage';
 import { SUPPORT_PHONE_TEL, SUPPORT_PHONE_DISPLAY } from '@/lib/constants';
 import { formatMobile, normalizeMobile } from '@/lib/format';
+import { DeliveryDetailsForm, type DeliveryDetails } from '@/components/order/DeliveryDetailsForm';
+import { Button } from '@/components/ui/Button';
+
+// Simple validation function extracted for profile use
+function validateDetails(details: DeliveryDetails) {
+  const errors: Partial<Record<string, string>> = {};
+  if (details.customerName.trim().length < 2) errors.customerName = 'Enter your full name';
+  if (!normalizeMobile(details.mobileNumber)) errors.mobileNumber = 'Enter a valid 10-digit mobile number';
+  if (!details.address.flat.trim()) errors.flat = 'Enter your flat, house or building';
+  if (details.address.area.trim().length < 2) errors.area = 'Enter your area';
+  return errors;
+}
+
+const emptyDetails: DeliveryDetails = { customerName: '', mobileNumber: '', address: { flat: '', area: '', landmark: '' } };
 
 export function UserProfile() {
   const [savedData, setSavedData] = useState<SavedCheckout | null>(null);
   const [clearedAction, setClearedAction] = useState(false);
 
+  // Edit Mode States
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<DeliveryDetails>(emptyDetails);
+  const [formErrors, setFormErrors] = useState<Partial<Record<string, string>>>({});
+
   useEffect(() => {
-    // Load saved address from local storage on mount
     const data = loadCheckout();
     if (data) setSavedData(data);
   }, []);
@@ -26,6 +44,23 @@ export function UserProfile() {
     setSavedData(null);
     setClearedAction(true);
     setTimeout(() => setClearedAction(false), 3000);
+  };
+
+  const handleStartEdit = () => {
+    setFormData(savedData || emptyDetails);
+    setFormErrors({});
+    setIsEditing(true);
+  };
+
+  const handleSaveData = () => {
+    const errors = validateDetails(formData);
+    setFormErrors(errors);
+    
+    if (Object.keys(errors).length === 0) {
+      saveCheckout(formData);
+      setSavedData(formData);
+      setIsEditing(false);
+    }
   };
 
   const addressString = savedData 
@@ -43,9 +78,31 @@ export function UserProfile() {
 
       {/* Section 1: Saved Details */}
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-soft px-1">Saved Details</h2>
+        <div className="mb-3 flex items-center justify-between px-1">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-ink-soft">Saved Details</h2>
+          {!isEditing && savedData && (
+            <button onClick={handleStartEdit} className="text-xs font-bold text-brand-700 hover:underline flex items-center gap-1">
+              <Edit2 className="h-3 w-3" /> Edit
+            </button>
+          )}
+        </div>
+
         <div className="card overflow-hidden bg-white shadow-sm ring-1 ring-brand-100">
-          {savedData ? (
+          {isEditing ? (
+            <div className="p-5">
+              <DeliveryDetailsForm 
+                value={formData} 
+                errors={formErrors} 
+                saveDetails={true} 
+                onChange={setFormData} 
+                onSaveDetailsChange={() => {}} // Always true when saving from profile
+              />
+              <div className="mt-6 flex items-center gap-3">
+                <Button variant="secondary" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button className="flex-1" onClick={handleSaveData}>Save Details</Button>
+              </div>
+            </div>
+          ) : savedData ? (
             <div className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -86,7 +143,10 @@ export function UserProfile() {
                     <User className="h-6 w-6" />
                   </div>
                   <p className="text-sm font-medium text-ink-muted">No address saved yet.</p>
-                  <p className="mt-1 text-xs text-ink-soft">Your details will be saved securely here when you place your next order.</p>
+                  <p className="mt-1 text-xs text-ink-soft mb-4">Add your details for faster checkout next time.</p>
+                  <Button variant="outline" onClick={handleStartEdit} className="w-full max-w-[200px]">
+                    <Plus className="mr-2 h-4 w-4" /> Add Details
+                  </Button>
                 </>
               )}
             </div>

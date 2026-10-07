@@ -1,6 +1,6 @@
 // src/components/layout/Navbar.tsx
 import Link from 'next/link';
-import { Phone, Bell } from 'lucide-react'; 
+import { Phone, Bell, Search } from 'lucide-react'; 
 import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '@/lib/constants';
 import { Logo } from './Logo';
 
@@ -26,7 +26,17 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          
+          {/* Search Icon - Visible on all screens */}
+          <Link 
+            href="/search" 
+            className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-brand-50"
+            aria-label="Search medicines"
+          >
+            <Search className="h-[22px] w-[22px]" strokeWidth={1.5} />
+          </Link>
+
           {/* Desktop Phone */}
           <a href={SUPPORT_PHONE_TEL} className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 sm:flex">
             <Phone className="h-4 w-4" aria-hidden /> {SUPPORT_PHONE_DISPLAY}
@@ -37,7 +47,7 @@ export function Navbar() {
             Order now
           </Link>
 
-          {/* Mobile Notification Bell (from your design) */}
+          {/* Mobile Notification Bell */}
           <button 
             className="relative grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-brand-50 md:hidden"
             aria-label="Notifications"
