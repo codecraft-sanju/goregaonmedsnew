@@ -1,134 +1,141 @@
-// src/components/home/OrderMethods.tsx
+//src//components/home/OrderMethods.tsx
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Camera } from 'lucide-react';
-import { Reveal } from './Reveal';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowRight, Clock3, Gift, MapPin, Search, X } from 'lucide-react';
 import { usePublicSettings } from '@/hooks/usePublicSettings';
+import { GIFT, SERVICE_AREA } from '@/lib/constants';
+import styles from './HomeExperience.module.css';
 
-export function OrderMethods() {
+const currency = new Intl.NumberFormat('en-IN', {
+  style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+});
+
+function Entrance({ children, delay = 0, className }: {
+  children: ReactNode; delay?: number; className?: string;
+}) {
+  const reduced = useReducedMotion();
+  return <motion.div className={className} initial={false}
+    animate={{ opacity: 1, y: 0 }}
+    whileInView={reduced ? undefined : { y: [8, 0] }} viewport={{ once: true, amount: 0.1 }}
+    transition={{ duration: reduced ? 0 : 0.35, delay }}>{children}</motion.div>;
+}
+
+function GiftImage({ className }: { className?: string }) {
+  const [failed, setFailed] = useState(false);
+  return <Image src={failed ? '/home/glucose-meter.svg' : GIFT.image}
+    alt={failed ? `Illustration of a glucose meter; offer product: ${GIFT.name}` : GIFT.name}
+    width={420} height={360} sizes="(min-width: 768px) 320px, 150px"
+    className={className} onError={() => setFailed(true)} />;
+}
+
+/** Existing settings and routes remain authoritative. onOpenOffer can reuse a parent-owned popup. */
+export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {}) {
   const { settings, loading } = usePublicSettings();
-  
-  // Check if offer is enabled from admin panel
-  const showOfferCard = !loading && settings.firstOrderOfferEnabled;
+  const reduced = useReducedMotion();
+  const showOffer = !loading && settings.firstOrderOfferEnabled;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
 
-  return (
-    <section id="order-methods" className="container-app pt-6 pb-14 md:pt-10" aria-labelledby="methods-title">
-      
-      {/* Merged Hero Section */}
-      <div className="mb-6 md:mb-8">
-        <h1 id="methods-title" className="font-display text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-4xl">
-          What do you need today?
-        </h1>
-        <p className="mt-2 text-sm text-ink-muted sm:text-base">
-          Order your medicines quickly and easily.
-        </p>
+  useEffect(() => {
+    if (!detailsOpen || !showOffer) return;
+    const node = dialog.current;
+    if (!node) return;
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    node.showModal();
+    document.body.style.overflow = 'hidden';
+    closeButton.current?.focus();
+    return () => {
+      node.close();
+      document.body.style.overflow = previousOverflow;
+      (previouslyFocused ?? opener.current)?.focus();
+    };
+  }, [detailsOpen, showOffer]);
+
+  useEffect(() => { if (!showOffer) setDetailsOpen(false); }, [showOffer]);
+
+  return <section id="order-methods" className={styles.home} aria-labelledby="methods-title">
+    <Entrance className={styles.hero}>
+      <div className={styles.heroCopy}>
+        <a href="/#locations" className={styles.location}><MapPin size={13} aria-hidden />{SERVICE_AREA}</a>
+        <p className={styles.greeting}>Namaste <span aria-hidden>👋</span></p>
+        <h1 id="methods-title">What do you<br />need today?</h1>
+        <p className={styles.intro}>Order your medicines quickly and easily.</p>
       </div>
-      
-      <div className="grid gap-4 md:grid-cols-3">
-        
-        {/* Card 1: Free Gift Banner (Offer) */}
-        {showOfferCard && (
-          <Reveal delay={0.05}>
-            <div className="relative flex min-h-[110px] items-center overflow-hidden rounded-3xl bg-gradient-to-r from-[#fff5e6] to-[#ffebd6] p-4 transition-transform hover:scale-[1.01] md:min-h-[220px] md:flex-col md:items-start md:p-6">
-              
-              <div className="relative h-16 w-20 shrink-0 pointer-events-none md:absolute md:bottom-6 md:right-6 md:h-24 md:w-24">
-                <div className="absolute left-1/2 top-1/2 h-12 w-14 -translate-x-1/2 -translate-y-1/2">
-                  <div className="absolute bottom-0 h-9 w-14 rounded-md bg-white shadow-sm" />
-                  <div className="absolute bottom-0 left-1/2 h-9 w-2.5 -translate-x-1/2 bg-[#dfa442]" />
-                  <div className="absolute top-2 -left-0.5 h-3 w-[60px] rounded-sm bg-white shadow-sm" />
-                  <div className="absolute top-2 left-1/2 h-3 w-2.5 -translate-x-1/2 bg-[#dfa442]" />
-                  <div className="absolute -top-1 left-1/2 flex -translate-x-1/2 gap-[1px]">
-                    <div className="h-3 w-4 rounded-full border-[2.5px] border-[#dfa442]" />
-                    <div className="h-3 w-4 rounded-full border-[2.5px] border-[#dfa442]" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="ml-2 flex-1 md:ml-0">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#b87c1c]">
-                  First Order Gift
-                </span>
-                <h3 className="mt-0.5 font-display text-[15px] font-bold text-ink md:mt-2 md:text-xl">
-                  Dr. Morepen GlucoOne BG-03
-                </h3>
-                <p className="mt-0.5 text-[11px] font-medium text-[#7a6441] md:text-sm">
-                  Free with qualifying medicine value.
-                </p>
-                <button className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#b87c1c] hover:underline">
-                  Know more <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-          </Reveal>
-        )}
-
-        {/* Card 2: Upload Prescription */}
-        <Reveal delay={0.1}>
-          <Link href="/order?method=prescription" className="relative flex min-h-[220px] flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-[#e5f7ed] to-[#d3f0e0] p-6 transition-transform hover:scale-[1.01]">
-            <span className="w-fit rounded-full bg-[#c2ecd4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#147a4a]">
-              Recommended
-            </span>
-            <div className="relative z-10 mt-3 max-w-[60%] sm:max-w-[70%]">
-              <h3 className="font-display text-[22px] font-extrabold leading-tight text-ink">
-                Upload<br/>Prescription
-              </h3>
-              <p className="mt-2 text-xs font-medium leading-relaxed text-[#4a6358]">
-                Take a photo or upload your prescription. We&apos;ll take care of the rest.
-              </p>
-              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#156253] px-4 py-2 text-[13px] font-semibold text-white shadow-sm">
-                Upload Prescription <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-              </div>
-            </div>
-
-            <div className="absolute -right-4 bottom-2 h-32 w-32 pointer-events-none md:bottom-6 md:right-0">
-              <div className="absolute right-8 top-2 h-24 w-20 rotate-[12deg] rounded-lg bg-white/50 shadow-sm" />
-              <div className="absolute right-4 top-4 h-24 w-20 rotate-3 rounded-lg bg-white p-2 shadow-md">
-                 <div className="font-serif text-sm font-bold text-brand-800">Rx</div>
-                 <div className="mt-2.5 space-y-2">
-                   <div className="h-1 w-full rounded bg-brand-50" />
-                   <div className="h-1 w-4/5 rounded bg-brand-50" />
-                   <div className="h-1 w-full rounded bg-brand-50" />
-                 </div>
-              </div>
-              <div className="absolute bottom-2 right-6 grid h-11 w-11 place-items-center rounded-2xl bg-[#156253] text-white shadow-lg border-2 border-white">
-                <Camera className="h-5 w-5" />
-              </div>
-            </div>
-          </Link>
-        </Reveal>
-
-        {/* Card 3: Order via Text */}
-        <Reveal delay={0.15}>
-          <Link href="/order?method=manual" className="relative flex min-h-[220px] flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-[#eaf4f4] to-[#dbeeee] p-6 transition-transform hover:scale-[1.01]">
-            <div className="relative z-10 max-w-[60%] sm:max-w-[70%] mt-6">
-              <h3 className="font-display text-[22px] font-extrabold leading-tight text-ink">
-                Order via Text
-              </h3>
-              <p className="mt-2 text-xs font-medium leading-relaxed text-[#5b7373]">
-                Simply enter medicine names and quantities (e.g. 1 strip, 10 tablets).
-              </p>
-              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#1e786b] px-4 py-2 text-[13px] font-semibold text-white shadow-sm">
-                Order via Text <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-              </div>
-            </div>
-
-            <div className="absolute -right-2 bottom-2 h-32 w-32 pointer-events-none md:bottom-6 md:right-0">
-              <div className="absolute right-4 top-4 grid h-[76px] w-[60px] -rotate-12 grid-cols-2 gap-2 rounded-xl bg-[#b4c8c8] p-2.5 shadow-inner">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-[14px] w-[14px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]" />
-                ))}
-              </div>
-              <div className="absolute bottom-6 right-16 flex h-[18px] w-11 rotate-45 overflow-hidden rounded-full shadow-md border-[1.5px] border-white">
-                <div className="h-full w-1/2 bg-white" />
-                <div className="h-full w-1/2 bg-[#1e786b]" />
-              </div>
-              <div className="absolute bottom-2 right-4 h-6 w-6 rounded-full bg-white shadow-md border-[1.5px] border-[#eaf4f4]" />
-            </div>
-          </Link>
-        </Reveal>
-
+      <div className={styles.heroArt} aria-hidden="true">
+        <Image src="/home/hero-pharmacy.svg" alt="" width={520} height={440}
+          priority sizes="(min-width: 768px) 450px, 190px" />
+        <span className={styles.hours}><Clock3 size={19} /><span><strong>24×7</strong>Pharmacy</span></span>
       </div>
-    </section>
-  );
+      <Link href="/search" className={styles.search}>
+        <Search size={22} aria-hidden /><span>Search for medicines, vitamins, wellness…</span>
+        <span className={styles.searchArrow}><ArrowRight size={20} aria-hidden /></span>
+      </Link>
+    </Entrance>
+
+    {loading && <div className={styles.offerSkeleton} role="status" aria-label="Loading offer settings" />}
+    {showOffer && <Entrance delay={0.05}>
+      <motion.div className={styles.offer} whileHover={reduced ? undefined : { y: -3 }}>
+        <div className={styles.offerCopy}>
+          <span className={styles.eyebrow}><Gift size={14} aria-hidden />First order gift</span>
+          <h2><span>FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
+          <p>On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
+          <p className={styles.mrp}>Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
+          <button ref={opener} className={styles.knowMore} type="button"
+            aria-haspopup="dialog" onClick={() => onOpenOffer ? onOpenOffer() : setDetailsOpen(true)}>
+            Know more <ArrowRight size={17} aria-hidden />
+          </button>
+        </div>
+        <GiftImage className={styles.giftArt} />
+        <span className={styles.giftSeal} aria-hidden="true"><Gift size={18} />FREE<br />GIFT</span>
+      </motion.div>
+    </Entrance>}
+
+    <div className={styles.methods}>
+      <Entrance delay={0.1}>
+        <Link href="/order?method=prescription" className={`${styles.method} ${styles.prescription}`}>
+          <span className={styles.recommended}>Recommended</span>
+          <h2>Upload<br />Prescription</h2>
+          <p>Take a photo or upload your prescription. We’ll take care of the rest.</p>
+          <Image className={styles.methodArt} src="/home/prescription-art.svg" alt=""
+            width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
+          <span className={styles.methodCta}>Upload prescription <ArrowRight size={17} aria-hidden /></span>
+        </Link>
+      </Entrance>
+      <Entrance delay={0.15}>
+        <Link href="/order?method=manual" className={`${styles.method} ${styles.manual}`}>
+          <span className={styles.methodKicker}>A few words. All sorted.</span>
+          <h2>Order<br />via Text</h2>
+          <p>Enter medicine names and quantities (e.g. 1 strip, 10 tablets).</p>
+          <Image className={styles.methodArt} src="/home/text-order-art.svg" alt=""
+            width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
+          <span className={styles.methodCta}>Order via text <ArrowRight size={17} aria-hidden /></span>
+        </Link>
+      </Entrance>
+    </div>
+
+    <dialog ref={dialog} className={styles.dialog} aria-labelledby="gift-title" aria-describedby="gift-description"
+      onCancel={() => setDetailsOpen(false)} onClose={() => setDetailsOpen(false)}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) setDetailsOpen(false);
+      }}>
+      <button ref={closeButton} className={styles.close} aria-label="Close offer details" type="button" onClick={() => setDetailsOpen(false)}><X size={21} /></button>
+      <div className={styles.dialogArt}><GiftImage /></div>
+      <div className={styles.dialogCopy}>
+        <span className={styles.eyebrow}>A little care, on us</span>
+        <h2 id="gift-title">Your first order.<br />An extra reason to smile.</h2>
+        <p id="gift-description">Get a <strong>{GIFT.name}</strong> free with your first qualifying medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)} or more</strong>.</p>
+        <ul><li>The minimum applies to medicines only.</li><li>A one-time gift for eligible first orders.</li><li>Final eligibility is confirmed with your order.</li></ul>
+        <Link href="/order" className={styles.solidButton} onClick={() => setDetailsOpen(false)}>Order medicines <ArrowRight size={18} aria-hidden /></Link>
+      </div>
+    </dialog>
+  </section>;
 }
