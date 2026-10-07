@@ -144,7 +144,8 @@ export function UserProfile() {
                   </div>
                   <p className="text-sm font-medium text-ink-muted">No address saved yet.</p>
                   <p className="mt-1 text-xs text-ink-soft mb-4">Add your details for faster checkout next time.</p>
-                  <Button variant="outline" onClick={handleStartEdit} className="w-full max-w-[200px]">
+                  {/* Yahan variant="outline" ko variant="secondary" kar diya hai */}
+                  <Button variant="secondary" onClick={handleStartEdit} className="w-full max-w-[200px]">
                     <Plus className="mr-2 h-4 w-4" /> Add Details
                   </Button>
                 </>
