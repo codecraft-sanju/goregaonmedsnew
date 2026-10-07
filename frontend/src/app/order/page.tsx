@@ -2,6 +2,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
+import { BottomNav } from '@/components/layout/BottomNav'; // <-- 1. Import added
 import { OrderFlow } from '@/components/order/OrderFlow';
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -16,6 +17,7 @@ export default function OrderPage() {
           <OrderFlow />
         </Suspense>
       </main>
+      <BottomNav /> {/* <-- 2. Component added here */}
     </>
   );
 }

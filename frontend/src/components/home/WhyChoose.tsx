@@ -11,7 +11,7 @@ const reasons = [
 
 export function WhyChoose() {
   return (
-    <section className="container-app py-14" aria-labelledby="why-title">
+    <section className="hidden md:block container-app py-14" aria-labelledby="why-title">
       <p className="eyebrow">Why GoregaonMeds</p>
       <h2 id="why-title" className="section-title mt-2">Your neighbourhood pharmacy, now on your phone</h2>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

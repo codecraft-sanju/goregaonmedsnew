@@ -26,7 +26,8 @@ function OpenAllHoursBadge({ compact = false }: { compact?: boolean }) {
 
 export function Locations() {
   return (
-    <section id="locations" className={`${CONTAINER} ${SECTION} ${SCROLL_OFFSET}`}>
+    // यहाँ `hidden md:block` जोड़ा गया है
+    <section id="locations" className={`hidden md:block ${CONTAINER} ${SECTION} ${SCROLL_OFFSET}`}>
       <Reveal className="mb-7 sm:flex sm:items-end sm:justify-between sm:gap-6 md:mb-9">
         <div>
           <span className={EYEBROW}>AROUND THE CORNER</span>

@@ -1,7 +1,7 @@
 // src/components/profile/UserProfile.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; 
 import Link from 'next/link';
 import { 
   User, MapPin, PackageSearch, HelpCircle, Shield, 
@@ -177,7 +177,7 @@ export function UserProfile() {
         <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-soft px-1">Support & Legal</h2>
         <div className="card divide-y divide-brand-50 bg-white shadow-sm ring-1 ring-brand-100">
           
-          <Link href="/#faq" className="flex items-center justify-between p-4 transition-colors hover:bg-brand-50/50">
+          <Link href="/faq" className="flex items-center justify-between p-4 transition-colors hover:bg-brand-50/50">
             <div className="flex items-center gap-3 text-ink">
               <HelpCircle className="h-5 w-5 text-ink-muted" />
               <span className="text-sm font-semibold">FAQs</span>

@@ -17,7 +17,8 @@ const faqs = [
 
 export function Faq() {
   return (
-    <section id="faq" className="container-app scroll-mt-20 py-14" aria-labelledby="faq-title">
+    // यहाँ `hidden md:block` जोड़ा गया है
+    <section id="faq" className="hidden md:block container-app scroll-mt-20 py-14" aria-labelledby="faq-title">
       <p className="eyebrow">FAQ</p>
       <h2 id="faq-title" className="section-title mt-2">Questions, answered</h2>
       <div className="card mt-8 divide-y divide-brand-100">

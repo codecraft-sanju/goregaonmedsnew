@@ -6,7 +6,7 @@ import { Reveal } from './Reveal';
 
 export function DeliveryInfo() {
   return (
-    <section className="container-app py-14" aria-labelledby="delivery-title">
+    <section className="hidden md:block container-app py-14" aria-labelledby="delivery-title">
       <p className="eyebrow">Delivery information</p>
       <h2 id="delivery-title" className="section-title mt-2">Simple, local, no surprises</h2>
       <div className="mt-8 grid gap-4 md:grid-cols-3">

@@ -2,7 +2,7 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Footer } from '@/components/layout/Footer';
-import { Hero } from '@/components/home/Hero';
+
 import { OfferPopup } from '@/components/home/OfferPopup';
 import { OrderMethods } from '@/components/home/OrderMethods';
 import { WhyChoose } from '@/components/home/WhyChoose';
@@ -22,7 +22,7 @@ export default function HomePage() {
       <Navbar />
       {/* pb-24 add kiya mobile me nav bar ki jagah chhodne ke liye */}
       <main className="pb-24 md:pb-0"> 
-        <Hero />
+     
         <OrderMethods />
         <WhyChoose />
         <Highlight24x7 />

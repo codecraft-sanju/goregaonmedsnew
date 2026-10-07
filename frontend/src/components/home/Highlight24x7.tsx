@@ -4,7 +4,7 @@ import { Reveal } from './Reveal';
 
 export function Highlight24x7() {
   return (
-    <section className="container-app py-6" aria-labelledby="open-title">
+    <section className="hidden md:block container-app py-6" aria-labelledby="open-title">
       <Reveal>
         <div className="relative overflow-hidden rounded-4xl bg-brand-950 p-8 text-white sm:p-12">
           <div className="absolute -right-16 -top-24 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl" aria-hidden />
