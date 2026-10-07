@@ -57,7 +57,8 @@ export default function SearchPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <Link href="/order?method=prescription">
-                <Button variant="outline" className="text-xs">Upload Rx</Button>
+                {/* Yahan variant="outline" ko variant="secondary" se replace kiya gaya hai */}
+                <Button variant="secondary" className="text-xs">Upload Rx</Button>
               </Link>
               <Link href="/order?method=manual">
                 <Button className="text-xs">Enter Manually</Button>
