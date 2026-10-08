@@ -52,7 +52,38 @@ function GiftImage({ className }: { className?: string }) {
 }
 
 /** HomeSupport Sub-Component */
+
 function HomeSupport() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isInteracting, setIsInteracting] = useState(false);
+
+  useEffect(() => {
+    
+    if (isInteracting) return;
+
+    const interval = setInterval(() => {
+      if (scrollRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        
+        // Agar container scrollable nahi hai (jaise desktop pe), toh kuch mat karo
+        if (scrollWidth <= clientWidth) return;
+
+        // Aapki CSS mein grid-auto-columns: 85% hai, toh hum 85% width se scroll karenge
+        const scrollAmount = clientWidth * 0.85;
+
+        // Agar hum end tak pahuch gaye hain (-10 pixels buffer), toh waapas start pe jao
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          // Warna agle card pe slide karo
+          scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      }
+    }, 3000); // 3000ms = 3 seconds (Aap isko apne hisaab se change kar sakte hain)
+
+    return () => clearInterval(interval);
+  }, [isInteracting]);
+
   return (
     <div className={styles.support}>
       <section className={styles.benefits} aria-label="Your neighbourhood pharmacy service">
@@ -63,13 +94,22 @@ function HomeSupport() {
       </section>
       <section id="locations" className={styles.locations} aria-labelledby="pharmacies-title">
         <div className={styles.sectionHeading}><div><p>Good care. Close to home.</p><h2 id="pharmacies-title">Our pharmacies</h2></div><span>Goregaon East</span></div>
-        <div className={styles.branchGrid}>
+        
+        {/* Yahan par humne ref aur touch/mouse events add kiye hain */}
+        <div 
+          className={styles.branchGrid} 
+          ref={scrollRef}
+          onMouseEnter={() => setIsInteracting(true)}
+          onMouseLeave={() => setIsInteracting(false)}
+          onTouchStart={() => setIsInteracting(true)}
+          onTouchEnd={() => setIsInteracting(false)}
+        >
           {BRANCHES.map((branch) => (
             <a key={branch.name}
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name},${branch.address}`)}`}
               className={styles.branch} target="_blank" rel="noopener noreferrer" aria-label={`${branch.name}, ${branch.address}. Open map in a new tab.`}>
               <div className={styles.branchArt}>
-                <Image src={`/home/pharmacy-${branch.tone}.svg`} alt={`Illustrated storefront for ${branch.name}`}
+                <Image src={`/home/pharmacy-${branch.tone}.png`} alt={`Illustrated storefront for ${branch.name}`}
                   width={480} height={260} sizes="(min-width: 768px) 360px, 250px" />
                 {branch.open24x7 && <span>Open 24×7</span>}
               </div>

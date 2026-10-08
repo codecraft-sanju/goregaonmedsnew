@@ -1,5 +1,3 @@
-
-
 /* src/components/home/HomeExperience.module.css */
 /* Locally scoped: no global resets, backend changes, or Tailwind config changes. */
 
@@ -56,6 +54,10 @@
   padding: 4px 0 0;
   scroll-margin-top: 90px;
 }
+
+/* ========================================= */
+/* 🚀 UPDATED: COMPACT HERO SECTION (MOBILE) */
+/* ========================================= */
 .hero {
   position: relative;
   display: grid;
@@ -80,7 +82,7 @@
 .heroCopy {
   position: relative;
   z-index: 2;
-  min-height: 164px;
+  min-height: 135px; /* 164px se kam karke compact kiya */
   pointer-events: none;
 }
 .heroCopy a {
@@ -89,40 +91,40 @@
 .location {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: var(--gm-teal);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 650;
-  margin-bottom: 13px;
+  margin-bottom: 8px; /* Margin kam kiya */
 }
 .greeting {
-  font-size: 16px;
+  font-size: 14px; /* Font kam kiya */
   font-weight: 600;
   color: #69736f;
-  margin: 0 0 4px;
+  margin: 0 0 2px; /* Margin kam kiya */
   letter-spacing: -0.025em;
 }
 .hero h1 {
-  font-size: clamp(27px, 7.5vw, 34px);
-  line-height: 1.07;
+  font-size: clamp(24px, 7vw, 30px); /* Badi size ko chota kiya */
+  line-height: 1.05;
   font-weight: 800;
   margin: 0;
   max-width: 65%;
   text-wrap: balance;
 }
 .intro {
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 11px;
+  line-height: 1.5;
   max-width: 61%;
-  margin: 10px 0 18px;
+  margin: 6px 0 12px; /* Margin kam kiya */
   color: var(--gm-muted);
 }
 .heroArt {
   position: absolute;
-  right: -12px;
-  top: 10px;
-  width: 49%;
-  max-width: 230px;
+  right: -10px;
+  top: 15px; /* Thoda adjust kiya */
+  width: 44%; /* Image ko chota kiya */
+  max-width: 200px;
   z-index: 1;
   pointer-events: none;
 }
@@ -133,35 +135,41 @@
 }
 .hours {
   position: absolute;
-  top: 7%;
-  right: 8%;
+  top: 2%; /* Niche se thoda upar kiya */
+  right: 5%;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: #ffffffed;
   box-shadow: 0 8px 22px #125b4b16;
-  padding: 7px 9px;
-  border-radius: 12px;
+  padding: 5px 7px; /* Padding kam ki */
+  border-radius: 10px;
   transform: rotate(-8deg);
   color: #174f46;
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.25;
 }
 .hours strong {
   display: block;
-  font-size: 12px;
+  font-size: 10.5px; /* Chota kiya */
 }
 .hours svg {
   flex-shrink: 0;
+  width: 14px; /* Icon ko chota kiya */
+  height: 14px;
 }
+
+/* ========================================= */
+/* SEARCH BAR (MOBILE COMPACT)               */
+/* ========================================= */
 .search {
   position: relative;
   z-index: 3;
   display: flex;
   align-items: center;
   gap: 11px;
-  min-height: 56px;
-  padding: 6px 6px 6px 16px;
+  min-height: 50px; /* 56px se 50px kiya space bachane ke liye */
+  padding: 5px 5px 5px 14px;
   border: 1px solid #e6eeea;
   border-radius: 30px;
   background: #ffffffef;
@@ -187,8 +195,8 @@
 }
 .searchAction {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -216,17 +224,21 @@
   color: #fff;
   box-shadow: 0 4px 10px #15625340;
 }
+
+/* ========================================= */
+/* COMPACT BANNER (MOBILE FIRST)             */
+/* ========================================= */
 .offer {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   border: 1px solid #f4e4c5;
-  border-radius: 25px;
+  border-radius: 20px;
   background:
     radial-gradient(ellipse at 90% 70%, #ffe2a6, transparent 58%),
     linear-gradient(115deg, #fff8e7, #fff0cd);
-  min-height: 226px;
-  padding: 19px 17px;
+  min-height: 175px;
+  padding: 16px 14px;
   margin-bottom: 16px;
 }
 .offer:after {
@@ -241,50 +253,50 @@
 .offerCopy {
   position: relative;
   z-index: 2;
-  width: 65%;
+  width: 62%;
 }
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: #925004;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 .offer h2 {
-  font-size: clamp(19px, 5.5vw, 25px);
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.12;
-  margin: 11px 0 8px;
+  margin: 8px 0 6px;
   letter-spacing: -0.045em;
 }
 .offer h2 > span {
   color: #154f41;
 }
 .offer p {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.45;
-  max-width: 190px;
+  max-width: 160px;
   margin: 0;
   color: #66563c;
 }
 .offer .mrp {
-  font-size: 10px;
-  margin-top: 7px;
+  font-size: 9px;
+  margin-top: 5px;
   color: #765e3b;
 }
 .knowMore {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
+  gap: 6px;
+  min-height: 36px;
   padding: 6px 0 0;
   border: 0;
   background: none;
   color: #8a4800;
-  font-size: 13px !important;
+  font-size: 11.5px !important;
   font-weight: 750 !important;
 }
 .knowMore svg {
@@ -292,30 +304,30 @@
 }
 .giftArt {
   position: absolute;
-  right: -15px;
-  bottom: 9px;
-  width: 45%;
+  right: -10px;
+  bottom: 5px;
+  width: 48%;
   height: auto;
-  max-height: 190px;
+  max-height: 140px;
   object-fit: contain;
   z-index: 1;
   filter: drop-shadow(0 12px 8px #9568171c);
 }
 .giftSeal {
   position: absolute;
-  right: 12px;
-  top: 15px;
-  border: 3px solid #ffffffe0;
+  right: 8px;
+  top: 10px;
+  border: 2px solid #ffffffe0;
   border-radius: 50%;
-  height: 53px;
-  width: 53px;
+  height: 44px;
+  width: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: linear-gradient(140deg, #288971, #0c4f43);
   color: #fff;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 750;
   line-height: 1.1;
   transform: rotate(8deg);
@@ -327,15 +339,15 @@
   height: 14px;
 }
 .offerSkeleton {
-  height: 226px;
+  height: 175px;
   background: linear-gradient(110deg, #f6f4ed, #faf8f2);
   border: 1px solid #eeeee5;
-  border-radius: 25px;
+  border-radius: 20px;
   margin-bottom: 16px;
 }
 
 /* ========================================= */
-/* UPGRADED COMPACT METHODS GRID (Fix Applied) */
+/* UPGRADED COMPACT METHODS GRID */
 /* ========================================= */
 
 .methods {
@@ -353,7 +365,7 @@
   flex-direction: column;
   isolation: isolate;
   overflow: hidden;
-  height: 248px; /* Fixed height for mobile to avoid stretching */
+  height: 248px;
   min-height: 0;
   border-radius: 22px;
   border: 1px solid #d2eade;
@@ -453,48 +465,69 @@
   width: 14px;
   transition: transform 0.2s;
 }
-/* ========================================= */
 
+/* ========================================= */
+/* 1-LINE HORIZONTAL FLEX LAYOUT FOR BENEFITS */
+/* ========================================= */
 .support {
   width: min(100% - 36px, 1200px);
   margin-inline: auto;
   padding-bottom: 30px;
 }
 .benefits {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px 10px;
-  padding: 28px 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 24px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.benefits::-webkit-scrollbar {
+  display: none;
 }
 .benefits > div,
 .benefits > a {
+  flex: 1;
+  min-width: 74px;
   text-align: center;
   color: var(--gm-ink);
 }
 .benefits > div > span,
 .benefits > a > span {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  margin: 0 auto 10px;
+  margin: 0 auto 8px;
   background: linear-gradient(135deg, #eefbf5, #daf4e9);
   border-radius: 50%;
   color: var(--gm-teal);
 }
+.benefits > div > span > svg,
+.benefits > a > span > svg {
+  width: 18px !important;
+  height: 18px !important;
+}
 .benefits h2 {
   font-family: inherit;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 750;
   letter-spacing: -0.025em;
-  margin: 0 0 5px;
+  line-height: 1.1;
+  margin: 0 0 4px;
 }
 .benefits p {
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 8.5px;
+  line-height: 1.3;
   color: var(--gm-muted);
   margin: 0;
 }
+
+/* ========================================= */
+
 .locations {
   scroll-margin-top: 100px;
   background: linear-gradient(120deg, #eef7f5, #f5faf8);
@@ -903,20 +936,20 @@
     max-width: none;
   }
   .heroArt {
-    top: 30px;
-    width: 45%;
+    top: 25px; /* Adjust image for small phone */
+    width: 42%;
   }
   .hours {
     display: none;
   }
   .hero h1 {
-    font-size: 27px;
+    font-size: 22px; /* Small phones pe aur compact */
   }
   .offerCopy {
     width: 70%;
   }
   .offer h2 {
-    font-size: 19px;
+    font-size: 17px; /* Updated for extra small phones */
   }
   .giftArt {
     width: 41%;
@@ -925,8 +958,6 @@
   .giftSeal {
     right: 8px;
     top: 15px;
-    width: 44px;
-    height: 44px;
   }
   .offer p {
     max-width: 158px;
@@ -947,11 +978,20 @@
 
 @media (min-width: 430px) {
   .benefits {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
+  }
+  .benefits > div > span,
+  .benefits > a > span {
+    width: 44px;
+    height: 44px;
+  }
+  .benefits > div > span > svg,
+  .benefits > a > span > svg {
+    width: 22px !important;
+    height: 22px !important;
   }
   .benefits h2 {
-    font-size: 11px;
+    font-size: 11.5px;
   }
   .benefits p {
     font-size: 10px;
@@ -1092,6 +1132,8 @@
     max-height: 350px;
     object-fit: contain;
   }
+  
+  /* Restoring Desktop Icon Size */
   .hours {
     font-size: 12px;
     padding: 12px 16px;
@@ -1101,14 +1143,27 @@
   .hours strong {
     font-size: 17px;
   }
+  .hours svg {
+    width: 19px;
+    height: 19px;
+  }
+  
+  /* Restoring Desktop Search Size */
   .search {
     grid-column: 1;
     align-self: start;
     margin-top: 6px;
+    min-height: 56px;
+    padding: 6px 6px 6px 16px;
   }
   .search > span:nth-child(2) {
     font-size: 13px;
   }
+  .searchAction {
+    width: 40px;
+    height: 40px;
+  }
+  
   .offer {
     min-height: 236px;
     padding: 28px 34px;
@@ -1182,8 +1237,8 @@
     font-size: 10px;
   }
   .benefits {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: 34px 0;
+    gap: 16px;
   }
   .benefits h2 {
     font-size: 14px;
@@ -1195,6 +1250,12 @@
   .benefits > a > span {
     width: 50px;
     height: 50px;
+    margin-bottom: 12px;
+  }
+  .benefits > div > span > svg,
+  .benefits > a > span > svg {
+    width: 24px !important;
+    height: 24px !important;
   }
   .locations {
     padding: 25px;
@@ -1344,17 +1405,32 @@
 @media (max-width: 600px) {
   .dialog {
     inset: auto 0 0;
-    width: 100%;
+    width: 100vw;
+    max-width: 100vw;
     max-height: 90dvh;
     margin: 0;
-    border-radius: 28px 28px 0 0;
+    border: none;
+    border-radius: 24px 24px 0 0;
     padding-bottom: env(safe-area-inset-bottom);
   }
   .dialogArt {
-    height: 170px;
+    height: 180px;
   }
   .dialogArt img {
-    height: 160px;
+    height: 150px;
+  }
+  .dialogCopy {
+    padding: 20px 20px 30px;
+  }
+  .dialogCopy h2 {
+    font-size: 24px;
+    margin: 8px 0 12px;
+  }
+  .close {
+    right: 12px;
+    top: 12px;
+    width: 38px;
+    height: 38px;
   }
 }
 

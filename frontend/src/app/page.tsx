@@ -20,9 +20,7 @@ export default function HomePage() {
     <>
       <LateNightBanner />
       <Navbar />
-      {/* pb-24 add kiya mobile me nav bar ki jagah chhodne ke liye */}
-      <main className="pb-24 md:pb-0"> 
-     
+      <main> 
         <OrderMethods />
         <WhyChoose />
         <Highlight24x7 />
@@ -35,6 +33,7 @@ export default function HomePage() {
           <PharmacyNotice />
         </div>
       </main>
+      
       <Footer />
       <BottomNav /> 
       <OfferPopup />
