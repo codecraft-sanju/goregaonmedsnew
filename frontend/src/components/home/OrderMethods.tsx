@@ -86,16 +86,10 @@ function HomeSupport() {
 
   return (
     <div className={styles.support}>
-      <section className={styles.benefits} aria-label="Your neighbourhood pharmacy service">
-        <div><span><Clock3 size={23} aria-hidden /></span><h2>24×7 Pharmacy</h2><p>Always here<br />around the clock</p></div>
-        <div><span><Truck size={23} aria-hidden /></span><h2>Local delivery</h2><p>Goregaon East<br />& nearby areas</p></div>
-        <div><span><ShieldCheck size={23} aria-hidden /></span><h2>Genuine medicines</h2><p>Care you can<br />count on</p></div>
-        <a href={SUPPORT_PHONE_TEL}><span><Headphones size={23} aria-hidden /></span><h2>Need help?</h2><p>Talk to your<br />local pharmacy</p></a>
-      </section>
+     
       <section id="locations" className={styles.locations} aria-labelledby="pharmacies-title">
-        <div className={styles.sectionHeading}><div><p>Good care. Close to home.</p><h2 id="pharmacies-title">Our pharmacies</h2></div><span>Goregaon East</span></div>
-        
-        {/* Yahan par humne ref aur touch/mouse events add kiye hain */}
+ 
+      
         <div 
           className={styles.branchGrid} 
           ref={scrollRef}

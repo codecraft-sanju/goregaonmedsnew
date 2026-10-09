@@ -474,7 +474,7 @@
   margin-inline: auto;
   padding-bottom: 30px;
 }
-.benefits {
+/* .benefits {
   display: flex;
   flex-wrap: nowrap;
   justify-content: space-between;
@@ -524,7 +524,7 @@
   line-height: 1.3;
   color: var(--gm-muted);
   margin: 0;
-}
+} */
 
 /* ========================================= */
 
@@ -976,7 +976,7 @@
   }
 }
 
-@media (min-width: 430px) {
+/* @media (min-width: 430px) {
   .benefits {
     gap: 10px;
   }
@@ -996,7 +996,7 @@
   .benefits p {
     font-size: 10px;
   }
-}
+} */
 
 @media (min-width: 430px) and (max-width: 767px) {
   .methods {
@@ -1236,7 +1236,7 @@
   .methodKicker {
     font-size: 10px;
   }
-  .benefits {
+  /* .benefits {
     padding: 34px 0;
     gap: 16px;
   }
@@ -1256,7 +1256,7 @@
   .benefits > a > span > svg {
     width: 24px !important;
     height: 24px !important;
-  }
+  } */
   .locations {
     padding: 25px;
   }
@@ -1388,9 +1388,9 @@
     max-width: 52%;
     font-size: 14px;
   }
-  .benefits {
+  /* .benefits {
     padding-block: 40px;
-  }
+  } */
   .branchInfo {
     padding: 17px;
   }
