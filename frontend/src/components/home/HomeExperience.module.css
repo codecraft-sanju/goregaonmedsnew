@@ -668,7 +668,9 @@
 }
 .logo {
   min-width: 0;
-  flex-shrink: 1;
+  flex-shrink: 0; /* Yeh 1 se 0 kar diya taki logo squeeze na ho aur square rahe */
+  display: flex;
+  align-items: center;
 }
 .logo > a {
   max-width: 100%;
@@ -683,6 +685,7 @@
   color: var(--gm-teal);
   white-space: nowrap;
   font-size: 10px;
+  margin-left: auto;
 }
 .desktopLinks {
   display: none;
@@ -691,7 +694,7 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  margin-left: auto;
+
   flex-shrink: 0;
 }
 .iconButton,
