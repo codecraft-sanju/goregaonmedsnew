@@ -1,16 +1,17 @@
 // src/components/order/OrderFlow.tsx
 'use client';
 
+import Image from 'next/image';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { 
   useEffect, useRef, useState, useCallback, ChangeEvent, 
   forwardRef, useId, type InputHTMLAttributes, type ButtonHTMLAttributes, type ReactNode 
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { 
   ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, 
   ShieldCheck, Wallet, Minus, Plus, Trash2, Info, CheckCircle2, 
-  FolderOpen, Images, Loader2, RefreshCw, X 
+  FolderOpen, Images, Loader2, RefreshCw, X
 } from 'lucide-react';
 
 import { useToast } from '@/components/ui/Toast';
@@ -25,13 +26,12 @@ import { createRequestId } from '@/lib/uuid';
 import { compressPrescription, ImageCompressionError } from '@/lib/imageCompression';
 import { uploadPrescription, UploadError } from '@/lib/cloudinaryUpload';
 
-
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800 shadow-lift disabled:bg-brand-700/60',
-  secondary: 'bg-white text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-50 disabled:text-brand-800/50',
+  primary: 'bg-[#156253] text-white hover:bg-[#0f4b3f] shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] disabled:bg-[#156253]/60',
+  secondary: 'bg-white text-[#156253] border-2 border-[#156253]/10 hover:bg-[#eaf4f4] disabled:text-[#156253]/50',
   ghost: 'text-brand-800 hover:bg-brand-50 disabled:text-brand-800/50',
   gift: 'bg-gift-500 text-white hover:bg-gift-600 shadow-[0_12px_30px_-12px_rgba(239,148,21,0.7)] disabled:bg-gift-500/60',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/60',
@@ -40,7 +40,7 @@ const buttonVariants: Record<ButtonVariant, string> = {
 const buttonSizes: Record<ButtonSize, string> = {
   sm: 'h-9 px-3.5 text-sm gap-1.5 rounded-xl',
   md: 'h-11 px-5 text-[15px] gap-2 rounded-2xl',
-  lg: 'h-14 px-6 text-base gap-2.5 rounded-2xl',
+  lg: 'h-14 px-6 text-base gap-2.5 rounded-[20px]',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -55,24 +55,26 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   ref,
 ) {
   return (
-    <button
+    <motion.button
       ref={ref}
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      whileTap={disabled || loading ? undefined : { scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold transition-[background-color,transform,box-shadow] duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
-        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
+        'inline-flex select-none items-center justify-center font-bold transition-[background-color,box-shadow,border-color,opacity] duration-200',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+        'disabled:cursor-not-allowed disabled:opacity-70',
         buttonVariants[variant],
         buttonSizes[size],
         className,
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : icon}
       {children}
-    </button>
+    </motion.button>
   );
 });
 
@@ -95,30 +97,30 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 
   return (
     <div className={className}>
-      <label htmlFor={inputId} className="mb-1.5 flex items-baseline justify-between text-sm font-medium text-ink">
+      <label htmlFor={inputId} className="mb-1.5 flex items-baseline justify-between text-xs font-semibold text-ink-muted">
         {label}
-        {optional && <span className="text-xs font-normal text-ink-soft">Optional</span>}
+        {optional && <span className="text-[10px] font-medium text-ink-soft">Optional</span>}
       </label>
       <div
         className={cn(
-          'flex items-center rounded-2xl bg-white ring-1 ring-inset transition-shadow focus-within:ring-2',
-          error ? 'ring-red-300 focus-within:ring-red-500' : 'ring-brand-100 focus-within:ring-brand-500',
+          'flex items-center rounded-2xl bg-white ring-1 ring-inset transition-all duration-300 focus-within:ring-2 focus-within:shadow-[0_4px_20px_rgba(21,98,83,0.08)]',
+          error ? 'ring-red-300 focus-within:ring-red-500' : 'ring-gray-200 focus-within:ring-[#156253]',
         )}
       >
-        {leading && <span className="pl-4 text-[15px] font-medium text-ink-muted">{leading}</span>}
+        {leading && <span className="pl-4 text-[15px] font-semibold text-ink-muted">{leading}</span>}
         <input
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-12 w-full rounded-2xl bg-transparent px-4 text-[15px] text-ink placeholder:text-ink-soft focus:outline-none"
+          className="h-[52px] w-full rounded-2xl bg-transparent px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-gray-400 focus:outline-none"
           {...props}
         />
       </div>
       {error ? (
-        <p id={`${inputId}-error`} role="alert" className="mt-1.5 text-sm text-red-600">
+        <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} id={`${inputId}-error`} role="alert" className="mt-1.5 text-xs font-medium text-red-600">
           {error}
-        </p>
+        </motion.p>
       ) : hint ? (
         <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-ink-soft">
           {hint}
@@ -131,16 +133,17 @@ const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 // --- Pharmacy Notice Component ---
 function PharmacyNotice({ className }: { className?: string }) {
   return (
-    <div className={cn('hidden md:flex gap-3 rounded-2xl bg-brand-50/70 p-4 text-sm text-ink-muted ring-1 ring-brand-100', className)} role="note">
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
-      <p>
-        Prescription medicines will be supplied only against a valid prescription where required. Medicine availability and the final payable amount will be confirmed by the pharmacy.
-      </p>
-    </div>
+    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className={cn('flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#eaf4f4] to-[#f4fafa] p-4 ring-1 ring-[#156253]/10', className)} role="note">
+      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#156253]/10">
+        <Info className="h-4 w-4 text-[#156253]" aria-hidden />
+      </div>
+      <div>
+        <p className="text-sm font-bold text-ink">Complete strips & sealed packs only.</p>
+        <p className="mt-0.5 text-xs font-medium text-ink-muted">We do not dispense loose tablets for your safety.</p>
+      </div>
+    </motion.div>
   );
 }
-
-
 
 export interface MedicineRow {
   id: string;
@@ -163,7 +166,7 @@ export type UploadState =
 
 type DetailErrors = Partial<Record<'customerName' | 'mobileNumber' | 'flat' | 'area' | 'landmark', string>>;
 
-const STEPS = ['Your medicines', 'Delivery details', 'Review & place'] as const;
+const STEPS = ['Medications', 'Delivery', 'Review'] as const;
 type Step = 0 | 1 | 2;
 
 export const MAX_MEDICINES = 30;
@@ -198,7 +201,6 @@ function failureMessage(error: unknown) {
 // ==========================================
 // COMPONENT: PrescriptionUploader
 // ==========================================
-
 interface PrescriptionUploaderProps {
   state: UploadState;
   onChange: (state: UploadState) => void;
@@ -259,19 +261,19 @@ function PrescriptionUploader({ state, onChange, error }: PrescriptionUploaderPr
   const previewUrl = state.status === 'uploading' || state.status === 'done' ? state.previewUrl : null;
 
   return (
-    <div>
+    <div className="w-full">
       <input ref={cameraInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={onSelect} />
       <input ref={galleryInput} type="file" accept="image/*" className="hidden" onChange={onSelect} />
       <input ref={filesInput} type="file" accept="image/*,.heic,.heif" className="hidden" onChange={onSelect} />
 
       <AnimatePresence mode="wait" initial={false}>
         {state.status === 'idle' || state.status === 'error' ? (
-          <motion.div key="pick" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className={cn('rounded-3xl border-2 border-dashed p-6 sm:p-8 text-center transition-colors', error || state.status === 'error' ? 'border-red-300 bg-red-50/50' : 'border-[#156253]/30 bg-[#e5f7ed]/50')}>
+          <motion.div key="pick" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
+            <div className={cn('rounded-[24px] border-2 border-dashed p-6 sm:p-8 text-center transition-colors bg-[#f4fafa]', error || state.status === 'error' ? 'border-red-300 bg-red-50' : 'border-[#156253]/20 hover:bg-[#eaf4f4]')}>
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white shadow-sm mb-4 text-[#156253]">
                 <Images className="h-6 w-6" />
               </div>
-              <p className="font-display text-lg font-bold text-ink">Upload Prescription</p>
+              <p className="text-lg font-bold text-ink">Upload Prescription</p>
               <p className="mt-1.5 text-xs font-medium text-ink-muted px-2">Ensure the doctor’s name, date, and medicines are clearly readable.</p>
               <div className="mt-6 grid grid-cols-3 gap-3">
                 {[
@@ -279,37 +281,40 @@ function PrescriptionUploader({ state, onChange, error }: PrescriptionUploaderPr
                   { label: 'Gallery', icon: Images, ref: galleryInput },
                   { label: 'Files', icon: FolderOpen, ref: filesInput },
                 ].map((source) => (
-                  <button
+                  <motion.button
                     key={source.label}
                     type="button"
+                    whileTap={{ scale: 0.94 }}
                     onClick={() => source.ref.current?.click()}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-white h-20 text-xs font-bold text-[#156253] shadow-sm transition-transform active:scale-[0.96]"
+                    className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-white h-20 text-xs font-bold text-[#156253] shadow-sm ring-1 ring-gray-100 hover:ring-[#156253]/30 hover:shadow-md transition-all duration-200"
                   >
                     <source.icon className="h-6 w-6" aria-hidden />
                     {source.label}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
             {state.status === 'error' && (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 ring-1 ring-red-100">
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 ring-1 ring-red-100">
                 <span>{state.message}</span>
                 {state.file && (
-                  <button type="button" onClick={() => state.file && start(state.file)} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-100 px-3 text-red-800">
+                  <button type="button" onClick={() => state.file && start(state.file)} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-100 px-3 text-red-800 active:scale-95 transition-transform">
                     <RefreshCw className="h-3.5 w-3.5" /> Retry
                   </button>
                 )}
-              </div>
+              </motion.div>
             )}
-            {error && state.status !== 'error' && <p className="mt-2 text-center text-sm font-semibold text-red-600 animate-in slide-in-from-top-1">{error}</p>}
+            {error && state.status !== 'error' && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-center text-sm font-semibold text-red-600">{error}</motion.p>
+            )}
           </motion.div>
         ) : (
-          <motion.div key="file" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-brand-100">
+          <motion.div key="file" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: 'spring', damping: 22, stiffness: 300 }} className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-gray-200">
             <div className="flex gap-4">
-              <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-surface ring-1 ring-brand-50">
+              <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-[16px] bg-[#f4fafa] ring-1 ring-gray-100">
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previewUrl} alt="Prescription preview" className="h-full w-full object-cover" />
+                  <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={previewUrl} alt="Prescription preview" className="h-full w-full object-cover" />
                 ) : (
                   <div className="grid h-full place-items-center"><Loader2 className="h-6 w-6 animate-spin text-[#156253]" /></div>
                 )}
@@ -317,7 +322,7 @@ function PrescriptionUploader({ state, onChange, error }: PrescriptionUploaderPr
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <div className="flex items-start justify-between gap-2">
                   <p className="truncate text-sm font-bold text-ink">{state.fileName}</p>
-                  <button type="button" onClick={reset} className="rounded-full bg-surface p-1.5 text-ink-muted hover:bg-red-50 hover:text-red-600 transition-colors" aria-label={busy ? 'Cancel upload' : 'Remove prescription'}>
+                  <button type="button" onClick={reset} className="rounded-full bg-gray-50 p-1.5 text-ink-muted hover:bg-red-50 hover:text-red-600 active:scale-90 transition-all duration-200" aria-label={busy ? 'Cancel upload' : 'Remove prescription'}>
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -333,13 +338,13 @@ function PrescriptionUploader({ state, onChange, error }: PrescriptionUploaderPr
                   </div>
                 )}
                 {state.status === 'done' && (
-                  <>
-                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#147a4a]"><CheckCircle2 className="h-4 w-4" /> Uploaded successfully</p>
+                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#156253]"><CheckCircle2 className="h-4 w-4" /> Uploaded successfully</p>
                     <p className="mt-1 text-[10px] font-medium text-ink-soft">
                       {state.uploadedSize < state.originalSize ? `Optimised to ${formatSize(state.uploadedSize)}` : formatSize(state.uploadedSize)}
                     </p>
                     <button type="button" onClick={() => galleryInput.current?.click()} className="mt-3 text-xs font-bold text-[#156253] hover:underline w-fit">Replace photo</button>
-                  </>
+                  </motion.div>
                 )}
               </div>
             </div>
@@ -353,7 +358,6 @@ function PrescriptionUploader({ state, onChange, error }: PrescriptionUploaderPr
 // ==========================================
 // COMPONENT: DeliveryDetailsForm
 // ==========================================
-
 interface DeliveryDetailsFormProps {
   value: DeliveryDetails;
   errors: Partial<Record<'customerName' | 'mobileNumber' | 'flat' | 'area' | 'landmark', string>>;
@@ -374,6 +378,7 @@ function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetai
         value={value.customerName}
         onChange={(event) => onChange({ ...value, customerName: event.target.value })}
         error={errors.customerName}
+        placeholder="Enter your name"
       />
       <Field
         label="Mobile Number"
@@ -388,8 +393,8 @@ function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetai
         error={errors.mobileNumber}
         hint="We’ll call this number to confirm your order."
       />
-      <div className="rounded-3xl bg-surface p-4 ring-1 ring-brand-100 sm:p-5">
-        <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-ink-soft">Delivery Address</h3>
+      <div className="rounded-[24px] bg-white p-4 ring-1 ring-gray-200 sm:p-5 mt-2">
+        <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-ink-muted">Delivery Address</h3>
         <div className="space-y-4">
           <Field
             label="Flat / House / Building"
@@ -398,6 +403,7 @@ function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetai
             value={value.address.flat}
             onChange={(event) => setAddress('flat', event.target.value)}
             error={errors.flat}
+            placeholder="e.g. 402, Shiv Shakti"
           />
           <Field
             label="Area"
@@ -419,15 +425,15 @@ function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetai
           />
         </div>
       </div>
-      <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-brand-50/50 p-4 text-sm ring-1 ring-brand-100 transition-colors hover:bg-brand-50">
+      <label className="flex cursor-pointer items-start gap-3 rounded-[20px] bg-white p-4 text-sm ring-1 ring-gray-200 transition-colors hover:bg-gray-50 mt-2">
         <input
           type="checkbox"
           checked={saveDetails}
           onChange={(event) => onSaveDetailsChange(event.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-brand-300 text-[#156253] accent-[#156253]"
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#156253] accent-[#156253] transition-transform active:scale-90"
         />
         <span>
-          <span className="font-semibold text-ink">Save my details for faster checkout</span>
+          <span className="font-bold text-ink">Save my details for faster checkout</span>
           <span className="mt-1 block text-xs font-medium text-ink-muted">Stored securely on this device for 180 days.</span>
         </span>
       </label>
@@ -438,7 +444,6 @@ function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetai
 // ==========================================
 // COMPONENT: MedicineListEditor
 // ==========================================
-
 interface MedicineListEditorProps {
   rows: MedicineRow[];
   errors: Record<string, string>;
@@ -459,96 +464,121 @@ function MedicineListEditor({ rows, errors, onChange, onAdd }: MedicineListEdito
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2.5 rounded-2xl bg-[#fff5e6] p-3 ring-1 ring-[#dfa442]/30">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#b87c1c]" aria-hidden="true" />
-        <p className="text-xs text-[#7a6441] leading-relaxed font-medium">
-          <strong className="font-bold">Please note:</strong> We currently fulfill orders in complete strips or sealed packs only. Loose tablets are not available.
-        </p>
+      <div className="mb-4">
+        <h2 className="text-xl font-bold text-ink">Add your medicines</h2>
+        <p className="mt-1 text-[13px] text-ink-muted font-medium">Search for the medicine name and choose quantity.</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <AnimatePresence initial={false}>
-          {rows.map((row, index) => (
+          {rows.map((row) => (
             <motion.div
               key={row.id}
               layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -15, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             >
-              <fieldset className={cn("rounded-3xl bg-white p-4 shadow-sm ring-1", errors[`${row.id}-name`] ? "ring-red-300" : "ring-brand-100")}>
-                <legend className="sr-only">Medicine {index + 1}</legend>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex h-6 items-center rounded-full bg-brand-50 px-2.5 text-[10px] font-bold uppercase tracking-widest text-[#156253]">
-                    Item {index + 1}
-                  </span>
-                  {rows.length > 1 && (
-                    <button type="button" onClick={() => remove(row.id)} className="rounded-full p-1.5 text-ink-muted hover:bg-red-50 hover:text-red-600 transition-colors" aria-label={`Remove item ${index + 1}`}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-[1.6fr_1fr]">
-                  <div>
-                    <label htmlFor={`${row.id}-name`} className="mb-1.5 block text-xs font-bold text-ink">Medicine Name</label>
-                    <input
-                      id={`${row.id}-name`}
-                      value={row.name}
-                      onChange={(event) => update(row.id, 'name', event.target.value)}
-                      placeholder="e.g. Dolo 650"
-                      maxLength={120}
-                      autoComplete="off"
-                      className="h-12 w-full rounded-xl bg-surface px-4 text-[15px] font-medium ring-1 ring-inset ring-brand-50 placeholder:font-normal placeholder:text-ink-soft focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#156253] transition-all"
-                    />
-                    {errors[`${row.id}-name`] && <p className="mt-1 text-xs font-semibold text-red-600">{errors[`${row.id}-name`]}</p>}
-                  </div>
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-ink">Quantity</label>
-                    <div className="flex h-12 w-full items-center justify-between rounded-xl bg-surface px-1.5 ring-1 ring-inset ring-brand-50">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentVal = getQtyNumber(row.quantity);
-                          if (currentVal > 1) {
-                            const newVal = currentVal - 1;
-                            update(row.id, 'quantity', `${newVal} Strip${newVal > 1 ? 's' : ''}`);
-                          }
-                        }}
-                        disabled={getQtyNumber(row.quantity) <= 1}
-                        className="grid h-9 w-9 place-items-center rounded-lg bg-white text-ink shadow-sm transition-transform active:scale-95 disabled:opacity-40"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-
-                      <span className="text-sm font-bold tabular-nums text-[#156253]">
-                        {getQtyNumber(row.quantity)} Strip{getQtyNumber(row.quantity) > 1 ? 's' : ''}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newVal = getQtyNumber(row.quantity) + 1;
-                          update(row.id, 'quantity', `${newVal} Strip${newVal > 1 ? 's' : ''}`);
-                        }}
-                        className="grid h-9 w-9 place-items-center rounded-lg bg-white text-ink shadow-sm transition-transform active:scale-95"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
+              <div className={cn(
+                "flex items-stretch rounded-[24px] bg-white p-3.5 shadow-sm ring-1 transition-all duration-300 group focus-within:ring-2 focus-within:shadow-[0_4px_24px_rgba(21,98,83,0.08)]", 
+                errors[`${row.id}-name`] ? "ring-red-300 focus-within:ring-red-500" : "ring-gray-100 focus-within:ring-[#156253]"
+              )}>
+                
+                <div className="flex-1 flex flex-col justify-center space-y-3 py-1 pr-1">
+                  
+                  <div className="relative">
+                    <label htmlFor={`${row.id}-name`} className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-ink-muted">Medicine name</label>
+                    <div className="relative">
+                      <input
+                        id={`${row.id}-name`}
+                        value={row.name}
+                        onChange={(event) => update(row.id, 'name', event.target.value)}
+                        placeholder="e.g. Dolo 650"
+                        maxLength={120}
+                        autoComplete="off"
+                        className="h-10 w-full rounded-xl bg-[#f8fbfb] px-3 text-[15px] font-bold text-ink ring-1 ring-inset ring-gray-100 placeholder:font-medium placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#156253]/20 focus:bg-white transition-all"
+                      />
+                      {row.name && (
+                         <button 
+                            type="button" 
+                            onClick={() => update(row.id, 'name', '')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                         >
+                            <X className="h-4 w-4" />
+                         </button>
+                      )}
                     </div>
+                    {errors[`${row.id}-name`] && <p className="mt-1 text-[10px] font-semibold text-red-600">{errors[`${row.id}-name`]}</p>}
                   </div>
+
+                  {/* Quantity & Delete */}
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-ink-muted">Quantity</label>
+                      <div className="flex h-10 w-full max-w-[180px] items-center justify-between rounded-xl bg-white px-1 ring-1 ring-inset ring-gray-200 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentVal = getQtyNumber(row.quantity);
+                            if (currentVal > 1) {
+                              const newVal = currentVal - 1;
+                              update(row.id, 'quantity', `${newVal} Strip${newVal > 1 ? 's' : ''}`);
+                            }
+                          }}
+                          disabled={getQtyNumber(row.quantity) <= 1}
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-[#eaf4f4] text-[#156253] font-bold active:scale-90 disabled:opacity-40 transition-transform"
+                        >
+                          <Minus className="h-4 w-4" strokeWidth={2.5} />
+                        </button>
+
+                        <span className="text-[13px] font-bold tabular-nums text-ink">
+                          {getQtyNumber(row.quantity)} Strip{getQtyNumber(row.quantity) > 1 ? 's' : ''}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newVal = getQtyNumber(row.quantity) + 1;
+                            update(row.id, 'quantity', `${newVal} Strip${newVal > 1 ? 's' : ''}`);
+                          }}
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-[#156253] text-white font-bold active:scale-90 transition-transform"
+                        >
+                          <Plus className="h-4 w-4" strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Trash Button */}
+                    <button 
+                      type="button" 
+                      onClick={() => remove(row.id)} 
+                      disabled={rows.length === 1 && !row.name}
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gray-50 text-gray-500 ring-1 ring-inset ring-gray-200 hover:bg-red-50 hover:text-red-600 hover:ring-red-100 disabled:opacity-40 active:scale-90 transition-all duration-200" 
+                      aria-label="Remove item"
+                    >
+                      <Trash2 className="h-[18px] w-[18px]" />
+                    </button>
+                  </div>
+
                 </div>
-              </fieldset>
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
       </div>
-      <Button variant="secondary" onClick={onAdd} disabled={rows.length >= MAX_MEDICINES} icon={<Plus className="h-4 w-4" />} className="w-full bg-surface hover:bg-brand-50 border-none font-bold text-brand-700">
+
+      <Button 
+        variant="secondary" 
+        onClick={onAdd} 
+        disabled={rows.length >= MAX_MEDICINES} 
+        icon={<Plus className="h-5 w-5 mr-1" />} 
+        className="w-full bg-white hover:bg-[#f4fafa] border-2 border-[#156253]/10 font-bold text-[#156253] h-[52px] rounded-[20px]"
+      >
         Add Another Medicine
       </Button>
+
+      <PharmacyNotice className="mt-8" />
     </div>
   );
 }
@@ -556,15 +586,14 @@ function MedicineListEditor({ rows, errors, onChange, onAdd }: MedicineListEdito
 // ==========================================
 // MAIN COMPONENT: OrderFlow
 // ==========================================
-
 export function OrderFlow() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const toast = useToast();
   const { settings, loading: settingsLoading } = usePublicSettings();
+  const prefersReducedMotion = useReducedMotion();
 
-  // URL se initial step calculate karna (default 0)
   const urlStepParam = parseInt(params.get('step') || '1', 10) - 1;
   const initialStep = (isNaN(urlStepParam) || urlStepParam < 0 || urlStepParam > 2) ? 0 : (urlStepParam as Step);
 
@@ -582,30 +611,19 @@ export function OrderFlow() {
   const [submitting, setSubmitting] = useState(false);
 
   const [isClientMounted, setIsClientMounted] = useState(false);
-
   const clientRequestId = useRef<string | null>(null);
   const submitLock = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
 
-  // Mounted check to avoid hydration mismatch
-  useEffect(() => {
-    setIsClientMounted(true);
-  }, []);
-
-  // Load saved details on mount
+  useEffect(() => { setIsClientMounted(true); }, []);
   useEffect(() => {
     const saved = loadCheckout();
-    if (saved) {
-      setDetails(saved);
-      setSaveDetails(true);
-    }
+    if (saved) { setDetails(saved); setSaveDetails(true); }
   }, []);
 
-  // Listen for URL changes to handle Browser Back/Forward buttons
   useEffect(() => {
     const currentUrlStep = parseInt(params.get('step') || '1', 10) - 1;
     const validStep = (isNaN(currentUrlStep) || currentUrlStep < 0 || currentUrlStep > 2) ? 0 : (currentUrlStep as Step);
-
     setStep((prevStep) => {
       if (validStep !== prevStep) {
         setDirection(validStep > prevStep ? 1 : -1);
@@ -615,35 +633,28 @@ export function OrderFlow() {
     });
   }, [params]);
 
-  // Handle Step Navigation with URL update
-  const go = useCallback(
-    (next: Step) => {
-      const newParams = new URLSearchParams(params.toString());
-      newParams.set('step', (next + 1).toString());
+  const go = useCallback((next: Step) => {
+    const newParams = new URLSearchParams(params.toString());
+    newParams.set('step', (next + 1).toString());
+    router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [params, pathname, router]);
 
-      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
-      topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    },
-    [params, pathname, router]
-  );
-
-  // Handle Method Tab change (Prescription vs Text) with URL update
   const handleMethodChange = (newMethod: OrderType) => {
     setMethod(newMethod);
     const newParams = new URLSearchParams(params.toString());
     newParams.set('method', newMethod === 'prescription_image' ? 'prescription' : 'manual');
-    // replaceState keeps history clean, so hitting back doesn't just switch tabs
     window.history.replaceState(null, '', `${pathname}?${newParams.toString()}`);
   };
 
-  const filledRows = rows.filter((row) => row.name.trim() || row.quantity.trim());
+  const hasMedicineInput = rows.some((row) => row.name.trim().length > 0);
+  const filledRows = rows.filter((row) => row.name.trim());
 
   const validateItems = () => {
     if (method === 'manual_text') {
       const errors: Record<string, string> = {};
       for (const row of filledRows) {
-        if (!row.name.trim()) errors[`${row.id}-name`] = 'Enter the medicine name';
-        if (!row.quantity.trim()) errors[`${row.id}-qty`] = 'Enter a quantity, e.g. 1 strip';
+        if (!row.name.trim()) errors[`${row.id}-name`] = 'Required';
       }
       if (filledRows.length === 0 && rows[0]) errors[`${rows[0].id}-name`] = 'Add at least one medicine';
       setRowErrors(errors);
@@ -711,176 +722,233 @@ export function OrderFlow() {
     }
   };
 
+  // Determine if the CTA bar should be visible
+  const isStep0Valid = method === 'manual_text' ? hasMedicineInput : upload.status === 'done';
+  const showCTA = step > 0 || isStep0Valid;
+
   const giftAvailable = !settingsLoading && settings.firstOrderOfferEnabled;
   const threshold = formatRupees(settings.firstOrderMinimumMedicineAmount);
 
   if (!isClientMounted) return null;
 
   return (
-    <div ref={topRef} className="mx-auto w-full max-w-2xl scroll-mt-24">
-      {/* iOS Style Step Progress */}
-      <ol className="mb-8 flex justify-between gap-2" aria-label="Order progress">
-        {STEPS.map((label, index) => (
-          <li key={label} className="w-full text-center" aria-current={index === step ? 'step' : undefined}>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[#eaf4f4]">
-              <motion.div className="h-full bg-[#156253]" initial={false} animate={{ width: index <= step ? '100%' : '0%' }} transition={{ duration: 0.35 }} />
+    <div ref={topRef} className="mx-auto w-full max-w-2xl px-4 sm:px-6 relative pb-40 md:pb-28">
+       
+      {/* iOS Style Progress Indicator */}
+      <div className="mb-8 flex items-center justify-between px-2 pt-4 relative z-10">
+        <div className="absolute top-1/2 left-6 right-6 h-[1px] bg-gray-200 -translate-y-1/2 -z-10" />
+        {STEPS.map((label, index) => {
+          const isActive = index === step;
+          const isPast = index < step;
+          return (
+            <div key={label} className="flex items-center gap-2.5 bg-[#f8fbfb] pl-1 pr-2">
+              <motion.div 
+                animate={{
+                  backgroundColor: isActive ? "#156253" : isPast ? "rgba(21,98,83,0.15)" : "#f3f4f6",
+                  color: isActive ? "#ffffff" : isPast ? "#156253" : "#9ca3af"
+                }}
+                className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold"
+              >
+                {index + 1}
+              </motion.div>
+              <span className={cn("text-[13px] font-bold", isActive ? "text-[#156253]" : "text-gray-400")}>
+                {label}
+              </span>
             </div>
-            <p className={cn('mt-2 text-[11px] font-bold sm:text-xs', index === step ? 'text-[#156253]' : 'text-[#8ba7a7]')}>{label}</p>
-          </li>
-        ))}
-      </ol>
-
-      <div className="card overflow-hidden bg-white p-5 shadow-sm sm:p-8">
-        <AnimatePresence mode="wait" initial={false} custom={direction}>
-          <motion.div
-            key={step}
-            custom={direction}
-            initial={{ opacity: 0, x: direction * 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -24 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {step === 0 && (
-              <section aria-labelledby="step-items">
-                <h1 id="step-items" className="font-display text-2xl font-extrabold text-ink">What do you need?</h1>
-
-                {/* Segmented Control / Tabs */}
-                <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-brand-50/70 p-1.5" role="tablist" aria-label="Ordering method">
-                  {[
-                    { value: 'manual_text' as const, label: 'Enter medicines', icon: ClipboardList },
-                    { value: 'prescription_image' as const, label: 'Upload Rx', icon: Camera },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="tab"
-                      aria-selected={method === option.value}
-                      onClick={() => handleMethodChange(option.value)}
-                      className={cn('relative flex h-12 items-center justify-center gap-2 rounded-xl text-[13px] font-bold transition-all duration-200', method === option.value ? 'text-[#156253]' : 'text-ink-muted hover:text-ink')}
-                    >
-                      {method === option.value && <motion.span layoutId="method-pill" className="absolute inset-0 rounded-xl bg-white shadow-sm border border-brand-100/50" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
-                      <option.icon className="relative h-4 w-4" aria-hidden />
-                      <span className="relative">{option.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-6">
-                  {method === 'manual_text' ? (
-                    <MedicineListEditor rows={rows} errors={rowErrors} onChange={setRows} onAdd={() => setRows((current) => [...current, emptyRow()])} />
-                  ) : (
-                    <PrescriptionUploader
-                      state={upload}
-                      onChange={(state) => {
-                        setUpload(state);
-                        if (state.status === 'done') setUploadError(undefined);
-                      }}
-                      error={uploadError}
-                    />
-                  )}
-                </div>
-              </section>
-            )}
-
-            {step === 1 && (
-              <section aria-labelledby="step-details">
-                <h1 id="step-details" className="font-display text-2xl font-extrabold text-ink">Delivery details</h1>
-                <p className="mt-1 text-sm font-medium text-ink-muted">We deliver safely across Goregaon East, Mumbai.</p>
-                <div className="mt-6">
-                  <DeliveryDetailsForm value={details} errors={detailErrors} saveDetails={saveDetails} onChange={setDetails} onSaveDetailsChange={setSaveDetails} />
-                </div>
-              </section>
-            )}
-
-            {step === 2 && (
-              <section aria-labelledby="step-review" className="space-y-5">
-                <h1 id="step-review" className="font-display text-2xl font-extrabold text-ink">Review your order</h1>
-
-                <div className="rounded-3xl bg-surface p-5 ring-1 ring-brand-100">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-ink-muted">{method === 'manual_text' ? 'Medicines' : 'Prescription'}</p>
-                    <button type="button" onClick={() => go(0)} className="text-[13px] font-bold text-[#156253] hover:underline">Edit</button>
-                  </div>
-                  {method === 'manual_text' ? (
-                    <ul className="mt-4 space-y-3">
-                      {filledRows.map((row) => (
-                        <li key={row.id} className="flex justify-between gap-4 text-sm">
-                          <span className="font-semibold text-ink">{row.name}</span>
-                          <span className="font-medium text-ink-muted">{row.quantity}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    upload.status === 'done' && (
-                      <div className="mt-4 flex items-center gap-4 rounded-2xl bg-white p-3 ring-1 ring-brand-50">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={upload.previewUrl} alt="Your prescription" className="h-16 w-14 shrink-0 rounded-xl object-cover shadow-sm" />
-                        <p className="text-xs font-medium leading-relaxed text-ink-muted">The pharmacy will review your prescription and confirm medicines with you.</p>
-                      </div>
-                    )
-                  )}
-                </div>
-
-                <div className="rounded-3xl bg-surface p-5 ring-1 ring-brand-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="flex items-center gap-1.5 text-sm font-bold text-ink-muted"><MapPin className="h-4 w-4" aria-hidden /> Delivery to</p>
-                    <button type="button" onClick={() => go(1)} className="text-[13px] font-bold text-[#156253] hover:underline">Edit</button>
-                  </div>
-                  <p className="text-sm font-bold text-ink">{details.customerName}</p>
-                  <p className="text-sm font-medium text-ink-muted">{formatMobile(normalizeMobile(details.mobileNumber) ?? '')}</p>
-                  <p className="mt-1 text-sm font-medium text-ink-muted">{[details.address.flat, details.address.area, details.address.landmark].filter(Boolean).join(', ')}</p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-start gap-3 rounded-3xl bg-white p-4 ring-1 ring-brand-100">
-                    <Wallet className="mt-0.5 h-5 w-5 text-[#156253]" aria-hidden />
-                    <p className="text-sm"><span className="font-bold text-ink">Payment</span><br /><span className="font-medium text-ink-muted">{PAYMENT_LABEL}</span></p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-3xl bg-white p-4 ring-1 ring-brand-100">
-                    <ShieldCheck className="mt-0.5 h-5 w-5 text-[#156253]" aria-hidden />
-                    <p className="text-sm">
-                      <span className="font-bold text-ink">{settings.deliveryCharge === 0 ? 'FREE Delivery' : `Delivery ${formatRupees(settings.deliveryCharge)}`}</span>
-                      <br />
-                      <span className="font-medium text-ink-muted">Final amount confirmed after billing</span>
-                    </p>
-                  </div>
-                </div>
-
-                {giftAvailable && (
-                  <label className={cn('flex cursor-pointer items-start gap-3 rounded-3xl p-4 ring-1 transition-colors', offerOptIn ? 'bg-[#fff5e6] ring-[#dfa442]/50' : 'bg-white ring-brand-100')}>
-                    <input type="checkbox" checked={offerOptIn} onChange={(event) => setOfferOptIn(event.target.checked)} className="mt-1 h-4 w-4 accent-[#dfa442]" />
-                    <span className="text-sm">
-                      <span className="flex items-center gap-1.5 font-bold text-ink"><Gift className="h-4 w-4 text-[#dfa442]" aria-hidden /> Claim FREE {GIFT.shortName}</span>
-                      <span className="mt-1 block text-xs font-medium text-[#7a6441] leading-relaxed">
-                        For first orders over {threshold} in medicines (after discounts). Final eligibility is confirmed upon billing.
-                      </span>
-                    </span>
-                  </label>
-                )}
-
-                <PharmacyNotice />
-              </section>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="mt-8 flex gap-3">
-          {step > 0 && (
-            <Button variant="secondary" size="lg" onClick={() => go((step - 1) as Step)} disabled={submitting} className="px-4">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          {step < 2 ? (
-            <Button size="lg" className="flex-1 bg-[#156253] hover:bg-[#0f4b3f]" onClick={next}>
-              Continue <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-          ) : (
-            <Button size="lg" className="flex-1 bg-[#156253] hover:bg-[#0f4b3f]" onClick={placeOrder} loading={submitting}>
-              {submitting ? 'Placing order…' : 'Place Order'}
-            </Button>
-          )}
-        </div>
+          );
+        })}
       </div>
+
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <motion.div
+          key={step}
+          custom={direction}
+          initial={{ opacity: 0, x: prefersReducedMotion ? 0 : direction * 25 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: prefersReducedMotion ? 0 : direction * -25 }}
+          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+        >
+          {step === 0 && (
+            <section aria-labelledby="step-items">
+              
+              {/* iOS Gradient Hero & Headers */}
+              <div className="relative mb-8 rounded-[32px] bg-gradient-to-br from-[#eaf4f4] via-[#f4fafa] to-transparent pt-8 pb-4 px-6 sm:px-8 border border-white shadow-sm overflow-hidden">
+                 <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-[#156253]/5 rounded-full blur-2xl pointer-events-none" />
+                 <h1 id="step-items" className="text-[34px] leading-tight font-extrabold text-ink tracking-tight mb-1 relative z-10">
+                   What do you need?
+                 </h1>
+                 <p className="text-[16px] font-medium text-ink-muted relative z-10">Your medicines, delivered with care.</p>
+              </div>
+
+              {/* Premium Asset Method Cards */}
+              <div className="mb-10 grid grid-cols-2 gap-4" role="group" aria-label="Ordering method">
+                <button
+                  type="button"
+                  onClick={() => handleMethodChange('manual_text')}
+                  className={cn(
+                    "relative overflow-hidden flex flex-col p-4 rounded-[28px] text-left transition-all duration-300",
+                    method === 'manual_text' 
+                      ? "ring-2 ring-[#156253] bg-white shadow-[0_8px_30px_rgba(21,98,83,0.12)] scale-[1.02]" 
+                      : "ring-1 ring-gray-200 bg-white hover:bg-gray-50 hover:shadow-sm"
+                  )}
+                >
+                  <div className={cn("relative w-full h-[100px] mb-4 rounded-xl flex items-center justify-center transition-colors duration-300", method === 'manual_text' ? "bg-gradient-to-b from-[#eaf4f4] to-[#f4fafa]" : "bg-gray-50")}>
+                    <Image src="/home/text-order-art.svg" alt="Enter Medicines visually" width={80} height={80} className="object-contain drop-shadow-sm" priority />
+                  </div>
+                  <span className="text-[16px] font-bold text-ink mb-0.5">Enter Medicines</span>
+                  <span className="text-[12px] font-medium text-ink-muted">Add medicines one by one</span>
+                  {method === 'manual_text' && <motion.div layoutId="methodIndicator" className="absolute top-4 right-4 h-2 w-2 rounded-full bg-[#156253]" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleMethodChange('prescription_image')}
+                  className={cn(
+                    "relative overflow-hidden flex flex-col p-4 rounded-[28px] text-left transition-all duration-300",
+                    method === 'prescription_image' 
+                      ? "ring-2 ring-[#156253] bg-white shadow-[0_8px_30px_rgba(21,98,83,0.12)] scale-[1.02]" 
+                      : "ring-1 ring-gray-200 bg-white hover:bg-gray-50 hover:shadow-sm"
+                  )}
+                >
+                  <div className={cn("relative w-full h-[100px] mb-4 rounded-xl flex items-center justify-center transition-colors duration-300", method === 'prescription_image' ? "bg-gradient-to-b from-[#eaf4f4] to-[#f4fafa]" : "bg-gray-50")}>
+                    <Image src="/home/prescription-art.svg" alt="Upload Prescription visually" width={80} height={80} className="object-contain drop-shadow-sm" priority />
+                  </div>
+                  <span className="text-[16px] font-bold text-ink mb-0.5">Upload Prescription</span>
+                  <span className="text-[12px] font-medium text-ink-muted">Upload a photo or file</span>
+                  {method === 'prescription_image' && <motion.div layoutId="methodIndicator" className="absolute top-4 right-4 h-2 w-2 rounded-full bg-[#156253]" />}
+                </button>
+              </div>
+
+              <motion.div layout>
+                {method === 'manual_text' ? (
+                  <MedicineListEditor rows={rows} errors={rowErrors} onChange={setRows} onAdd={() => setRows((current) => [...current, emptyRow()])} />
+                ) : (
+                  <PrescriptionUploader
+                    state={upload}
+                    onChange={(state) => {
+                      setUpload(state);
+                      if (state.status === 'done') setUploadError(undefined);
+                    }}
+                    error={uploadError}
+                  />
+                )}
+              </motion.div>
+            </section>
+          )}
+
+          {step === 1 && (
+            <section aria-labelledby="step-details" className="pt-2">
+              <h1 id="step-details" className="text-[32px] font-extrabold text-ink tracking-tight mb-2">Delivery details</h1>
+              <p className="mt-1 text-[16px] font-medium text-ink-muted">We deliver safely across Goregaon East, Mumbai.</p>
+              <div className="mt-8">
+                <DeliveryDetailsForm value={details} errors={detailErrors} saveDetails={saveDetails} onChange={setDetails} onSaveDetailsChange={setSaveDetails} />
+              </div>
+            </section>
+          )}
+
+          {step === 2 && (
+            <section aria-labelledby="step-review" className="pt-2 space-y-6">
+              <h1 id="step-review" className="text-[32px] font-extrabold text-ink tracking-tight mb-2">Review your order</h1>
+
+              <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[13px] font-bold uppercase tracking-wider text-ink-muted">{method === 'manual_text' ? 'Medicines' : 'Prescription'}</p>
+                  <button type="button" onClick={() => go(0)} className="text-[14px] font-bold text-[#156253] active:scale-95 transition-transform">Edit</button>
+                </div>
+                {method === 'manual_text' ? (
+                  <ul className="mt-5 space-y-4">
+                    {filledRows.map((row) => (
+                      <li key={row.id} className="flex justify-between items-center gap-4 text-[16px]">
+                        <span className="font-bold text-ink">{row.name}</span>
+                        <span className="font-bold text-ink-muted bg-[#f4fafa] px-3 py-1 rounded-lg text-[13px]">{row.quantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  upload.status === 'done' && (
+                    <div className="mt-5 flex items-center gap-4 rounded-[20px] bg-[#f8fbfb] p-3.5 ring-1 ring-gray-100">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={upload.previewUrl} alt="Your prescription" className="h-[80px] w-[64px] shrink-0 rounded-[14px] object-cover shadow-sm ring-1 ring-black/5" />
+                      <p className="text-[13px] font-medium leading-relaxed text-ink-muted pr-2">The pharmacy will review your prescription and confirm medicines with you.</p>
+                    </div>
+                  )
+                )}
+              </div>
+
+              <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[13px] font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5"><MapPin className="h-4 w-4" /> Delivery to</p>
+                  <button type="button" onClick={() => go(1)} className="text-[14px] font-bold text-[#156253] active:scale-95 transition-transform">Edit</button>
+                </div>
+                <p className="text-[16px] font-bold text-ink mb-0.5">{details.customerName}</p>
+                <p className="text-[15px] font-medium text-ink-muted mb-2">{formatMobile(normalizeMobile(details.mobileNumber) ?? '')}</p>
+                <p className="text-[14px] font-medium leading-relaxed text-ink-muted">{[details.address.flat, details.address.area, details.address.landmark].filter(Boolean).join(', ')}</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-start gap-3.5 rounded-[24px] bg-white p-5 shadow-sm ring-1 ring-gray-200">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eaf4f4]">
+                     <Wallet className="h-5 w-5 text-[#156253]" aria-hidden />
+                  </div>
+                  <p className="text-[13px] pt-0.5"><span className="font-bold text-ink text-[15px] block mb-0.5">Payment</span><span className="font-medium text-ink-muted">{PAYMENT_LABEL}</span></p>
+                </div>
+                <div className="flex items-start gap-3.5 rounded-[24px] bg-white p-5 shadow-sm ring-1 ring-gray-200">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eaf4f4]">
+                     <ShieldCheck className="h-5 w-5 text-[#156253]" aria-hidden />
+                  </div>
+                  <p className="text-[13px] pt-0.5">
+                    <span className="font-bold text-ink text-[15px] block mb-0.5">{settings.deliveryCharge === 0 ? 'FREE Delivery' : `Delivery ${formatRupees(settings.deliveryCharge)}`}</span>
+                    <span className="font-medium text-ink-muted">Final amount confirmed after billing</span>
+                  </p>
+                </div>
+              </div>
+
+              {giftAvailable && (
+                <label className={cn('flex cursor-pointer items-start gap-4 rounded-[28px] p-5 ring-1 transition-all duration-300', offerOptIn ? 'bg-[#fff5e6] ring-[#dfa442]/50 shadow-sm scale-[1.01]' : 'bg-white ring-gray-200')}>
+                  <input type="checkbox" checked={offerOptIn} onChange={(event) => setOfferOptIn(event.target.checked)} className="mt-1 h-5 w-5 accent-[#dfa442] transition-transform active:scale-90" />
+                  <span className="text-[13px]">
+                    <span className="flex items-center gap-2 font-bold text-ink text-[16px] mb-1"><Gift className="h-5 w-5 text-[#dfa442]" aria-hidden /> Claim FREE {GIFT.shortName}</span>
+                    <span className="block font-medium text-[#7a6441] leading-relaxed">
+                      For first orders over {threshold} in medicines (after discounts). Final eligibility is confirmed upon billing.
+                    </span>
+                  </span>
+                </label>
+              )}
+            </section>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Conditionally Animated Sticky Bottom Actions */}
+      <AnimatePresence>
+         {showCTA && (
+            <motion.div 
+              initial={{ y: prefersReducedMotion ? 0 : 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: prefersReducedMotion ? 0 : 100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-2xl shadow-[0_-12px_40px_rgba(21,98,83,0.06)] border-t border-white/60 md:bg-white/90 md:border-gray-100"
+            >
+              <div className="mx-auto flex max-w-2xl gap-3 px-4 py-3 sm:px-6 sm:py-4">
+                {step > 0 && (
+                  <Button variant="secondary" size="lg" onClick={() => go((step - 1) as Step)} disabled={submitting} className="w-[60px] shrink-0 p-0 shadow-sm border-gray-200">
+                    <ArrowLeft className="h-6 w-6" />
+                  </Button>
+                )}
+                {step < 2 ? (
+                  <Button size="lg" className="flex-1 text-[17px] shadow-[0_8px_24px_-8px_rgba(21,98,83,0.6)]" onClick={next}>
+                    Continue <ArrowRight className="h-5 w-5 ml-1" aria-hidden />
+                  </Button>
+                ) : (
+                  <Button size="lg" className="flex-1 text-[17px] shadow-[0_8px_24px_-8px_rgba(21,98,83,0.6)]" onClick={placeOrder} loading={submitting}>
+                    {submitting ? 'Placing order…' : 'Place Order'}
+                  </Button>
+                )}
+              </div>
+            </motion.div>
+         )}
+      </AnimatePresence>
+
     </div>
   );
 }
