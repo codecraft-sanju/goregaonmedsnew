@@ -1,3 +1,4 @@
+//src/components/track/TrackOrder.tsx
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -5,7 +6,7 @@ import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { 
   ChevronLeft, HelpCircle, Smartphone, Hash, ArrowRight, FileText, 
   Check, CheckCircle2, CircleDashed, Pill, Wallet, ReceiptText, 
-  Gift, FileImage, XCircle, AlertCircle, ChevronRight, Package
+  Gift, FileImage, XCircle, AlertCircle, ChevronRight, Package, Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -366,6 +367,19 @@ export function TrackOrder() {
             {isSubmitting ? 'Verifying...' : 'Find My Orders'} <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </form>
+
+        {/* --- INFORMATION BANNER --- */}
+        <div className="mt-6 flex items-start gap-4 rounded-3xl bg-[#f8faff] p-5 border border-blue-100 shadow-sm">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-100/80 text-blue-600">
+            <Lightbulb className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-blue-900">Don't have an Order ID?</p>
+            <p className="mt-1 text-xs font-medium leading-relaxed text-blue-800/80">
+              No worries! Place a new order anytime. You can use your <span className="font-bold text-blue-900">new Order ID</span> here to instantly recover your complete order history.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* --- LIST SECTION --- */}

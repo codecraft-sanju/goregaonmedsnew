@@ -366,7 +366,7 @@ interface DeliveryDetailsFormProps {
   onSaveDetailsChange: (save: boolean) => void;
 }
 
-function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetailsChange }: DeliveryDetailsFormProps) {
+export function DeliveryDetailsForm({ value, errors, saveDetails, onChange, onSaveDetailsChange }: DeliveryDetailsFormProps) {
   const setAddress = (field: keyof Address, fieldValue: string) => onChange({ ...value, address: { ...value.address, [field]: fieldValue } });
 
   return (
@@ -732,7 +732,7 @@ export function OrderFlow() {
   if (!isClientMounted) return null;
 
   return (
-    <div ref={topRef} className="mx-auto w-full max-w-2xl px-4 sm:px-6 relative pb-40 md:pb-28">
+    <div ref={topRef} className="mx-auto w-full max-w-2xl px-4 sm:px-6 relative pb-6 md:pb-8">
        
       {/* iOS Style Progress Indicator */}
       <div className="mb-8 flex items-center justify-between px-2 pt-4 relative z-10">
@@ -772,12 +772,28 @@ export function OrderFlow() {
             <section aria-labelledby="step-items">
               
               {/* iOS Gradient Hero & Headers */}
-              <div className="relative mb-8 rounded-[32px] bg-gradient-to-br from-[#eaf4f4] via-[#f4fafa] to-transparent pt-8 pb-4 px-6 sm:px-8 border border-white shadow-sm overflow-hidden">
+              <div className="relative mb-8 flex items-center justify-between gap-4 rounded-[32px] bg-gradient-to-br from-[#eaf4f4] via-[#f4fafa] to-transparent py-6 px-6 sm:px-8 border border-white shadow-sm overflow-hidden">
                  <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-[#156253]/5 rounded-full blur-2xl pointer-events-none" />
-                 <h1 id="step-items" className="text-[34px] leading-tight font-extrabold text-ink tracking-tight mb-1 relative z-10">
-                   What do you need?
-                 </h1>
-                 <p className="text-[16px] font-medium text-ink-muted relative z-10">Your medicines, delivered with care.</p>
+                 
+                 {/* Text Content */}
+                 <div className="relative z-10 flex-1">
+                   <h1 id="step-items" className="text-[30px] sm:text-[34px] leading-tight font-extrabold text-ink tracking-tight mb-1">
+                     What do you need?
+                   </h1>
+                   <p className="text-[15px] sm:text-[16px] font-medium text-ink-muted">Your medicines, delivered with care.</p>
+                 </div>
+
+                 {/* Image Content */}
+                 <div className="relative z-10 shrink-0">
+                   <Image 
+                     src="/home/hero-pharmacy.svg" 
+                     alt="Pharmacy delivery" 
+                     width={140} 
+                     height={140} 
+                     className="object-contain drop-shadow-sm" 
+                     priority 
+                   />
+                 </div>
               </div>
 
               {/* Premium Asset Method Cards */}

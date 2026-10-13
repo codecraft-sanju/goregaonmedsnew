@@ -13,7 +13,7 @@ export default function OrderPage() {
     <>
       <Navbar />
       
-      <main className="container-app pb-28 pt-0 sm:py-12 md:pb-12 bg-[#f8fbfb] min-h-[100dvh]">
+    <main className="container-app pb-32 pt-0 sm:py-12 md:pb-12 bg-[#f8fbfb] min-h-[100dvh]">
         <Suspense fallback={<Skeleton className="mx-auto mt-6 h-[520px] max-w-2xl rounded-3xl bg-white shadow-sm" />}>
           <OrderFlow />
         </Suspense>
