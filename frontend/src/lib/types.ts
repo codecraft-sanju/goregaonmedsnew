@@ -1,6 +1,5 @@
 //src/lib/types.ts
 export type OrderType = 'manual_text' | 'prescription_image';
-
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
 export interface MedicineItem {
@@ -9,6 +8,27 @@ export interface MedicineItem {
   quantity: string;
   price?: number;
   isAvailable?: boolean;
+}
+
+
+export interface Product {
+  _id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  inStock: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+export interface OrderProduct {
+  _id?: string;
+  productId?: string;
+  name: string;
+  price: number;
+  quantity: number;
 }
 
 export interface Address {
@@ -33,6 +53,7 @@ export interface CreateOrderPayload {
   mobileNumber: string;
   orderType: OrderType;
   medicines: MedicineItem[];
+  products?: OrderProduct[]; 
   prescriptionUrl?: string;
   address: Address;
   offerOptIn: boolean;
@@ -57,11 +78,12 @@ export interface TrackedOrder {
   finalAmount: number | null;
   cancelReason: string | null;
   medicines?: MedicineItem[];
+  products?: OrderProduct[]; 
   medicineSubtotal?: number;
   nonMedicineSubtotal?: number;
   deliveryCharge?: number;
   discount?: number;
-  offerApplied?: boolean; // <-- Added to fix the build error
+  offerApplied?: boolean;
 }
 
 export interface OfferEvaluation {
@@ -93,6 +115,7 @@ export interface AdminOrder {
   mobileNumber: string;
   orderType: OrderType;
   medicines: MedicineItem[];
+  products?: OrderProduct[]; 
   prescriptionUrl: string | null;
   address: Address;
   paymentMethod: string;

@@ -76,6 +76,7 @@ export async function createOrder(input, { notifier, logger = console }) {
       customerName: input.customerName,
       orderType: input.orderType,
       medicines: input.medicines,
+      products: input.products, // NEW: Include products in DB creation
       prescriptionUrl: input.orderType === 'prescription_image' ? input.prescriptionUrl : null,
       address: input.address,
       offerOptIn: input.offerOptIn,
@@ -113,7 +114,7 @@ export async function createOrder(input, { notifier, logger = console }) {
 const STATUS_LABELS = {
   Pending: 'Order Received & Processing',
   Delivered: 'Delivered',
-  Cancelled: 'Cancelled', // Added Cancelled label just in case
+  Cancelled: 'Cancelled',
 };
 
 export async function trackOrder({ orderId, mobileLast4 }) {
@@ -124,12 +125,13 @@ export async function trackOrder({ orderId, mobileLast4 }) {
     status: order.status,
     statusLabel: STATUS_LABELS[order.status],
     orderType: order.orderType,
-    itemCount: order.medicines.length,
+    itemCount: order.medicines.length + (order.products ? order.products.length : 0), // NEW: Total items count
     placedAt: order.createdAt,
     deliveredAt: order.deliveredAt,
     paymentMethod: order.paymentMethod,
     
     medicines: order.medicines,
+    products: order.products, // NEW
     medicineSubtotal: order.medicineSubtotal,
     nonMedicineSubtotal: order.nonMedicineSubtotal,
     deliveryCharge: order.deliveryCharge,
@@ -137,8 +139,6 @@ export async function trackOrder({ orderId, mobileLast4 }) {
     finalAmount: order.billedAt ? order.finalAmount : null,
   };
 }
-
-// --- UPDATED FUNCTIONS FOR HISTORY & RECOVERY ---
 
 export async function fetchOrderHistory(orderIds) {
   if (!orderIds || orderIds.length === 0) return [];
@@ -152,13 +152,13 @@ export async function fetchOrderHistory(orderIds) {
     status: order.status,
     statusLabel: STATUS_LABELS[order.status] || order.status,
     orderType: order.orderType,
-    itemCount: order.medicines.length,
+    itemCount: order.medicines.length + (order.products ? order.products.length : 0), // NEW: Total items count
     placedAt: order.createdAt,
     deliveredAt: order.deliveredAt,
     finalAmount: order.billedAt ? order.finalAmount : null,
     
-    // NEW: Complete billing transparency for inline profile receipt
     medicines: order.medicines,
+    products: order.products, // NEW
     medicineSubtotal: order.medicineSubtotal,
     nonMedicineSubtotal: order.nonMedicineSubtotal,
     deliveryCharge: order.deliveryCharge,

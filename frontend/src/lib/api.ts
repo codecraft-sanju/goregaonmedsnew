@@ -1,4 +1,5 @@
-//src/lib/api.ts
+// src/lib/api.ts
+
 export interface FieldIssue {
   path: string;
   message: string;
@@ -20,8 +21,9 @@ export class ApiError extends Error {
   }
 }
 
+
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
 }

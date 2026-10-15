@@ -6,6 +6,7 @@ import { getOrder, listCustomers, listOrders, markDelivered, saveBilling, cancel
 import { getSettings, toAdminSettings, updateSettings } from '../services/settingsService.js';
 import { unauthorized } from '../utils/AppError.js';
 import { Order } from '../models/Order.js';
+import { Product } from '../models/Product.js'; 
 
 const DUMMY_HASH = '$2b$12$u0YK1PBfuuKz2KrcYy.BU.iG011BDU6ZzkEpa/Qv5mfcyu0dPUzui';
 
@@ -76,7 +77,6 @@ export function createAdminController({ env, notifier }) {
       res.json({ success: true, settings: toAdminSettings(await updateSettings(req.body)) });
     },
 
-    // NEW: Analytics Controller for Sales and Orders
     async getAnalyticsOverview(req, res, next) {
       try {
         const { startDate, endDate } = req.query;
@@ -125,6 +125,50 @@ export function createAdminController({ env, notifier }) {
             delivered: deliveredOrdersCount,
           },
         });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    // --- NEW: COSMETIC PRODUCTS CONTROLLER METHODS ---
+
+    async listProducts(req, res, next) {
+      try {
+        const products = await Product.find().sort({ createdAt: -1 });
+        res.json({ success: true, products });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async createProduct(req, res, next) {
+      try {
+        const product = await Product.create(req.body);
+        res.status(201).json({ success: true, product });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async updateProduct(req, res, next) {
+      try {
+        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!product) {
+          return res.status(404).json({ success: false, error: 'Product not found' });
+        }
+        res.json({ success: true, product });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async deleteProduct(req, res, next) {
+      try {
+        const product = await Product.findByIdAndDelete(req.params.id);
+        if (!product) {
+          return res.status(404).json({ success: false, error: 'Product not found' });
+        }
+        res.json({ success: true, message: 'Product deleted successfully' });
       } catch (error) {
         next(error);
       }

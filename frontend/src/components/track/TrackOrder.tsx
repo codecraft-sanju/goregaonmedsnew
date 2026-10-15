@@ -1,4 +1,5 @@
 //src/components/track/TrackOrder.tsx
+// src/components/track/TrackOrder.tsx
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -6,7 +7,7 @@ import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { 
   ChevronLeft, HelpCircle, Smartphone, Hash, ArrowRight, FileText, 
   Check, CheckCircle2, CircleDashed, Pill, Wallet, ReceiptText, 
-  Gift, FileImage, XCircle, AlertCircle, ChevronRight, Package, Lightbulb
+  Gift, FileImage, XCircle, AlertCircle, ChevronRight, Package, Lightbulb, ShoppingBag
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -256,10 +257,33 @@ export function TrackOrder() {
                 ))}
               </ul>
 
+              {/* NEW: Products List */}
+              {order.products && order.products.length > 0 && (
+                <div className="mt-5 border-t border-gray-100 pt-5">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-4">Other Items</h4>
+                  <ul className="space-y-5">
+                    {order.products.map((prod, idx) => (
+                      <li key={`prod-${idx}`} className="flex items-start gap-4">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gray-50 text-gray-400">
+                          <ShoppingBag className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-sm font-bold leading-tight text-ink">{prod.name}</p>
+                          <p className="mt-1 text-xs font-medium text-ink-muted">Qty: {prod.quantity}</p>
+                        </div>
+                        <div className="pt-1 text-right">
+                          <span className="text-sm font-extrabold text-ink">{formatRupees(prod.price || 0)}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Bill Breakdown */}
               <div className="mt-8 space-y-3 border-t border-dashed border-gray-200 pt-6 text-sm font-medium text-ink-muted">
                 <div className="flex justify-between items-center"><p>Medicine subtotal</p><p className="font-semibold text-ink">{formatRupees(order.medicineSubtotal || 0)}</p></div>
-                {Number(order.nonMedicineSubtotal) > 0 && <div className="flex justify-between items-center"><p>Other items</p><p className="font-semibold text-ink">{formatRupees(order.nonMedicineSubtotal || 0)}</p></div>}
+                {Number(order.nonMedicineSubtotal) > 0 && <div className="flex justify-between items-center"><p>Products & Other Items</p><p className="font-semibold text-ink">{formatRupees(order.nonMedicineSubtotal || 0)}</p></div>}
                 <div className="flex justify-between items-center"><p>Delivery charge</p><p className="font-semibold text-ink">{order.deliveryCharge === 0 ? 'FREE' : formatRupees(order.deliveryCharge || 0)}</p></div>
                 {Number(order.discount) > 0 && <div className="flex justify-between items-center"><p>Discount</p><p className="font-bold text-[#147a4a]">-{formatRupees(order.discount || 0)}</p></div>}
               </div>

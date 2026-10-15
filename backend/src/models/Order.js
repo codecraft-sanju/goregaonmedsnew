@@ -1,19 +1,24 @@
-//src/models/Order.js
+// src/models/Order.js
 import mongoose from 'mongoose';
 
 export const ORDER_STATUSES = Object.freeze(['Pending', 'Delivered', 'Cancelled']);
 export const ORDER_TYPES = Object.freeze(['manual_text', 'prescription_image']);
 export const PAYMENT_METHOD = 'Pay at Delivery (Cash/UPI)';
 
-const medicineSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true, trim: true, maxlength: 120 },
-    quantity: { type: String, required: true, trim: true, maxlength: 60 },
-    isAvailable: { type: Boolean, default: true },
-    price: { type: Number, default: 0, min: 0 },
-  }
-  // Removed { _id: false } to allow item-level tracking via _id
-);
+const medicineSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true, maxlength: 120 },
+  quantity: { type: String, required: true, trim: true, maxlength: 60 },
+  isAvailable: { type: Boolean, default: true },
+  price: { type: Number, default: 0, min: 0 },
+});
+
+// NEW: Schema for extra products (cosmetics) added to the order
+const orderProductSchema = new mongoose.Schema({
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  name: { type: String, required: true, trim: true },
+  price: { type: Number, required: true, min: 0 },
+  quantity: { type: Number, required: true, min: 1 }
+});
 
 const money = { type: Number, default: 0, min: 0 };
 
@@ -24,7 +29,10 @@ const orderSchema = new mongoose.Schema(
     mobileNumber: { type: String, required: true, index: true },
     customerName: { type: String, required: true, trim: true, maxlength: 80 },
     orderType: { type: String, enum: ORDER_TYPES, required: true },
+    
     medicines: { type: [medicineSchema], default: [] },
+    products: { type: [orderProductSchema], default: [] }, // NEW: Added cross-sell products
+    
     prescriptionUrl: { type: String, default: null },
     address: {
       flat: { type: String, required: true, trim: true, maxlength: 120 },
@@ -34,9 +42,9 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: { type: String, default: PAYMENT_METHOD },
 
     medicineSubtotal: money,
-    nonMedicineSubtotal: money,
+    nonMedicineSubtotal: money, // Yeh products ka total count karne ke kaam ayega
     deliveryCharge: money,
-    discount: money, // NEW: Added global order discount
+    discount: money,
     finalAmount: money,
     billedAt: { type: Date, default: null },
 
@@ -47,9 +55,7 @@ const orderSchema = new mongoose.Schema(
     offerApplied: { type: Boolean, default: false },
 
     status: { type: String, enum: ORDER_STATUSES, default: 'Pending', index: true },
-    
     cancelReason: { type: String, default: null },
-    
     telegramNotificationSent: { type: Boolean, default: false },
     deliveredAt: { type: Date, default: null },
   },

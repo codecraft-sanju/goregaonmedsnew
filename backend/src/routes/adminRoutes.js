@@ -8,7 +8,8 @@ import {
   listOrdersQuerySchema,
   loginSchema,
   settingsUpdateSchema,
-  cancelOrderSchema, 
+  cancelOrderSchema,
+  createProductSchema, // NEW
 } from '../validation/schemas.js';
 
 export function createAdminRouter({ env, controller, limiters }) {
@@ -35,9 +36,14 @@ export function createAdminRouter({ env, controller, limiters }) {
 
   router.get('/settings', authenticated, controller.getSettings);
   router.patch('/settings', authenticated, validateBody(settingsUpdateSchema), controller.updateSettings);
-
   
   router.get('/analytics/overview', authenticated, controller.getAnalyticsOverview);
+
+  
+  router.get('/products', authenticated, controller.listProducts); 
+  router.post('/products', authenticated, validateBody(createProductSchema), controller.createProduct);
+  router.put('/products/:id', authenticated, validateBody(createProductSchema), controller.updateProduct);
+  router.delete('/products/:id', authenticated, controller.deleteProduct);
 
   return router;
 }

@@ -26,10 +26,19 @@ export function buildOrderMessage(order, settings) {
     `🧾 Type: ${ORDER_TYPE_LABELS[order.orderType]}`,
   ];
 
-  if (order.medicines.length > 0) {
+  if (order.medicines && order.medicines.length > 0) {
     lines.push('💊 Medicines:');
     order.medicines.forEach((item, index) => {
       lines.push(`${index + 1}. ${escapeHtml(item.name)} — ${escapeHtml(item.quantity)}`);
+    });
+  }
+
+  // NEW: Cosmetic Products in Telegram Notification
+  if (order.products && order.products.length > 0) {
+    if (order.medicines && order.medicines.length > 0) lines.push(''); // Extra line break
+    lines.push('🛍️ Other Products:');
+    order.products.forEach((item, index) => {
+      lines.push(`${index + 1}. ${escapeHtml(item.name)} — Qty: ${escapeHtml(String(item.quantity))}`);
     });
   }
 

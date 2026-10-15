@@ -3,6 +3,7 @@ import { createOrder, trackOrder, fetchOrderHistory, recoverOrderIds } from '../
 import { getSettings, toPublicSettings } from '../services/settingsService.js';
 import { createUploadSignature, isTrustedPrescriptionUrl } from '../services/cloudinaryService.js';
 import { badRequest, notFound } from '../utils/AppError.js';
+import { Product } from '../models/Product.js'; // NEW: Imported Product model
 
 export function createPublicController({ env, notifier, logger }) {
   const cloudinary = {
@@ -28,8 +29,6 @@ export function createPublicController({ env, notifier, logger }) {
       res.json({ success: true, order });
     },
 
-    // --- NEW METHODS FOR HISTORY & RECOVERY ---
-    
     async fetchHistory(req, res) {
       const orders = await fetchOrderHistory(req.body.orderIds);
       res.json({ success: true, orders });
@@ -53,5 +52,17 @@ export function createPublicController({ env, notifier, logger }) {
       const { cloudName, apiKey, folder, timestamp, signature, uploadUrl } = createUploadSignature(cloudinary);
       res.json({ success: true, upload: { cloudName, apiKey, folder, timestamp, signature, uploadUrl } });
     },
+
+  
+    async getPublicProducts(_req, res) {
+   
+      const products = await Product.find({ isActive: true })
+        .sort({ category: 1, name: 1 }) 
+        .lean();
+      
+     
+      res.set('Cache-Control', 'public, max-age=60'); 
+      res.json({ success: true, products });
+    }
   };
 }

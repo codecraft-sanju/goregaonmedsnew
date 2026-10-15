@@ -1,4 +1,5 @@
 // src/components/order/OrderFlow.tsx
+// src/components/order/OrderFlow.tsx
 'use client';
 
 import Image from 'next/image';
@@ -11,7 +12,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { 
   ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, 
   ShieldCheck, Wallet, Minus, Plus, Trash2, Info, CheckCircle2, 
-  FolderOpen, Images, Loader2, RefreshCw, X
+  FolderOpen, Images, Loader2, RefreshCw, X, ShoppingBag
 } from 'lucide-react';
 
 import { useToast } from '@/components/ui/Toast';
@@ -21,7 +22,7 @@ import { clearCheckout, loadCheckout, saveCheckout } from '@/lib/checkoutStorage
 import { GIFT, PAYMENT_LABEL } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { formatMobile, formatRupees, normalizeMobile } from '@/lib/format';
-import type { CreateOrderPayload, CreateOrderResponse, OrderType, Address } from '@/lib/types';
+import type { CreateOrderPayload, CreateOrderResponse, OrderType, Address, Product } from '@/lib/types';
 import { createRequestId } from '@/lib/uuid';
 import { compressPrescription, ImageCompressionError } from '@/lib/imageCompression';
 import { uploadPrescription, UploadError } from '@/lib/cloudinaryUpload';
@@ -166,7 +167,7 @@ export type UploadState =
 
 type DetailErrors = Partial<Record<'customerName' | 'mobileNumber' | 'flat' | 'area' | 'landmark', string>>;
 
-const STEPS = ['Medications', 'Delivery', 'Review'] as const;
+const STEPS = ['Items', 'Delivery', 'Review'] as const;
 type Step = 0 | 1 | 2;
 
 export const MAX_MEDICINES = 30;
@@ -577,8 +578,6 @@ function MedicineListEditor({ rows, errors, onChange, onAdd }: MedicineListEdito
       >
         Add Another Medicine
       </Button>
-
-      <PharmacyNotice className="mt-8" />
     </div>
   );
 }
@@ -600,8 +599,14 @@ export function OrderFlow() {
   const [step, setStep] = useState<Step>(initialStep);
   const [direction, setDirection] = useState(1);
   const [method, setMethod] = useState<OrderType>(params.get('method') === 'prescription' ? 'prescription_image' : 'manual_text');
+  
   const [rows, setRows] = useState<MedicineRow[]>([{ id: 'initial-row', name: '', quantity: '1 Strip' }]);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  
+  // NEW: State for fetching and selecting Cosmetics/OTC products
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<{product: Product, quantity: number}[]>([]);
+
   const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
   const [uploadError, setUploadError] = useState<string>();
   const [details, setDetails] = useState<DeliveryDetails>(emptyDetails);
@@ -616,9 +621,17 @@ export function OrderFlow() {
   const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsClientMounted(true); }, []);
+  
   useEffect(() => {
     const saved = loadCheckout();
     if (saved) { setDetails(saved); setSaveDetails(true); }
+  }, []);
+
+  // NEW: Fetch active products on load
+  useEffect(() => {
+    apiRequest<{products: Product[]}>('/products')
+      .then(res => setAvailableProducts(res.products))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -647,7 +660,30 @@ export function OrderFlow() {
     window.history.replaceState(null, '', `${pathname}?${newParams.toString()}`);
   };
 
+  // NEW: Handle adding/removing cosmetic products
+  const handleProductToggle = (product: Product) => {
+    setSelectedProducts(prev => {
+      const existing = prev.find(p => p.product._id === product._id);
+      if (existing) {
+        return prev.filter(p => p.product._id !== product._id);
+      } else {
+        return [...prev, { product, quantity: 1 }];
+      }
+    });
+  };
+
+  const handleProductQuantity = (productId: string, increment: boolean) => {
+    setSelectedProducts(prev => prev.map(p => {
+      if (p.product._id === productId) {
+        const newQty = increment ? p.quantity + 1 : Math.max(1, p.quantity - 1);
+        return { ...p, quantity: newQty };
+      }
+      return p;
+    }));
+  };
+
   const hasMedicineInput = rows.some((row) => row.name.trim().length > 0);
+  const hasProductInput = selectedProducts.length > 0;
   const filledRows = rows.filter((row) => row.name.trim());
 
   const validateItems = () => {
@@ -656,16 +692,21 @@ export function OrderFlow() {
       for (const row of filledRows) {
         if (!row.name.trim()) errors[`${row.id}-name`] = 'Required';
       }
-      if (filledRows.length === 0 && rows[0]) errors[`${rows[0].id}-name`] = 'Add at least one medicine';
+      // NEW: Allow order if either medicine OR product is present
+      if (filledRows.length === 0 && !hasProductInput && rows[0]) {
+        errors[`${rows[0].id}-name`] = 'Add at least one medicine or product';
+      }
       setRowErrors(errors);
       return Object.keys(errors).length === 0;
     }
+    
+    // For Prescription mode, we must have an uploaded file OR selected products
     if (upload.status === 'compressing' || upload.status === 'uploading') {
       setUploadError('Please wait for the upload to finish');
       return false;
     }
-    if (upload.status !== 'done') {
-      setUploadError('Upload a photo of your prescription to continue');
+    if (upload.status !== 'done' && !hasProductInput) {
+      setUploadError('Upload a prescription or add a product to continue');
       return false;
     }
     setUploadError(undefined);
@@ -687,12 +728,22 @@ export function OrderFlow() {
     setSubmitting(true);
 
     clientRequestId.current ??= createRequestId();
+    
+    // NEW: Map selected cosmetics/products to payload
+    const orderProducts = selectedProducts.map(p => ({
+      productId: p.product._id,
+      name: p.product.name,
+      price: p.product.price,
+      quantity: p.quantity
+    }));
+
     const payload: CreateOrderPayload = {
       clientRequestId: clientRequestId.current,
       customerName: details.customerName.trim(),
       mobileNumber: normalizeMobile(details.mobileNumber) ?? details.mobileNumber,
       orderType: method,
       medicines: method === 'manual_text' ? filledRows.map(({ name, quantity }) => ({ name: name.trim(), quantity: quantity.trim() })) : [],
+      products: orderProducts, // NEW: Including the products
       prescriptionUrl: method === 'prescription_image' && upload.status === 'done' ? upload.url : undefined,
       address: { flat: details.address.flat.trim(), area: details.address.area.trim(), landmark: details.address.landmark.trim() },
       offerOptIn: settings.firstOrderOfferEnabled && offerOptIn,
@@ -722,8 +773,7 @@ export function OrderFlow() {
     }
   };
 
-  // Determine if the CTA bar should be visible
-  const isStep0Valid = method === 'manual_text' ? hasMedicineInput : upload.status === 'done';
+  const isStep0Valid = method === 'manual_text' ? hasMedicineInput || hasProductInput : upload.status === 'done' || hasProductInput;
   const showCTA = step > 0 || isStep0Valid;
 
   const giftAvailable = !settingsLoading && settings.firstOrderOfferEnabled;
@@ -733,7 +783,7 @@ export function OrderFlow() {
 
   return (
     <div ref={topRef} className="mx-auto w-full max-w-2xl px-4 sm:px-6 relative pb-6 md:pb-8">
-       
+        
       {/* iOS Style Progress Indicator */}
       <div className="mb-8 flex items-center justify-between px-2 pt-4 relative z-10">
         <div className="absolute top-1/2 left-6 right-6 h-[1px] bg-gray-200 -translate-y-1/2 -z-10" />
@@ -771,11 +821,9 @@ export function OrderFlow() {
           {step === 0 && (
             <section aria-labelledby="step-items">
               
-              {/* iOS Gradient Hero & Headers */}
               <div className="relative mb-8 flex items-center justify-between gap-4 rounded-[32px] bg-gradient-to-br from-[#eaf4f4] via-[#f4fafa] to-transparent py-6 px-6 sm:px-8 border border-white shadow-sm overflow-hidden">
                  <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-[#156253]/5 rounded-full blur-2xl pointer-events-none" />
                  
-                 {/* Text Content */}
                  <div className="relative z-10 flex-1">
                    <h1 id="step-items" className="text-[30px] sm:text-[34px] leading-tight font-extrabold text-ink tracking-tight mb-1">
                      What do you need?
@@ -783,7 +831,6 @@ export function OrderFlow() {
                    <p className="text-[15px] sm:text-[16px] font-medium text-ink-muted">Your medicines, delivered with care.</p>
                  </div>
 
-                 {/* Image Content */}
                  <div className="relative z-10 shrink-0">
                    <Image 
                      src="/home/hero-pharmacy.svg" 
@@ -796,7 +843,6 @@ export function OrderFlow() {
                  </div>
               </div>
 
-              {/* Premium Asset Method Cards */}
               <div className="mb-10 grid grid-cols-2 gap-4" role="group" aria-label="Ordering method">
                 <button
                   type="button"
@@ -839,16 +885,76 @@ export function OrderFlow() {
                 {method === 'manual_text' ? (
                   <MedicineListEditor rows={rows} errors={rowErrors} onChange={setRows} onAdd={() => setRows((current) => [...current, emptyRow()])} />
                 ) : (
-                  <PrescriptionUploader
-                    state={upload}
-                    onChange={(state) => {
-                      setUpload(state);
-                      if (state.status === 'done') setUploadError(undefined);
-                    }}
-                    error={uploadError}
-                  />
+                  <>
+                    <PrescriptionUploader
+                      state={upload}
+                      onChange={(state) => {
+                        setUpload(state);
+                        if (state.status === 'done') setUploadError(undefined);
+                      }}
+                      error={uploadError}
+                    />
+                    <PharmacyNotice className="mt-8" />
+                  </>
                 )}
               </motion.div>
+
+              {/* NEW: Cosmetics & OTC Products Section */}
+              {availableProducts.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-gray-100 pb-10">
+                  <div className="flex items-center gap-2 mb-6">
+                    <ShoppingBag className="w-6 h-6 text-brand-700" />
+                    <h2 className="text-xl font-bold text-ink">Everyday Essentials</h2>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {availableProducts.map(product => {
+                      const selected = selectedProducts.find(p => p.product._id === product._id);
+                      return (
+                        <div key={product._id} className={cn("flex flex-col bg-white rounded-2xl border p-3 transition-all duration-200 relative overflow-hidden group", selected ? "border-[#156253] ring-1 ring-[#156253] shadow-md" : "border-gray-200 hover:border-brand-200 hover:shadow-sm")}>
+                          {selected && <div className="absolute top-0 right-0 w-8 h-8 bg-[#156253] rounded-bl-[20px] flex items-start justify-end p-1.5"><CheckCircle2 className="w-4 h-4 text-white" /></div>}
+                          
+                          <div className="h-24 w-full bg-[#f8fbfb] rounded-xl mb-3 flex items-center justify-center overflow-hidden">
+                            {product.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover mix-blend-multiply" />
+                            ) : (
+                              <ShoppingBag className="w-8 h-8 text-brand-200" />
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div>
+                              <p className="text-[10px] font-bold text-brand-600 uppercase tracking-wider mb-1">{product.category}</p>
+                              <h3 className="text-sm font-bold text-ink line-clamp-2 leading-tight">{product.name}</h3>
+                            </div>
+                            
+                            <div className="mt-3 flex items-center justify-between">
+                              <span className="font-bold text-ink text-sm">{formatRupees(product.price)}</span>
+                              
+                              {!selected ? (
+                                <button type="button" onClick={() => handleProductToggle(product)} className="h-7 w-7 rounded-full bg-brand-50 text-brand-700 grid place-items-center hover:bg-brand-100 transition-colors">
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-2 bg-brand-50 rounded-full px-1 py-0.5">
+                                  <button type="button" onClick={() => { if (selected.quantity === 1) handleProductToggle(product); else handleProductQuantity(product._id, false); }} className="h-6 w-6 rounded-full bg-white text-brand-700 grid place-items-center shadow-sm">
+                                    {selected.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <span className="text-xs font-bold w-3 text-center">{selected.quantity}</span>
+                                  <button type="button" onClick={() => handleProductQuantity(product._id, true)} className="h-6 w-6 rounded-full bg-[#156253] text-white grid place-items-center shadow-sm">
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
@@ -879,6 +985,7 @@ export function OrderFlow() {
                         <span className="font-bold text-ink-muted bg-[#f4fafa] px-3 py-1 rounded-lg text-[13px]">{row.quantity}</span>
                       </li>
                     ))}
+                    {filledRows.length === 0 && <li className="text-sm font-medium text-ink-soft italic">No medicines added</li>}
                   </ul>
                 ) : (
                   upload.status === 'done' && (
@@ -888,6 +995,21 @@ export function OrderFlow() {
                       <p className="text-[13px] font-medium leading-relaxed text-ink-muted pr-2">The pharmacy will review your prescription and confirm medicines with you.</p>
                     </div>
                   )
+                )}
+
+                {/* NEW: Display selected products in review */}
+                {selectedProducts.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <p className="text-[13px] font-bold uppercase tracking-wider text-ink-muted mb-4">Other Items</p>
+                    <ul className="space-y-4">
+                      {selectedProducts.map((p) => (
+                        <li key={p.product._id} className="flex justify-between items-center gap-4 text-[16px]">
+                          <span className="font-bold text-ink">{p.product.name}</span>
+                          <span className="font-bold text-ink-muted bg-[#f4fafa] px-3 py-1 rounded-lg text-[13px]">Qty: {p.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
 

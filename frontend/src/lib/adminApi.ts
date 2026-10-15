@@ -1,6 +1,8 @@
-//src/lib/adminApi.ts
+// src/lib/adminApi.ts
+
 import { ApiError, apiRequest } from './api';
 
+// Uses the extended methods ('PUT', 'DELETE') from apiRequest
 type Options = Parameters<typeof apiRequest>[1];
 
 /** Admin requests: an expired or missing session sends the user back to the login page. */

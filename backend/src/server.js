@@ -5,6 +5,7 @@ import { createApp } from './app.js';
 import './models/User.js';
 import './models/Order.js';
 import './models/Settings.js';
+import './models/Product.js';
 
 async function start() {
   const env = loadEnv();

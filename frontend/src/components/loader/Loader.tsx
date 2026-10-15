@@ -1,3 +1,4 @@
+//src/components/loader/Loader.tsx
 import React from 'react';
 
 const Loader: React.FC = () => {

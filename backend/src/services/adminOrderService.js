@@ -20,7 +20,6 @@ function toCustomerSummary(user) {
   };
 }
 
-
 function toAdminOrder(order, user, settings) {
   return {
     id: String(order._id),
@@ -29,6 +28,7 @@ function toAdminOrder(order, user, settings) {
     mobileNumber: order.mobileNumber,
     orderType: order.orderType,
     medicines: order.medicines,
+    products: order.products, // NEW: Include cosmetics/products in admin view
     prescriptionUrl: order.prescriptionUrl,
     address: order.address,
     paymentMethod: order.paymentMethod,
@@ -91,23 +91,20 @@ export async function getOrder(id) {
   return toAdminOrder(order, user, settings);
 }
 
-
-export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount, offerApplied }) {
+// NEW: Added "products" in destructuring to save them during billing
+export async function saveBilling(id, { medicines, products = [], nonMedicineSubtotal, discount, offerApplied }) {
   const order = await findOrderOrThrow(id);
   if (order.status !== 'Pending') throw conflict('Only pending orders can be billed', 'ORDER_LOCKED');
 
   const [settings, user] = await Promise.all([getSettings(), User.findOne({ mobileNumber: order.mobileNumber }).lean()]);
 
   let computedMedicineSubtotal = 0;
-  
 
   const updatedMedicines = medicines.map((inputMed, index) => {
-    // Try to find if this medicine already exists in DB
     let dbMed = null;
     if (inputMed._id && order.medicines) {
       dbMed = order.medicines.find((m) => String(m._id) === String(inputMed._id));
     } else if (order.medicines && order.medicines[index]) {
-      // Fallback for very old orders
       dbMed = order.medicines[index];
     }
     
@@ -118,7 +115,6 @@ export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount
       computedMedicineSubtotal += price;
     }
 
-    // Combine old data with new data added by admin
     return {
       ...(dbMed ? dbMed : {}),
       name: inputMed.name || (dbMed ? dbMed.name : 'Prescription Medicine'),
@@ -128,9 +124,27 @@ export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount
     };
   });
 
+  // NEW: Process and map cosmetic products for billing
+  const updatedProducts = products.map((inputProd, index) => {
+    let dbProd = null;
+    if (inputProd._id && order.products) {
+      dbProd = order.products.find((p) => String(p._id) === String(inputProd._id));
+    } else if (order.products && order.products[index]) {
+      dbProd = order.products[index];
+    }
+    
+    return {
+      ...(dbProd ? dbProd : {}),
+      productId: inputProd.productId || (dbProd ? dbProd.productId : null),
+      name: inputProd.name || (dbProd ? dbProd.name : 'Unknown Product'),
+      price: inputProd.price !== undefined ? inputProd.price : (dbProd ? dbProd.price : 0),
+      quantity: inputProd.quantity || (dbProd ? dbProd.quantity : 1)
+    };
+  });
+
   const bill = calculateBill({
     medicineSubtotal: computedMedicineSubtotal,
-    nonMedicineSubtotal,
+    nonMedicineSubtotal, // Product pricing can be managed within this nonMedicineSubtotal in frontend
     deliveryCharge: settings.deliveryCharge,
     discount
   });
@@ -151,6 +165,7 @@ export async function saveBilling(id, { medicines, nonMedicineSubtotal, discount
     { $set: { 
         ...bill, 
         medicines: updatedMedicines, 
+        products: updatedProducts, // NEW: Saving cosmetic products array
         offerEligible: offer.eligible, 
         offerApplied: Boolean(offerApplied), 
         billedAt: new Date() 
@@ -199,7 +214,6 @@ export async function markDelivered(id) {
   return getOrder(id);
 }
 
-// NEW: Cancel Order Service
 export async function cancelOrder(id, cancelReason) {
   const order = await findOrderOrThrow(id);
   if (order.status !== 'Pending') {

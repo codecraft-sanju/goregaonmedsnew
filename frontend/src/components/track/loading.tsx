@@ -1,3 +1,4 @@
+//src/components/track/loading.tsx
 import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import Loader from '@/components/loader/Loader';

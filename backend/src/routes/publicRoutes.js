@@ -9,12 +9,14 @@ export function createPublicRouter({ controller, limiters }) {
   router.post('/orders/create', limiters.createOrder, validateBody(createOrderSchema), controller.createOrder);
   router.post('/orders/track', limiters.trackOrder, validateBody(trackOrderSchema), controller.trackOrder);
   
-  
   router.post('/orders/history', limiters.trackOrder, validateBody(fetchHistorySchema), controller.fetchHistory);
   router.post('/orders/recover', limiters.trackOrder, validateBody(recoverHistorySchema), controller.recoverHistory);
   
   router.get('/settings/public', controller.publicSettings);
   router.get('/uploads/signature', limiters.uploadSignature, controller.uploadSignature);
+  
+ 
+  router.get('/products', controller.getPublicProducts);
   
   return router;
 }

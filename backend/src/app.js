@@ -19,7 +19,7 @@ export function createApp({ env, notifier, logger = console }) {
 
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(helmet());
-  app.use(cors({ origin: env.frontendOrigin, credentials: true, methods: ['GET', 'POST', 'PATCH'] }));
+  app.use(cors({ origin: env.frontendOrigin, credentials: true, methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'] }));
   app.use(express.json({ limit: '32kb' }));
   app.use(cookieParser());
 

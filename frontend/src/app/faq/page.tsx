@@ -1,3 +1,4 @@
+//src/app/faq/page.tsx
 'use client';
 
 import { useState, useMemo } from 'react';

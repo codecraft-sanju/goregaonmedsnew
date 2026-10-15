@@ -32,6 +32,14 @@ const medicine = z.object({
   quantity: text(1, 60, 'Quantity'),
 });
 
+// NEW: Validation for cosmetic products in order
+const orderProduct = z.object({
+  productId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Product ID'),
+  name: text(1, 120, 'Product name'),
+  price: z.number().min(0, 'Price cannot be negative'),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1')
+});
+
 export const createOrderSchema = z
   .object({
     clientRequestId: z.string().uuid('Invalid request id'),
@@ -39,6 +47,7 @@ export const createOrderSchema = z
     mobileNumber,
     orderType: z.enum(ORDER_TYPES),
     medicines: z.array(medicine).max(30, 'Up to 30 medicines per order').default([]),
+    products: z.array(orderProduct).max(20, 'Up to 20 products per order').default([]), // NEW
     prescriptionUrl: z.string().max(500).optional(),
     address: z.object({
       flat: text(1, 120, 'Flat / House / Building'),
@@ -48,8 +57,9 @@ export const createOrderSchema = z
     offerOptIn: z.boolean().default(false),
   })
   .superRefine((order, ctx) => {
-    if (order.orderType === 'manual_text' && order.medicines.length === 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['medicines'], message: 'Add at least one medicine' });
+    // NEW: Allow order if either medicine OR product is added
+    if (order.orderType === 'manual_text' && order.medicines.length === 0 && order.products.length === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['medicines'], message: 'Add at least one medicine or product' });
     }
     if (order.orderType === 'prescription_image' && !order.prescriptionUrl) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['prescriptionUrl'], message: 'Upload your prescription' });
@@ -83,10 +93,19 @@ export const billingSchema = z
     medicines: z.array(
       z.object({
         _id: z.string().optional(),
-        name: z.string().max(120, 'Name is too long').optional(), // New
-        quantity: z.string().max(60, 'Quantity is too long').optional(), // New
+        name: z.string().max(120, 'Name is too long').optional(),
+        quantity: z.string().max(60, 'Quantity is too long').optional(),
         price: z.number().min(0, 'Price cannot be negative').default(0),
         isAvailable: z.boolean().default(true),
+      })
+    ).optional().default([]),
+    products: z.array( // NEW: In case admin needs to adjust billed products
+      z.object({
+        _id: z.string().optional(),
+        productId: z.string().optional(),
+        name: z.string().max(120, 'Name is too long').optional(),
+        price: z.number().min(0, 'Price cannot be negative').default(0),
+        quantity: z.number().min(1).optional(),
       })
     ).optional().default([]),
     nonMedicineSubtotal: amount('Other items subtotal'),
@@ -123,8 +142,6 @@ export const cancelOrderSchema = z.object({
   cancelReason: z.string().min(1, 'Reason is required').max(300, 'Reason is too long').transform(cleanText),
 }).strict();
 
-
-
 export const fetchHistorySchema = z.object({
   orderIds: z.array(
     z.string().transform((value) => value.trim().toUpperCase()).pipe(z.string().regex(ORDER_ID_PATTERN, 'Invalid Order ID'))
@@ -139,3 +156,14 @@ export const recoverHistorySchema = z.object({
     .transform((value) => value.trim().toUpperCase())
     .pipe(z.string().regex(ORDER_ID_PATTERN, 'Enter a valid Order ID, e.g. GMED-X8P2K7')),
 });
+
+// NEW: Admin schema for creating/updating products
+export const createProductSchema = z.object({
+  name: text(2, 120, 'Product name'),
+  category: text(2, 60, 'Category'),
+  description: z.string().max(500, 'Description too long').optional().default(''),
+  price: z.number().min(0, 'Price cannot be negative'),
+  imageUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
+  isActive: z.boolean().default(true),
+  inStock: z.boolean().default(true)
+}).strict();
