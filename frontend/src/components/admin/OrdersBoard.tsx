@@ -23,9 +23,9 @@ import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import {
   AlertCircle, AlertTriangle, Ban, BellOff, CheckCircle2, ChevronRight,
   ExternalLink, Gift, Inbox, Info, MapPin, PackageCheck, Phone, Plus,
-  RefreshCw, Save, ShoppingBag, Trash2, TrendingUp, User, X, XCircle, Loader2, type LucideIcon
+  RefreshCw, Save, ShoppingBag, Trash2, TrendingUp, User, X, XCircle, Loader2, type LucideIcon,
+  CalendarDays
 } from 'lucide-react';
-
 
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
@@ -174,7 +174,6 @@ export interface Pagination {
   totalPages: number;
 }
 
-
 export const SUPPORT_PHONE_DISPLAY = '+91 84338 18771';
 export const SUPPORT_PHONE_TEL = 'tel:+918433818771';
 export const SERVICE_AREA = 'Goregaon East, Mumbai';
@@ -260,7 +259,6 @@ export function isLateNightInMumbai(date = new Date()) {
   return hour >= 22 || hour < 6;
 }
 
-
 export interface FieldIssue {
   path: string;
   message: string;
@@ -342,23 +340,23 @@ export function safeAdminRedirect(next: string | null) {
 }
 
 // ============================================================================
-// UI COMPONENTS (Button, Skeleton, Toast)
+// UI COMPONENTS (Premium Design System)
 // ============================================================================
 type Variant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800 shadow-lift disabled:bg-brand-700/60',
-  secondary: 'bg-white text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-50 disabled:text-brand-800/50',
-  ghost: 'text-brand-800 hover:bg-brand-50 disabled:text-brand-800/50',
-  gift: 'bg-gift-500 text-white hover:bg-gift-600 shadow-[0_12px_30px_-12px_rgba(239,148,21,0.7)] disabled:bg-gift-500/60',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/60',
+  primary: 'bg-[#156253] text-[#FFFFFF] hover:bg-[#0F1F1C] shadow-[0_2px_8px_rgba(21,98,83,0.15)] disabled:opacity-50',
+  secondary: 'bg-[#FFFFFF] text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/15 hover:bg-[#F6FAF8] shadow-sm disabled:opacity-50',
+  ghost: 'text-[#156253] hover:bg-[#156253]/5 disabled:opacity-50',
+  gift: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md disabled:opacity-50',
+  danger: 'bg-[#DC2626] text-white hover:bg-[#B91C1C] shadow-sm disabled:opacity-50',
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-9 px-3.5 text-sm gap-1.5 rounded-xl',
-  md: 'h-11 px-5 text-[15px] gap-2 rounded-2xl',
-  lg: 'h-14 px-6 text-base gap-2.5 rounded-2xl',
+  sm: 'h-8 px-3 text-[13px] gap-1.5 rounded-lg',
+  md: 'h-10 px-4 text-[14px] gap-2 rounded-xl',
+  lg: 'h-12 px-6 text-[15px] gap-2.5 rounded-xl',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -379,16 +377,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold transition-[background-color,transform,box-shadow] duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
-        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
+        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+        'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         variants[variant],
         sizes[size],
         className,
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden /> : icon}
       {children}
     </button>
   );
@@ -396,8 +394,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div aria-hidden className={cn('relative overflow-hidden rounded-xl bg-brand-100/60', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+    <div aria-hidden className={cn('relative overflow-hidden rounded-xl bg-[#156253]/5', className)}>
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
   );
 }
@@ -420,9 +418,9 @@ const ToastContext = createContext<ToastApi | null>(null);
 
 const toastIcons = { success: CheckCircle2, error: AlertTriangle, info: Info };
 const toastTones = {
-  success: 'text-brand-700',
-  error: 'text-red-600',
-  info: 'text-ink-muted',
+  success: 'text-[#156253]',
+  error: 'text-[#DC2626]',
+  info: 'text-[#0F1F1C]/70',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -452,7 +450,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4 sm:bottom-6">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
         <AnimatePresence initial={false}>
           {toasts.map((toast) => {
             const Icon = toastIcons[toast.tone];
@@ -460,16 +458,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <motion.div
                 key={toast.id}
                 layout
-                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                initial={{ opacity: 0, y: 16, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 role={toast.tone === 'error' ? 'alert' : 'status'}
-                className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl bg-white px-4 py-3 shadow-lift ring-1 ring-brand-100"
+                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-[#FFFFFF]/95 px-4 py-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-1 ring-[#156253]/10 backdrop-blur-md"
               >
                 <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toastTones[toast.tone])} aria-hidden />
-                <p className="flex-1 text-sm text-ink">{toast.message}</p>
-                <button type="button" onClick={() => dismiss(toast.id)} className="text-ink-soft hover:text-ink" aria-label="Dismiss">
+                <p className="flex-1 text-[14px] font-medium text-[#0F1F1C]">{toast.message}</p>
+                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#0F1F1C]/40 hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>
@@ -492,15 +490,15 @@ export function useToast() {
 // ============================================================================
 
 const STATUS_TONES: Record<OrderStatus, { pill: string; dot: string }> = {
-  Pending: { pill: 'bg-amber-50 text-amber-800 ring-amber-200', dot: 'bg-amber-500' },
-  Delivered: { pill: 'bg-brand-50 text-brand-800 ring-brand-200', dot: 'bg-brand-600' },
-  Cancelled: { pill: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
+  Pending: { pill: 'bg-amber-50 text-amber-700 ring-amber-200/50', dot: 'bg-amber-500' },
+  Delivered: { pill: 'bg-[#D8F3E8]/50 text-[#156253] ring-[#156253]/10', dot: 'bg-[#156253]' },
+  Cancelled: { pill: 'bg-red-50 text-red-700 ring-red-100', dot: 'bg-red-500' },
 };
 
 export function OrderStatusBadge({ status, className }: { status: OrderStatus; className?: string }) {
   const tone = STATUS_TONES[status];
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset', tone.pill, className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase ring-1 ring-inset', tone.pill, className)}>
       <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', tone.dot)} />
       {status}
     </span>
@@ -511,7 +509,7 @@ function buildSummary(order: AdminOrder) {
   const parts: string[] = [];
   if (order.orderType === 'manual_text') {
     const count = order.medicines.length;
-    parts.push(`${count} ${count === 1 ? 'medicine' : 'medicines'} · Manual order`);
+    parts.push(`${count} ${count === 1 ? 'item' : 'items'}`);
   } else {
     parts.push('Prescription upload');
   }
@@ -528,56 +526,53 @@ export const CompactOrderCard = memo(function CompactOrderCard({
   const giftRequested = order.offerOptIn && order.firstOrderAtCreation;
   const notNotified = !order.telegramNotificationSent;
 
-  const label = [
-    `Order ${order.orderId}`,
-    order.customerName,
-    order.status,
-    giftRequested ? 'gift requested' : null,
-    notNotified ? 'Telegram notification not delivered' : null,
-  ].filter(Boolean).join(', ');
-
   return (
     <button
       type="button"
       onClick={(event) => onSelect(order.id, event.currentTarget)}
       aria-current={selected ? 'true' : undefined}
-      aria-label={`${label}. View details`}
       className={cn(
-        'group flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition duration-150',
-        'hover:-translate-y-px hover:border-brand-300 hover:shadow-sm',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
-        selected ? 'border-brand-500 bg-brand-50/60' : 'border-brand-100 bg-white',
+        'group relative flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-2xl p-4 text-left transition-all duration-300',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+        selected 
+          ? 'bg-[#FFFFFF] ring-2 ring-[#156253] shadow-[0_4px_16px_rgba(21,98,83,0.08)] z-10' 
+          : 'bg-[#FFFFFF] ring-1 ring-[#156253]/10 hover:ring-[#156253]/30 hover:shadow-sm hover:-translate-y-[1px]'
       )}
     >
-      <span className="min-w-0 flex-1">
-        <span className="flex items-start justify-between gap-2">
-          <span className="font-mono text-base font-bold tracking-wide text-brand-800">{order.orderId}</span>
-          <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-            {notNotified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gift-50 px-2 py-1 text-xs font-semibold text-gift-600" title="Telegram notification was not delivered">
-                <BellOff className="h-3 w-3" aria-hidden />
-                <span className="sr-only sm:not-sr-only">Not notified</span>
-              </span>
-            )}
-            {giftRequested && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gift-100 px-2 py-1 text-xs font-semibold text-gift-600" title="Gift requested">
-                <Gift className="h-3 w-3" aria-hidden />
-                <span className="sr-only sm:not-sr-only">Gift</span>
-              </span>
-            )}
-            <OrderStatusBadge status={order.status} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <span className="font-mono text-[13px] font-bold tracking-wider text-[#156253] bg-[#D8F3E8]/40 px-2 py-0.5 rounded-md">
+            {order.orderId}
           </span>
-        </span>
-
-        <span className="mt-1 block truncate text-sm font-semibold text-ink">{order.customerName}</span>
-        <span className="block text-xs text-ink-muted">{formatMobile(order.mobileNumber)}</span>
-
-        <span className="mt-2 flex items-center justify-between gap-3 text-xs text-ink-soft">
+          <OrderStatusBadge status={order.status} />
+          {notNotified && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700" title="Notification failed">
+              <BellOff className="h-3 w-3" /> <span className="hidden sm:inline">No Alert</span>
+            </span>
+          )}
+          {giftRequested && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-50 to-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-orange-600 ring-1 ring-inset ring-orange-200/50" title="Gift requested">
+              <Gift className="h-3 w-3" /> <span className="hidden sm:inline">Gift</span>
+            </span>
+          )}
+        </div>
+        
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="truncate text-[15px] font-bold text-[#0F1F1C]">{order.customerName}</span>
+          <span className="shrink-0 text-[12px] font-medium text-[#0F1F1C]/60 sm:hidden">{formatDateTime(order.createdAt).split(',')[1]}</span>
+        </div>
+        
+        <div className="flex items-center gap-2 text-[13px] font-medium text-[#0F1F1C]/60">
+          <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{formatMobile(order.mobileNumber)}</span>
+          <span className="text-[#156253]/30">•</span>
           <span className="truncate">{buildSummary(order)}</span>
-          <span className="shrink-0">{formatDateTime(order.createdAt)}</span>
-        </span>
-      </span>
-      <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5" aria-hidden />
+        </div>
+      </div>
+
+      <div className="hidden shrink-0 flex-col items-end justify-between sm:flex">
+        <span className="text-[12px] font-medium text-[#0F1F1C]/50">{formatDateTime(order.createdAt)}</span>
+        <ChevronRight className={cn("mt-4 h-5 w-5 text-[#0F1F1C]/30 transition-transform duration-300", selected ? "translate-x-1 text-[#156253]" : "group-hover:translate-x-1 group-hover:text-[#156253]/60")} />
+      </div>
     </button>
   );
 });
@@ -624,7 +619,7 @@ export function AnalyticsOverview() {
 
   const dateRangeLabel = 
     dateRangeType === 'today' ? "Today's" : 
-    dateRangeType === 'yesterday' ? "Yesterday's" : "Selected Date's";
+    dateRangeType === 'yesterday' ? "Yesterday's" : "Custom Range";
 
   useEffect(() => {
     if (dateRangeType === 'custom' && (!customStartDate || !customEndDate)) return;
@@ -658,88 +653,122 @@ export function AnalyticsOverview() {
   }, [startDate, endDate, dateRangeType, customStartDate, customEndDate]);
 
   return (
-    <div className="space-y-6 mb-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end justify-between">
+    <section className="mb-10 space-y-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end justify-between border-b border-[#156253]/10 pb-6">
         <div>
-          <h2 className="font-display text-2xl font-bold">Sales & Analytics</h2>
-          <p className="mt-1 text-sm text-ink-muted">Track revenue and order volume.</p>
+          <h2 className="font-display text-[26px] font-bold text-[#0F1F1C] tracking-tight">Sales & Analytics</h2>
+          <p className="mt-1 text-[14px] text-[#0F1F1C]/60">Track revenue and order volume in real-time.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <select 
-            className="h-10 rounded-xl bg-white px-3 text-sm font-medium ring-1 ring-brand-100 outline-none focus:ring-2 focus:ring-brand-500"
-            value={dateRangeType}
-            onChange={(e) => setDateRangeType(e.target.value as 'today' | 'yesterday' | 'custom')}
-          >
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="custom">Custom Date Range</option>
-          </select>
+          <div className="relative flex items-center">
+            <CalendarDays className="absolute left-3.5 h-4 w-4 text-[#156253]/60" />
+            <select 
+              className="h-10 cursor-pointer appearance-none rounded-xl border-none bg-[#FFFFFF] pl-10 pr-10 text-[13px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all hover:bg-[#F6FAF8] focus:ring-2 focus:ring-[#156253]"
+              value={dateRangeType}
+              onChange={(e) => setDateRangeType(e.target.value as 'today' | 'yesterday' | 'custom')}
+            >
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            <ChevronRight className="pointer-events-none absolute right-3 h-4 w-4 rotate-90 text-[#0F1F1C]/40" />
+          </div>
 
-          {dateRangeType === 'custom' && (
-            <div className="flex items-center gap-2">
-              <input 
-                type="date" 
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="h-10 rounded-xl bg-white px-3 text-sm ring-1 ring-brand-100 outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <span className="text-ink-soft">to</span>
-              <input 
-                type="date" 
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="h-10 rounded-xl bg-white px-3 text-sm ring-1 ring-brand-100 outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-          )}
+          <AnimatePresence>
+            {dateRangeType === 'custom' && (
+              <motion.div 
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="flex items-center gap-2 overflow-hidden"
+              >
+                <input 
+                  type="date" 
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="h-10 rounded-xl border-none bg-[#FFFFFF] px-3.5 text-[13px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 focus:ring-2 focus:ring-[#156253]"
+                />
+                <span className="text-[13px] font-medium text-[#0F1F1C]/40">to</span>
+                <input 
+                  type="date" 
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="h-10 rounded-xl border-none bg-[#FFFFFF] px-3.5 text-[13px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 focus:ring-2 focus:ring-[#156253]"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       {error && (
-         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-red-50 p-4 text-[13px] font-medium text-red-700 ring-1 ring-inset ring-red-200">
            {error}
-         </div>
+         </motion.div>
       )}
 
       {loading && !data ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="h-28 rounded-2xl bg-brand-50/50 animate-pulse border border-brand-100" />
-          <div className="h-28 rounded-2xl bg-brand-50/50 animate-pulse border border-brand-100" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+          <Skeleton className="h-[132px] rounded-2xl" />
+          <Skeleton className="h-[132px] rounded-2xl" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ink-soft">
-              <TrendingUp className="h-4 w-4 text-brand-600" />
-              {dateRangeLabel} Sales
-            </div>
-            <div className="mt-2 text-3xl font-display font-bold text-brand-900">
-              {formatRupees(data?.totalSales ?? 0)}
-            </div>
-            <p className="mt-1 text-xs text-ink-muted">From delivered orders only</p>
-          </div>
-
-          <div className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ink-soft">
-              <ShoppingBag className="h-4 w-4 text-brand-600" />
-              {dateRangeLabel} Orders
-            </div>
-            <div className="mt-2 flex items-baseline gap-3">
-              <span className="text-3xl font-display font-bold text-brand-900">{data?.totalOrders ?? 0}</span>
-              <div className="flex gap-2 text-xs font-medium">
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-800 ring-1 ring-inset ring-amber-200">
-                  {data?.breakdown.pending ?? 0} Pending
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-6 shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-md hover:ring-[#156253]/20"
+          >
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gradient-to-br from-[#D8F3E8]/50 to-transparent opacity-50 blur-2xl group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/60">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3E8] text-[#156253]">
+                  <TrendingUp className="h-4 w-4" />
                 </span>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-brand-800 ring-1 ring-inset ring-brand-200">
-                  {data?.breakdown.delivered ?? 0} Delivered
+                {dateRangeLabel} Sales
+              </div>
+              <div className="mt-4 flex items-end gap-3">
+                <span className="font-display text-[40px] font-bold tracking-tight text-[#0F1F1C] tabular-nums leading-none">
+                  {formatRupees(data?.totalSales ?? 0)}
                 </span>
               </div>
+              <p className="mt-2 text-[13px] font-medium text-[#156253]/60">Based strictly on delivered orders.</p>
             </div>
-          </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="group relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-6 shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-md hover:ring-[#156253]/20"
+          >
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gradient-to-br from-amber-100/50 to-transparent opacity-50 blur-2xl group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/60">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0F1F1C]/5 text-[#0F1F1C]">
+                  <ShoppingBag className="h-4 w-4" />
+                </span>
+                {dateRangeLabel} Volume
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <span className="font-display text-[40px] font-bold tracking-tight text-[#0F1F1C] tabular-nums leading-none">
+                  {data?.totalOrders ?? 0}
+                </span>
+                <div className="flex flex-col gap-1.5 text-[12px] font-bold uppercase tracking-wide">
+                  <span className="flex items-center gap-2 text-amber-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> {data?.breakdown.pending ?? 0} Pending
+                  </span>
+                  <span className="flex items-center gap-2 text-[#156253]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#156253]" /> {data?.breakdown.delivered ?? 0} Delivered
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -785,21 +814,24 @@ function AmountInput({ id, label, hint, value, onChange }: { id: string; label?:
   const invalid = value.trim() !== '' && !AMOUNT_PATTERN.test(value.trim());
   return (
     <div>
-      {label && <label htmlFor={id} className="block text-xs font-semibold text-ink">{label}</label>}
-      <div className={cn('flex items-center rounded-xl bg-white ring-1 ring-inset focus-within:ring-2 transition-shadow', label && 'mt-1', invalid ? 'ring-red-300 focus-within:ring-red-500' : 'ring-brand-100 focus-within:ring-brand-500')}>
-        <span className="pl-3 text-sm text-ink-muted">₹</span>
+      {label && <label htmlFor={id} className="mb-1.5 block text-[13px] font-semibold text-[#0F1F1C]">{label}</label>}
+      <div className={cn(
+        'group flex h-11 items-center rounded-xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset transition-all', 
+        invalid ? 'ring-red-300 focus-within:ring-2 focus-within:ring-red-500' : 'ring-[#156253]/15 focus-within:ring-2 focus-within:ring-[#156253]'
+      )}>
+        <span className="pl-3.5 pr-2 text-[14px] font-medium text-[#0F1F1C]/40 transition-colors group-focus-within:text-[#156253]">₹</span>
         <input
           id={id}
           inputMode="decimal"
           autoComplete="off"
           value={value}
           onChange={(event) => onChange(event.target.value.replace(/[^\d.]/g, ''))}
-          placeholder="0"
+          placeholder="0.00"
           aria-invalid={invalid || undefined}
-          className="h-11 w-full rounded-xl bg-transparent px-2 font-semibold tabular-nums focus:outline-none"
+          className="h-full w-full rounded-r-xl bg-transparent pr-3.5 text-[15px] font-semibold tabular-nums text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
         />
       </div>
-      {hint && <p className="mt-1 text-[11px] text-ink-soft">{hint}</p>}
+      {hint && <p className="mt-1.5 text-[11px] font-medium text-[#0F1F1C]/50">{hint}</p>}
     </div>
   );
 }
@@ -976,7 +1008,7 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
       });
       onUpdated(res.order);
       setGiftIncluded(res.order.offerApplied);
-      toast.success(res.order.offerEligible ? 'Bill saved · Eligible for the free gift' : 'Bill saved');
+      toast.success(res.order.offerEligible ? 'Bill saved · Eligible for free gift' : 'Bill saved successfully');
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -1000,264 +1032,302 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   const status = billed && !dirty ? { eligible: order.offerEligible, checks: order.offer.checks, saved: true } : { ...preview, saved: false };
 
   const actions = (
-    <div className="space-y-2">
-      <div className="grid gap-2 min-[400px]:grid-cols-2">
-        <Button variant="secondary" onClick={saveBill} loading={saving} disabled={!valid || delivering} icon={<Save className="h-4 w-4" />}>
+    <div className="space-y-3 pb-safe-offset-2">
+      <div className="grid gap-3 min-[400px]:grid-cols-2">
+        <Button variant="secondary" size="lg" onClick={saveBill} loading={saving} disabled={!valid || delivering} icon={<Save className="h-[18px] w-[18px]" />}>
           Save Bill
         </Button>
         <AnimatePresence mode="wait" initial={false}>
           {confirmDelivery ? (
-            <motion.div key="confirm" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setConfirmDelivery(false)} disabled={delivering}>
-                Back
+            <motion.div key="confirm" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex gap-2">
+              <Button variant="ghost" size="lg" className="flex-1 bg-[#F6FAF8]" onClick={() => setConfirmDelivery(false)} disabled={delivering}>
+                Cancel
               </Button>
-              <Button className="flex-1" onClick={deliver} loading={delivering}>
+              <Button variant="primary" size="lg" className="flex-1" onClick={deliver} loading={delivering}>
                 Confirm
               </Button>
             </motion.div>
           ) : (
-            <motion.div key="deliver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="deliver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex">
               <Button
-                className="w-full"
+                variant="primary"
+                size="lg"
+                className="w-full shadow-[0_4px_12px_rgba(21,98,83,0.2)]"
                 onClick={() => setConfirmDelivery(true)}
                 disabled={!billed || dirty || saving}
                 title={!billed || dirty ? 'Save the bill first' : undefined}
-                icon={<PackageCheck className="h-4 w-4" />}
+                icon={<PackageCheck className="h-[18px] w-[18px]" />}
               >
-                Mark as Delivered
+                Mark Delivered
               </Button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      {confirmDelivery && (
-        <p className="text-xs text-ink-muted">
-          Confirm payment was collected{order.offerApplied ? ` and the free ${GIFT.shortName} was handed over. The gift will be recorded as claimed.` : '.'}
-        </p>
-      )}
-      {(!billed || dirty) && !confirmDelivery && <p className="text-xs text-ink-soft">Save the bill before marking the order as delivered.</p>}
+      <AnimatePresence>
+        {confirmDelivery && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <p className="text-[12px] font-medium text-[#156253] bg-[#D8F3E8]/50 p-2.5 rounded-lg border border-[#156253]/10">
+              Confirm payment collected{order.offerApplied ? ` & free ${GIFT.shortName} handed over.` : '.'}
+            </p>
+          </motion.div>
+        )}
+        {(!billed || dirty) && !confirmDelivery && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-[12px] font-medium text-[#0F1F1C]/50">
+            Unsaved changes. Save bill to enable delivery.
+          </motion.p>
+        )}
+      </AnimatePresence>
     </div>
   );
 
   return (
-    <div className="space-y-4">
-      
+    <div className="space-y-8">
       {/* MEDICINES SECTION */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-semibold text-ink">Medicines ({medicinesData.length})</h4>
+      <section className="space-y-4">
+        <header className="flex items-center justify-between border-b border-[#156253]/10 pb-2">
+          <h4 className="text-[14px] font-bold text-[#0F1F1C]">Medicines <span className="ml-1 text-[#0F1F1C]/40 font-normal">({medicinesData.length})</span></h4>
+          <Button variant="ghost" size="sm" onClick={addMedicine} className="h-7 px-2 text-[#156253]" icon={<Plus className="w-4 h-4" />}>Add</Button>
+        </header>
         
-        <AnimatePresence initial={false}>
-          {medicinesData.map((med, index) => (
-            <motion.div 
-              key={med._id || `new-med-${index}`} 
-              layout
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={cn("p-3 rounded-xl border transition-colors relative group", med.isAvailable ? "bg-white border-brand-100" : "bg-surface border-transparent opacity-80")}
-            >
-              {!med._id && (
-                <button 
-                  onClick={() => removeMedicine(index)} 
-                  className="absolute -top-2.5 -right-2.5 bg-red-100 text-red-600 p-1.5 rounded-full hover:bg-red-200 transition-transform scale-0 group-hover:scale-100 opacity-0 group-hover:opacity-100 shadow-sm"
-                  title="Remove Medicine"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-
-              <div className="flex justify-between items-start gap-2">
-                <div className="flex-1 min-w-0 space-y-1">
-                  <input
-                    value={med.name}
-                    onChange={(e) => updateMedicine(index, 'name', e.target.value)}
-                    placeholder="Medicine Name"
-                    className={cn(
-                      "w-full bg-transparent text-sm font-semibold focus:outline-none placeholder:text-ink-muted/50 transition-colors rounded px-1 -mx-1 focus:bg-brand-50/50",
-                      !med.isAvailable && "line-through text-ink-muted"
-                    )}
-                  />
-                  <input
-                    value={med.quantity}
-                    onChange={(e) => updateMedicine(index, 'quantity', e.target.value)}
-                    placeholder="Quantity (e.g. 1 strip)"
-                    className="w-full bg-transparent text-xs text-ink-soft focus:outline-none placeholder:text-ink-muted/50 transition-colors rounded px-1 -mx-1 focus:bg-brand-50/50"
-                  />
-                </div>
-                <label className="flex items-center gap-1.5 cursor-pointer shrink-0 mt-1">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 accent-brand-600 rounded" 
-                    checked={med.isAvailable} 
-                    onChange={(e) => {
-                      updateMedicine(index, 'isAvailable', e.target.checked);
-                      if (!e.target.checked) updateMedicine(index, 'price', '0');
-                    }} 
-                  />
-                  <span className="text-xs font-medium text-ink-muted">In Stock</span>
-                </label>
-              </div>
-              
-              <AnimatePresence>
-                {med.isAvailable && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: 'auto', opacity: 1 }} 
-                    exit={{ height: 0, opacity: 0 }} 
-                    className="mt-3 overflow-hidden"
-                  >
-                    <AmountInput 
-                      id={`price-${index}`} 
-                      label="" 
-                      hint="" 
-                      value={med.price} 
-                      onChange={(val) => updateMedicine(index, 'price', val)} 
-                    />
-                  </motion.div>
+        <div className="grid gap-3">
+          <AnimatePresence initial={false}>
+            {medicinesData.map((med, index) => (
+              <motion.div 
+                key={med._id || `new-med-${index}`} 
+                layout
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                className={cn(
+                  "group relative overflow-hidden rounded-xl border p-4 transition-all duration-300", 
+                  med.isAvailable ? "bg-[#FFFFFF] border-[#156253]/15 shadow-sm focus-within:ring-2 focus-within:ring-[#156253]" : "bg-[#F6FAF8] border-transparent opacity-75"
                 )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              >
+                {!med._id && (
+                  <button 
+                    onClick={() => removeMedicine(index)} 
+                    className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg bg-red-50 text-red-600 opacity-0 transition-all hover:bg-red-100 group-hover:opacity-100 sm:focus:opacity-100 sm:active:opacity-100"
+                    title="Remove Medicine"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
 
-        <Button 
-          variant="ghost" 
-          onClick={addMedicine} 
-          className="w-full border border-dashed border-brand-200 text-brand-700 bg-brand-50/30 hover:bg-brand-50 hover:border-brand-300 transition-colors" 
-          icon={<Plus className="w-4 h-4" />}
-        >
-          Add Medicine
-        </Button>
-      </div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3 min-w-0">
+                    <div>
+                      <input
+                        value={med.name}
+                        onChange={(e) => updateMedicine(index, 'name', e.target.value)}
+                        placeholder="Medicine Name"
+                        className={cn(
+                          "w-full bg-transparent text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none",
+                          !med.isAvailable && "line-through text-[#0F1F1C]/40"
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 relative">
+                        <label className="sr-only">Quantity</label>
+                        <input
+                          value={med.quantity}
+                          onChange={(e) => updateMedicine(index, 'quantity', e.target.value)}
+                          placeholder="e.g. 1 strip, 10 tabs"
+                          className="w-full bg-transparent text-[13px] font-medium text-[#0F1F1C]/70 placeholder:text-[#0F1F1C]/30 focus:outline-none"
+                        />
+                      </div>
+                      
+                      <label className="flex cursor-pointer items-center gap-2 rounded-md p-1 hover:bg-[#F6FAF8] transition-colors">
+                        <div className={cn("flex h-4 w-8 items-center rounded-full p-0.5 transition-colors", med.isAvailable ? "bg-[#156253]" : "bg-[#0F1F1C]/20")}>
+                          <motion.div layout className="h-3 w-3 rounded-full bg-white shadow-sm" animate={{ x: med.isAvailable ? 16 : 0 }} transition={{ type: "spring", stiffness: 700, damping: 30 }} />
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          className="sr-only" 
+                          checked={med.isAvailable} 
+                          onChange={(e) => {
+                            updateMedicine(index, 'isAvailable', e.target.checked);
+                            if (!e.target.checked) updateMedicine(index, 'price', '0');
+                          }} 
+                        />
+                        <span className="text-[12px] font-bold tracking-wide uppercase text-[#0F1F1C]/60">Stock</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <AnimatePresence>
+                  {med.isAvailable && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }} 
+                      animate={{ height: 'auto', opacity: 1 }} 
+                      exit={{ height: 0, opacity: 0 }} 
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-4 border-t border-[#156253]/10 pt-4">
+                        <AmountInput 
+                          id={`price-${index}`} 
+                          label="Medicine Price" 
+                          value={med.price} 
+                          onChange={(val) => updateMedicine(index, 'price', val)} 
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </section>
 
       {/* PRODUCTS SECTION */}
-      <div className="space-y-3 mt-6">
-        <h4 className="text-xs font-semibold text-ink">Other Products ({productsData.length})</h4>
+      <section className="space-y-4">
+        <header className="flex items-center justify-between border-b border-[#156253]/10 pb-2">
+          <h4 className="text-[14px] font-bold text-[#0F1F1C]">Other Products <span className="ml-1 text-[#0F1F1C]/40 font-normal">({productsData.length})</span></h4>
+          <Button variant="ghost" size="sm" onClick={addProduct} className="h-7 px-2 text-[#156253]" icon={<Plus className="w-4 h-4" />}>Add</Button>
+        </header>
         
-        <AnimatePresence initial={false}>
-          {productsData.map((prod, index) => (
-            <motion.div 
-              key={prod._id || `new-prod-${index}`} 
-              layout
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="p-3 rounded-xl border bg-white border-brand-100 transition-colors relative group"
-            >
-              <button 
-                onClick={() => removeProduct(index)} 
-                className="absolute -top-2.5 -right-2.5 bg-red-100 text-red-600 p-1.5 rounded-full hover:bg-red-200 transition-transform scale-0 group-hover:scale-100 opacity-0 group-hover:opacity-100 shadow-sm"
-                title="Remove Product"
+        <div className="grid gap-3">
+          <AnimatePresence initial={false}>
+            {productsData.map((prod, index) => (
+              <motion.div 
+                key={prod._id || `new-prod-${index}`} 
+                layout
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                className="group relative overflow-hidden rounded-xl border border-[#156253]/15 bg-[#FFFFFF] p-4 shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#156253]"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+                <button 
+                  onClick={() => removeProduct(index)} 
+                  className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg bg-red-50 text-red-600 opacity-0 transition-all hover:bg-red-100 group-hover:opacity-100 sm:focus:opacity-100 sm:active:opacity-100"
+                  title="Remove Product"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
 
-              <div className="flex justify-between items-start gap-2">
-                <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex-1 space-y-4 min-w-0 pr-6">
                   <input
                     value={prod.name}
                     onChange={(e) => updateProduct(index, 'name', e.target.value)}
-                    placeholder="Product Name"
-                    className="w-full bg-transparent text-sm font-semibold focus:outline-none placeholder:text-ink-muted/50 transition-colors rounded px-1 -mx-1 focus:bg-brand-50/50"
+                    placeholder="Product Name (e.g. Shampoo)"
+                    className="w-full bg-transparent text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
                   />
-                  <div className="flex items-center text-xs text-ink-soft mt-1">
-                    <span>Qty:</span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={prod.quantity}
-                      onChange={(e) => updateProduct(index, 'quantity', e.target.value)}
-                      className="ml-1 w-12 bg-transparent focus:outline-none focus:bg-brand-50/50 rounded px-1"
-                    />
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 rounded-lg bg-[#F6FAF8] p-1 ring-1 ring-inset ring-[#156253]/10">
+                      <span className="pl-2 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">Qty</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={prod.quantity}
+                        onChange={(e) => updateProduct(index, 'quantity', e.target.value)}
+                        className="w-12 bg-transparent py-1 text-center text-[14px] font-semibold text-[#0F1F1C] focus:outline-none"
+                      />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <AmountInput 
+                        id={`prod-price-${index}`} 
+                        value={prod.price} 
+                        onChange={(val) => updateProduct(index, 'price', val)} 
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="mt-3">
-                <AmountInput 
-                  id={`prod-price-${index}`} 
-                  label="" 
-                  hint="" 
-                  value={prod.price} 
-                  onChange={(val) => updateProduct(index, 'price', val)} 
-                />
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </section>
 
-        <Button 
-          variant="ghost" 
-          onClick={addProduct} 
-          className="w-full border border-dashed border-brand-200 text-brand-700 bg-brand-50/30 hover:bg-brand-50 hover:border-brand-300 transition-colors" 
-          icon={<ShoppingBag className="w-4 h-4" />}
-        >
-          Add Product
-        </Button>
-      </div>
+      {/* FINANCIAL SUMMARY */}
+      <section className="rounded-2xl border border-[#156253]/10 bg-[#FFFFFF] shadow-sm">
+        <div className="grid grid-cols-2 gap-4 border-b border-[#156253]/10 p-5">
+          <AmountInput id={`${order.id}-other`} label="Misc Charges" hint="Extra non-product fees" value={other} onChange={setOther} />
+          <AmountInput id={`${order.id}-discount`} label="Discount" hint="Total order discount" value={discount} onChange={setDiscount} />
+        </div>
 
-      {/* OTHER CHARGES & DISCOUNTS */}
-      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-brand-100 mt-6">
-        <AmountInput id={`${order.id}-other`} label="Misc Charges" hint="Extra non-product charges" value={other} onChange={setOther} />
-        <AmountInput id={`${order.id}-discount`} label="Discount" hint="Global order discount" value={discount} onChange={setDiscount} />
-      </div>
-
-      <dl className="space-y-2 rounded-xl bg-surface p-3.5 text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-ink-muted">Medicine subtotal</dt>
-          <dd className="font-medium tabular-nums">{medicineValue === null ? '—' : formatRupees(medicineValue)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-ink-muted">Products & Other Items</dt>
-          <dd className="font-medium tabular-nums">{combinedNonMedicineSubtotal === null ? '—' : formatRupees(combinedNonMedicineSubtotal)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-ink-muted">Delivery</dt>
-          <dd className="font-medium tabular-nums">{formatRupees(deliveryCharge)}</dd>
-        </div>
-        <div className="flex justify-between gap-3 text-brand-700">
-          <dt className="font-medium">Discount</dt>
-          <dd className="font-medium tabular-nums">-{preview.appliedDiscount === null ? '—' : formatRupees(preview.appliedDiscount)}</dd>
-        </div>
-        <div className="flex items-center justify-between gap-3 border-t border-brand-100 pt-3">
-          <dt className="text-sm font-semibold">Final Amount</dt>
-          <dd className="text-2xl font-bold tabular-nums text-brand-800">{preview.finalAmount === null ? '—' : formatRupees(preview.finalAmount)}</dd>
-        </div>
-      </dl>
-
-      <div className={cn('rounded-xl p-3.5 ring-1 transition-colors duration-300', status.eligible ? 'bg-brand-50 ring-brand-300' : 'bg-white ring-brand-100')}>
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">First Order Gift Eligibility</p>
-            <p className="mt-0.5 text-sm font-semibold">{formatRupees(order.offer.requiredMedicineAmount)} Medicine Minimum</p>
-            <p className="mt-0.5 text-xs text-ink-soft">Medicine subtotal only. Delivery and other items never count.</p>
+        <dl className="p-5 text-[14px]">
+          <div className="flex justify-between gap-4 py-2">
+            <dt className="font-medium text-[#0F1F1C]/60">Medicines Subtotal</dt>
+            <dd className="font-semibold tabular-nums text-[#0F1F1C]">{medicineValue === null ? '—' : formatRupees(medicineValue)}</dd>
           </div>
-          <span className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors', status.eligible ? 'bg-brand-700 text-white' : 'bg-red-50 text-red-700')}>
-            {status.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
-          </span>
+          <div className="flex justify-between gap-4 py-2">
+            <dt className="font-medium text-[#0F1F1C]/60">Products & Charges</dt>
+            <dd className="font-semibold tabular-nums text-[#0F1F1C]">{combinedNonMedicineSubtotal === null ? '—' : formatRupees(combinedNonMedicineSubtotal)}</dd>
+          </div>
+          <div className="flex justify-between gap-4 py-2">
+            <dt className="font-medium text-[#0F1F1C]/60">Delivery Fee</dt>
+            <dd className="font-semibold tabular-nums text-[#0F1F1C]">{formatRupees(deliveryCharge)}</dd>
+          </div>
+          <div className="flex justify-between gap-4 py-2 text-[#156253]">
+            <dt className="font-bold">Discount Applied</dt>
+            <dd className="font-bold tabular-nums">-{preview.appliedDiscount === null ? '—' : formatRupees(preview.appliedDiscount)}</dd>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl bg-[#F6FAF8] p-4 ring-1 ring-inset ring-[#156253]/10">
+            <dt className="text-[16px] font-bold text-[#0F1F1C]">Final Amount</dt>
+            <dd className="font-display text-[28px] font-bold tabular-nums leading-none text-[#156253]">
+              {preview.finalAmount === null ? '—' : formatRupees(preview.finalAmount)}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      {/* GIFT ELIGIBILITY CARD */}
+      <section className={cn(
+        'relative overflow-hidden rounded-2xl p-5 shadow-sm ring-1 ring-inset transition-all duration-300', 
+        status.eligible ? 'bg-gradient-to-br from-[#D8F3E8]/80 to-[#FFFFFF] ring-[#156253]/20' : 'bg-[#FFFFFF] ring-[#156253]/10'
+      )}>
+        {status.eligible && <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/3 rounded-full bg-gradient-to-bl from-[#156253]/10 to-transparent blur-2xl" />}
+        
+        <div className="relative">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/50">
+                <Gift className="h-4 w-4 text-[#156253]" /> Gift Status
+              </div>
+              <p className="mt-2 text-[16px] font-bold text-[#0F1F1C]">Free {GIFT.shortName}</p>
+              <p className="mt-1 text-[13px] font-medium text-[#0F1F1C]/60">Requires {formatRupees(order.offer.requiredMedicineAmount)} in medicines.</p>
+            </div>
+            <span className={cn(
+              'shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold tracking-wide uppercase', 
+              status.eligible ? 'bg-[#156253] text-[#FFFFFF] shadow-sm' : 'bg-[#0F1F1C]/5 text-[#0F1F1C]/60'
+            )}>
+              {status.eligible ? 'Qualified' : 'Ineligible'}
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+            {(Object.keys(CHECK_LABELS) as Array<keyof typeof CHECK_LABELS>).map((key) => (
+              <div key={key} className="flex items-center gap-2.5 rounded-lg bg-[#FFFFFF]/50 p-2 text-[12px] font-medium ring-1 ring-inset ring-[#156253]/5">
+                {status.checks[key] ? <CheckCircle2 className="h-4 w-4 text-[#156253]" aria-hidden /> : <XCircle className="h-4 w-4 text-[#0F1F1C]/20" aria-hidden />}
+                <span className={status.checks[key] ? 'text-[#0F1F1C]' : 'text-[#0F1F1C]/50'}>{CHECK_LABELS[key]}</span>
+              </div>
+            ))}
+          </div>
+
+          <label
+            className={cn(
+              'mt-5 flex min-h-14 select-none items-center gap-3.5 rounded-xl bg-[#FFFFFF] px-4 shadow-sm ring-1 ring-inset transition-all',
+              preview.eligible ? 'cursor-pointer ring-[#156253]/20 hover:ring-[#156253]/40' : 'cursor-not-allowed opacity-50 ring-transparent',
+              giftIncluded && 'ring-2 ring-[#156253]'
+            )}
+          >
+            <div className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors", giftIncluded ? "border-[#156253] bg-[#156253]" : "border-[#0F1F1C]/20 bg-transparent")}>
+              {giftIncluded && <CheckCircle2 className="h-4 w-4 text-white" />}
+            </div>
+            <input type="checkbox" className="sr-only" checked={giftIncluded} disabled={!preview.eligible} onChange={(event) => setGiftIncluded(event.target.checked)} />
+            <span className="text-[14px] font-bold text-[#0F1F1C]">Include free gift in delivery</span>
+          </label>
         </div>
-        <p className="mt-2 text-xs text-ink-soft">
-          Eligible medicine subtotal: <strong className="text-ink">{medicineValue === null ? '—' : formatRupees(medicineValue)}</strong>
-          {!status.saved && ' · preview, confirmed on save'}
-        </p>
-        <ul className="mt-3 grid gap-1.5 text-xs sm:grid-cols-2">
-          {(Object.keys(CHECK_LABELS) as Array<keyof typeof CHECK_LABELS>).map((key) => (
-            <li key={key} className="flex items-center gap-1.5">
-              {status.checks[key] ? <CheckCircle2 className="h-3.5 w-3.5 text-brand-600" aria-hidden /> : <XCircle className="h-3.5 w-3.5 text-red-500" aria-hidden />}
-              <span className={status.checks[key] ? 'text-ink-muted' : 'text-ink'}>{CHECK_LABELS[key]}</span>
-            </li>
-          ))}
-        </ul>
-        <label
-          className={cn(
-            'mt-3 flex min-h-11 items-center gap-2.5 rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-brand-100 transition-opacity',
-            preview.eligible ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
-          )}
-        >
-          <input type="checkbox" className="h-5 w-5 accent-brand-700 rounded" checked={giftIncluded} disabled={!preview.eligible} onChange={(event) => setGiftIncluded(event.target.checked)} />
-          <Gift className="h-4 w-4 text-gift-500" aria-hidden /> FREE {GIFT.shortName} Included
-        </label>
-      </div>
+      </section>
 
       {actionsTarget === undefined ? actions : actionsTarget ? createPortal(actions, actionsTarget) : null}
     </div>
@@ -1312,8 +1382,8 @@ function buildWhatsappLink(order: AdminOrder): string | null {
 function Section({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="rounded-2xl border border-brand-100 bg-white p-4">
-      <h3 id={id} className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-soft">
+    <section aria-labelledby={id} className="rounded-2xl border border-[#156253]/10 bg-[#FFFFFF] p-5 shadow-sm">
+      <h3 id={id} className="mb-4 flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/50">
         {icon}
         {title}
       </h3>
@@ -1324,18 +1394,18 @@ function Section({ title, icon, children }: { title: string; icon?: ReactNode; c
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <dt className="text-xs text-ink-soft">{label}</dt>
-      <dd className="mt-0.5 text-sm font-bold text-ink">{children}</dd>
+    <div className="flex flex-col gap-1 rounded-xl bg-[#F6FAF8] p-3 ring-1 ring-inset ring-[#156253]/5">
+      <dt className="text-[12px] font-medium text-[#0F1F1C]/60">{label}</dt>
+      <dd className="text-[15px] font-bold text-[#0F1F1C]">{children}</dd>
     </div>
   );
 }
 
 function SummaryRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={cn('flex items-center justify-between gap-3', strong && 'border-t border-brand-100 pt-3')}>
-      <dt className={strong ? 'text-sm font-semibold' : 'text-ink-muted'}>{label}</dt>
-      <dd className={cn('tabular-nums', strong ? 'text-xl font-bold text-brand-800' : 'font-medium')}>{value}</dd>
+    <div className={cn('flex items-center justify-between gap-4', strong && 'border-t border-[#156253]/10 pt-3 mt-1')}>
+      <dt className={cn(strong ? 'text-[15px] font-bold text-[#0F1F1C]' : 'text-[14px] font-medium text-[#0F1F1C]/60')}>{label}</dt>
+      <dd className={cn('tabular-nums', strong ? 'text-[20px] font-bold text-[#156253]' : 'text-[14px] font-semibold text-[#0F1F1C]')}>{value}</dd>
     </div>
   );
 }
@@ -1344,24 +1414,26 @@ function BillSummary({ order }: { order: AdminOrder }) {
   const delivered = order.status === 'Delivered';
   if (!delivered && !order.billedAt) {
     return (
-      <Section title="Bill">
-        <p className="text-sm text-ink-muted">No bill was saved before this order was cancelled.</p>
+      <Section title="Final Bill">
+        <p className="text-[14px] font-medium text-[#0F1F1C]/50">No bill was generated before cancellation.</p>
       </Section>
     );
   }
   return (
-    <Section title={delivered ? 'Bill' : 'Bill (order not delivered)'}>
-      <dl className="space-y-2 text-sm">
-        <SummaryRow label="Medicine subtotal" value={formatRupees(order.medicineSubtotal)} />
-        <SummaryRow label="Other items subtotal" value={formatRupees(order.nonMedicineSubtotal)} />
-        <SummaryRow label="Delivery charge" value={formatRupees(order.deliveryCharge)} />
-        <SummaryRow label="Final amount" value={formatRupees(order.finalAmount)} strong />
+    <Section title={delivered ? 'Final Bill' : 'Saved Bill'}>
+      <dl className="space-y-2.5">
+        <SummaryRow label="Medicine Subtotal" value={formatRupees(order.medicineSubtotal)} />
+        <SummaryRow label="Products & Other" value={formatRupees(order.nonMedicineSubtotal)} />
+        <SummaryRow label="Delivery Charge" value={formatRupees(order.deliveryCharge)} />
+        <SummaryRow label="Final Amount" value={formatRupees(order.finalAmount)} strong />
       </dl>
-      <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
-        <Gift className="h-3.5 w-3.5 text-gift-500" aria-hidden />
-        {order.offerApplied ? `Free ${GIFT.shortName} included` : 'No gift included'}
-      </p>
-      {order.deliveredAt && <p className="mt-1 text-xs text-ink-muted">Delivered {formatDateTime(order.deliveredAt)}</p>}
+      <div className="mt-5 rounded-xl bg-[#F6FAF8] p-3 text-[13px] font-medium text-[#0F1F1C]/70 ring-1 ring-inset ring-[#156253]/5">
+        <p className="flex items-center gap-2">
+          <Gift className="h-4 w-4 text-[#156253]" aria-hidden />
+          {order.offerApplied ? `Included free ${GIFT.shortName}` : 'No gift applied'}
+        </p>
+        {order.deliveredAt && <p className="mt-1 ml-6">Delivered on {formatDateTime(order.deliveredAt)}</p>}
+      </div>
     </Section>
   );
 }
@@ -1431,14 +1503,14 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[55] grid place-items-center p-4">
+    <div className="fixed inset-0 z-[120] grid place-items-center p-4">
       <motion.div
         aria-hidden
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-[#0F1F1C]/40 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: 0.2 }}
         onClick={submitting ? undefined : onClose}
       />
       <motion.div
@@ -1447,29 +1519,38 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         onKeyDown={handleKeyDown}
-        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 8, scale: 0.98 }}
-        transition={{ duration: 0.18 }}
-        className="relative max-h-full w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-6"
+        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-[#FFFFFF] p-6 shadow-2xl sm:p-8"
       >
-        <h2 id={titleId} className="font-display text-xl font-bold text-ink">
-          Cancel this order?
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 sm:mx-0">
+          <AlertTriangle className="h-6 w-6 text-red-600" />
+        </div>
+        
+        <h2 id={titleId} className="text-center font-display text-[22px] font-bold text-[#0F1F1C] sm:text-left">
+          Cancel Order {order.orderId}
         </h2>
-        <p id={descriptionId} className="mt-1 text-sm text-ink-muted">
-          {order.orderId} for {order.customerName} will move to Cancelled. The reason is saved with the order and shown to the customer when they track it.
+        <p id={descriptionId} className="mt-2 text-center text-[14px] font-medium text-[#0F1F1C]/60 sm:text-left">
+          This order will be moved to Cancelled. The reason you select will be permanently saved and visible to {order.customerName}.
         </p>
 
-        <fieldset className="mt-4 space-y-2" disabled={submitting}>
-          <legend className="mb-2 text-sm font-medium text-ink">Reason for cancellation</legend>
+        <fieldset className="mt-6 space-y-2.5" disabled={submitting}>
+          <legend className="sr-only">Reason for cancellation</legend>
           {CANCEL_REASONS.map((option, index) => (
             <label
               key={option}
               className={cn(
-                'flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 text-sm',
-                reason === option ? 'border-brand-500 bg-brand-50' : 'border-brand-100 hover:bg-surface',
+                'flex min-h-12 cursor-pointer items-center gap-3.5 rounded-xl border p-3 text-[14px] font-semibold transition-all',
+                reason === option 
+                  ? 'border-[#156253] bg-[#D8F3E8]/30 ring-1 ring-inset ring-[#156253]/50' 
+                  : 'border-[#156253]/15 bg-[#FFFFFF] hover:bg-[#F6FAF8]'
               )}
             >
+              <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors", reason === option ? "border-[#156253] bg-[#156253]" : "border-[#0F1F1C]/20 bg-transparent")}>
+                {reason === option && <div className="h-2 w-2 rounded-full bg-white" />}
+              </div>
               <input
                 ref={index === 0 ? firstOptionRef : undefined}
                 type="radio"
@@ -1477,37 +1558,39 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
                 value={option}
                 checked={reason === option}
                 onChange={() => setReason(option)}
-                className="h-4 w-4 accent-brand-700"
+                className="sr-only"
               />
-              {option}
+              <span className="text-[#0F1F1C]">{option}</span>
             </label>
           ))}
         </fieldset>
 
-        {reason === CUSTOM_REASON && (
-          <div className="mt-3">
-            <label htmlFor={customId} className="mb-1.5 block text-sm font-medium text-ink">
-              Custom reason
-            </label>
-            <textarea
-              id={customId}
-              ref={customRef}
-              value={customReason}
-              onChange={(event) => setCustomReason(event.target.value)}
-              disabled={submitting}
-              placeholder="Type the exact reason here..."
-              rows={3}
-              aria-required
-              className="w-full resize-none rounded-xl border-0 bg-surface p-3 text-sm outline-none ring-1 ring-inset ring-brand-100 focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {reason === CUSTOM_REASON && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
+              <label htmlFor={customId} className="mb-2 block text-[13px] font-bold text-[#0F1F1C]">
+                Custom Reason Detail
+              </label>
+              <textarea
+                id={customId}
+                ref={customRef}
+                value={customReason}
+                onChange={(event) => setCustomReason(event.target.value)}
+                disabled={submitting}
+                placeholder="Type the exact reason..."
+                rows={3}
+                aria-required
+                className="w-full resize-none rounded-xl border-none bg-[#F6FAF8] p-3.5 text-[14px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all placeholder:text-[#0F1F1C]/30 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="secondary" onClick={onClose} disabled={submitting}>
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button variant="secondary" size="lg" className="sm:w-auto w-full" onClick={onClose} disabled={submitting}>
             Keep Order
           </Button>
-          <Button variant="danger" onClick={submit} loading={submitting} disabled={!canSubmit}>
+          <Button variant="danger" size="lg" className="sm:w-auto w-full" onClick={submit} loading={submitting} disabled={!canSubmit}>
             Confirm Cancellation
           </Button>
         </div>
@@ -1573,14 +1656,14 @@ export function OrderSidePanel({ order, deliveryCharge, open, onClose, onUpdated
     <>
       <AnimatePresence>
         {open && shown && (
-          <div key="order-panel" className="fixed inset-0 z-50">
+          <div key="order-panel" className="fixed inset-0 z-[80]">
             <motion.div
               aria-hidden
-              className="absolute inset-0 bg-black/25 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-[#0F1F1C]/20 backdrop-blur-sm transition-opacity"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.3 }}
               onClick={onClose}
             />
             <motion.div
@@ -1588,137 +1671,164 @@ export function OrderSidePanel({ order, deliveryCharge, open, onClose, onUpdated
               aria-modal="true"
               aria-labelledby={titleId}
               onKeyDown={trapTab}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-              className="absolute inset-y-0 right-0 flex w-full flex-col bg-surface shadow-2xl sm:max-w-xl lg:max-w-2xl"
+              initial={{ x: '100%', opacity: 0.5 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0.5 }}
+              transition={{ type: 'spring', damping: 32, stiffness: 350, mass: 0.8 }}
+              className="absolute inset-y-0 right-0 flex w-full flex-col bg-[#F6FAF8] shadow-2xl sm:max-w-[560px] lg:max-w-[640px]"
             >
-              <header className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-100 bg-white px-4 py-4 sm:px-6">
+              <header className="relative flex shrink-0 items-start justify-between gap-4 border-b border-[#156253]/10 bg-[#FFFFFF] px-5 py-5 sm:px-8">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 id={titleId} className="font-mono text-xl font-bold tracking-wide text-brand-800">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 id={titleId} className="font-mono text-[22px] font-bold tracking-tight text-[#156253]">
                       {shown.orderId}
                     </h2>
                     <OrderStatusBadge status={shown.status} />
                   </div>
-                  <p className="mt-1 text-xs text-ink-soft">
-                    {shown.orderType === 'manual_text' ? 'Manual order' : 'Prescription order'} · {formatDateTime(shown.createdAt)}
+                  <p className="mt-1.5 flex items-center gap-2 text-[13px] font-medium text-[#0F1F1C]/50">
+                    <span className="flex items-center gap-1">
+                      {shown.orderType === 'manual_text' ? <Inbox className="h-3.5 w-3.5" /> : <PackageCheck className="h-3.5 w-3.5" />}
+                      {shown.orderType === 'manual_text' ? 'Manual Order' : 'Prescription Order'}
+                    </span>
+                    <span>•</span>
+                    <span>{formatDateTime(shown.createdAt)}</span>
                   </p>
                 </div>
                 <button
                   ref={closeRef}
                   type="button"
                   onClick={onClose}
-                  aria-label="Close order details"
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-ink-muted hover:bg-brand-50 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                  aria-label="Close panel"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F6FAF8] text-[#0F1F1C]/40 transition-colors hover:bg-[#156253]/10 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
                 >
                   <X className="h-5 w-5" aria-hidden />
                 </button>
               </header>
 
-              <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+              <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-6 sm:px-8">
                 {shown.status === 'Cancelled' && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                    <p className="flex items-center gap-2 text-sm font-bold text-red-800">
-                      <AlertCircle className="h-4 w-4" aria-hidden /> Order cancelled
-                    </p>
-                    <p className="mt-1 text-sm text-red-700">{shown.cancelReason ?? 'No reason recorded.'}</p>
-                    {whatsappLink && (
-                      <a
-                        href={whatsappLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
-                      >
-                        Notify customer on WhatsApp <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                      </a>
-                    )}
+                  <div className="rounded-2xl border border-red-200 bg-[#FFFFFF] p-5 shadow-sm ring-1 ring-inset ring-red-100">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
+                      <div>
+                        <h4 className="text-[15px] font-bold text-red-900">Order Cancelled</h4>
+                        <p className="mt-1 text-[14px] font-medium text-red-700">{shown.cancelReason ?? 'No reason provided.'}</p>
+                        {whatsappLink && (
+                          <a
+                            href={whatsappLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-[13px] font-bold text-red-700 transition-colors hover:bg-red-100 active:scale-[0.98] w-fit"
+                          >
+                            Notify Customer via WhatsApp <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <Section title="Customer" icon={<User className="h-3.5 w-3.5" aria-hidden />}>
-                  <p className="text-base font-semibold text-ink">{shown.customerName}</p>
-                  <a
-                    href={`tel:+91${shown.mobileNumber}`}
-                    className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-brand-700 hover:underline"
-                  >
-                    <Phone className="h-4 w-4" aria-hidden /> {formatMobile(shown.mobileNumber)}
-                  </a>
-                  <div className="mt-2 flex gap-2 border-t border-brand-100 pt-3 text-sm">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
-                    <dl className="grid min-w-0 flex-1 grid-cols-[auto,1fr] gap-x-3 gap-y-1">
-                      <dt className="text-ink-soft">Address</dt>
-                      <dd className="break-words text-ink">{shown.address.flat || '—'}</dd>
-                      <dt className="text-ink-soft">Area</dt>
-                      <dd className="break-words text-ink">{shown.address.area || '—'}</dd>
+                <Section title="Customer Details" icon={<User className="h-4 w-4" aria-hidden />}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#156253]/10 pb-4">
+                    <div>
+                      <p className="text-[18px] font-bold text-[#0F1F1C]">{shown.customerName}</p>
+                      <a href={`tel:+91${shown.mobileNumber}`} className="mt-1 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#156253] hover:underline">
+                        <Phone className="h-3.5 w-3.5" aria-hidden /> {formatMobile(shown.mobileNumber)}
+                      </a>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="rounded-lg bg-[#F6FAF8] px-3 py-1.5 text-[12px] font-bold uppercase tracking-wider text-[#0F1F1C]/60 ring-1 ring-inset ring-[#156253]/10">
+                        {shown.firstOrderAtCreation ? 'New Customer' : 'Returning'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex gap-3">
+                    <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#156253]/40" aria-hidden />
+                    <dl className="grid min-w-0 flex-1 gap-1.5 text-[14px]">
+                      <div className="flex gap-2">
+                        <dt className="w-20 shrink-0 font-medium text-[#0F1F1C]/50">Address</dt>
+                        <dd className="font-semibold text-[#0F1F1C]">{shown.address.flat || '—'}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-20 shrink-0 font-medium text-[#0F1F1C]/50">Area</dt>
+                        <dd className="font-semibold text-[#0F1F1C]">{shown.address.area || '—'}</dd>
+                      </div>
                       {shown.address.landmark && (
-                        <Fragment>
-                          <dt className="text-ink-soft">Landmark</dt>
-                          <dd className="break-words text-ink">{shown.address.landmark}</dd>
-                        </Fragment>
+                        <div className="flex gap-2">
+                          <dt className="w-20 shrink-0 font-medium text-[#0F1F1C]/50">Landmark</dt>
+                          <dd className="font-semibold text-[#0F1F1C]">{shown.address.landmark}</dd>
+                        </div>
                       )}
                     </dl>
                   </div>
                 </Section>
 
-                <Section title="Customer history">
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-                    <Stat label="First order">{shown.firstOrderAtCreation ? 'Yes' : 'No'}</Stat>
-                    <Stat label="Previous orders">{shown.previousOrders}</Stat>
-                    <Stat label="Delivered">{shown.customer?.deliveredOrders ?? 0}</Stat>
-                    <Stat label="Gift claimed before">
-                      {shown.customer?.offerClaimed ? `Yes${shown.customer.offerClaimedOrderId ? ` (${shown.customer.offerClaimedOrderId})` : ''}` : 'No'}
+                <Section title="Customer History" icon={<TrendingUp className="h-4 w-4" />}>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <Stat label="Total Orders">{shown.previousOrders}</Stat>
+                    <Stat label="Completed">{shown.customer?.deliveredOrders ?? 0}</Stat>
+                    <Stat label="First Order">{shown.firstOrderAtCreation ? 'Yes' : 'No'}</Stat>
+                    <Stat label="Gift Claimed">
+                      {shown.customer?.offerClaimed ? <span className="text-[#156253] flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Yes</span> : 'No'}
                     </Stat>
-                  </dl>
+                  </div>
                 </Section>
 
-                <Section title="Order details">
+                <Section title="Requested Items" icon={<ShoppingBag className="h-4 w-4" />}>
                   {shown.orderType === 'manual_text' ? (
-                    <ul className="divide-y divide-brand-100 overflow-hidden rounded-xl ring-1 ring-brand-100">
-                      {shown.medicines.map((item, index) => (
-                        <li key={`${item.name}-${index}`} className="flex justify-between gap-3 px-3 py-2.5 text-sm">
-                          <span className="min-w-0 break-words font-medium">{item.name}</span>
-                          <span className="shrink-0 text-ink-muted">{item.quantity}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="overflow-hidden rounded-xl ring-1 ring-inset ring-[#156253]/10">
+                      <ul className="divide-y divide-[#156253]/10 bg-[#F6FAF8]">
+                        {shown.medicines.map((item, index) => (
+                          <li key={`${item.name}-${index}`} className="flex items-center justify-between gap-4 px-4 py-3">
+                            <span className="min-w-0 break-words text-[14px] font-bold text-[#0F1F1C]">{item.name}</span>
+                            <span className="shrink-0 rounded-md bg-[#FFFFFF] px-2.5 py-1 text-[13px] font-semibold text-[#156253] shadow-sm ring-1 ring-inset ring-[#156253]/10">{item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : shown.prescriptionUrl ? (
                     <a
                       href={shown.prescriptionUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-4 rounded-xl p-2 ring-1 ring-brand-100 hover:ring-brand-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                      className="group relative flex overflow-hidden rounded-xl bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/15 transition-all hover:shadow-md hover:ring-[#156253]/30"
                     >
                       <Image
                         src={cloudinaryThumb(shown.prescriptionUrl, 240)}
                         alt={`Prescription for ${shown.orderId}`}
-                        width={72}
-                        height={96}
-                        className="h-24 w-[72px] shrink-0 rounded-lg object-cover"
+                        width={96}
+                        height={128}
+                        className="h-32 w-24 shrink-0 border-r border-[#156253]/10 object-cover"
                         unoptimized
                       />
-                      <span className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-700 group-hover:underline">
-                        View Prescription <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                      </span>
+                      <div className="flex flex-1 items-center justify-between p-4">
+                        <div>
+                          <p className="text-[15px] font-bold text-[#0F1F1C]">Prescription Image</p>
+                          <p className="mt-1 text-[13px] font-medium text-[#0F1F1C]/50">Tap to open full size</p>
+                        </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] text-[#156253] shadow-sm transition-transform group-hover:scale-110">
+                          <ExternalLink className="h-5 w-5" aria-hidden />
+                        </div>
+                      </div>
                     </a>
                   ) : (
-                    <p className="text-sm text-ink-muted">No prescription image is attached to this order.</p>
+                    <p className="text-[14px] font-medium text-[#0F1F1C]/50">No items or prescription attached.</p>
                   )}
                 </Section>
 
                 {!shown.telegramNotificationSent && (
-                  <div role="status" className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                    <BellOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                    <div className="text-sm">
-                      <p className="font-semibold">Telegram notification was not delivered.</p>
-                      <p className="mt-0.5 text-xs text-amber-800">Make sure this order has been seen by the team.</p>
+                  <div className="flex gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <BellOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+                    <div>
+                      <p className="text-[14px] font-bold text-amber-900">Telegram Notification Failed</p>
+                      <p className="mt-1 text-[13px] font-medium text-amber-800">Ensure the pharmacy team is aware of this order.</p>
                     </div>
                   </div>
                 )}
 
                 {shown.status === 'Pending' ? (
-                  <Section title="Billing">
+                  <Section title="Operations Workspace" icon={<Save className="h-4 w-4" />}>
                     <BillingPanel
                       key={shown.id}
                       order={shown}
@@ -1734,17 +1844,20 @@ export function OrderSidePanel({ order, deliveryCharge, open, onClose, onUpdated
               </div>
 
               {shown.status === 'Pending' && (
-                <footer className="shrink-0 space-y-1 border-t border-brand-100 bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
-                  {/* BillingPanel portals Save Bill / Mark as Delivered here so they stay visible while the body scrolls. */}
+                <footer className="shrink-0 flex flex-col gap-3 border-t border-[#156253]/10 bg-[#FFFFFF] p-5 pb-safe sm:px-8">
+                  {/* Billing actions portaled here */}
                   <div ref={setActionsTarget} />
-                  <button
-                    ref={cancelTriggerRef}
-                    type="button"
-                    onClick={() => setCancelOpen(true)}
-                    className="flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                  >
-                    Cancel Order
-                  </button>
+                  
+                  <div className="flex justify-center border-t border-[#156253]/5 pt-3">
+                    <button
+                      ref={cancelTriggerRef}
+                      type="button"
+                      onClick={() => setCancelOpen(true)}
+                      className="text-[13px] font-bold text-red-600 hover:text-red-700 hover:underline transition-colors"
+                    >
+                      Cancel Order...
+                    </button>
+                  </div>
                 </footer>
               )}
             </motion.div>
@@ -1777,14 +1890,14 @@ const PENDING_TAB: TabConfig = {
   status: 'Pending',
   label: 'Pending',
   icon: Inbox,
-  emptyTitle: 'No pending orders',
-  emptyHint: 'New orders will appear here automatically.',
+  emptyTitle: 'Inbox Zero',
+  emptyHint: 'No pending orders right now. New ones will appear here.',
 };
 
 const TABS: TabConfig[] = [
   PENDING_TAB,
-  { status: 'Delivered', label: 'Delivered', icon: PackageCheck, emptyTitle: 'No delivered orders yet.', emptyHint: 'Delivered orders will show up here.' },
-  { status: 'Cancelled', label: 'Cancelled', icon: Ban, emptyTitle: 'No cancelled orders.', emptyHint: 'Cancelled orders and their reasons will show up here.' },
+  { status: 'Delivered', label: 'Delivered', icon: PackageCheck, emptyTitle: 'No deliveries yet.', emptyHint: 'Completed orders will be logged here.' },
+  { status: 'Cancelled', label: 'Cancelled', icon: Ban, emptyTitle: 'No cancellations.', emptyHint: 'Orders that fell through appear here.' },
 ];
 
 interface ListState {
@@ -1985,122 +2098,134 @@ export function OrdersBoard() {
   return (
     <ToastProvider>
       <MotionConfig reducedMotion="user">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           
           <AnalyticsOverview />
 
-          <div className="mt-8 flex flex-wrap items-start justify-between gap-3 border-t border-brand-100 pt-8">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-display text-2xl font-bold">Orders</h2>
-                <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold text-ink-muted ring-1 ring-inset ring-brand-100">
-                  All-Time
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-ink-muted">Manage all incoming, delivered and cancelled pharmacy orders across all dates.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              {pending.updatedAt && <span className="hidden text-xs text-ink-soft sm:inline">Updated {timeFormatter.format(pending.updatedAt)}</span>}
-              <Button variant="secondary" onClick={refresh} icon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}>
-                Refresh
-              </Button>
-            </div>
-          </div>
-
-          <dl className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-            {TABS.map((tab) => (
-              <div key={tab.status} className="rounded-2xl border border-brand-100 bg-white px-3 py-3 sm:px-4">
-                <dt className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
-                  <tab.icon className="h-3.5 w-3.5" aria-hidden /> {tab.label}
-                </dt>
-                <dd className="mt-1 text-2xl font-bold tabular-nums">{lists[tab.status].pagination?.total ?? '—'}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <div
-            role="tablist"
-            aria-label="Order status"
-            onKeyDown={handleTabKeyDown}
-            className="mt-5 grid grid-cols-3 gap-1 rounded-2xl bg-white p-1 ring-1 ring-brand-100 sm:inline-grid sm:grid-cols-[repeat(3,minmax(8rem,1fr))]"
-          >
-            {TABS.map((tab) => {
-              const active = activeTab === tab.status;
-              const total = lists[tab.status].pagination?.total;
-              return (
-                <button
-                  key={tab.status}
-                  id={`${tabsId}-tab-${tab.status}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  aria-controls={`${tabsId}-panel`}
-                  tabIndex={active ? 0 : -1}
-                  onClick={() => setActiveTab(tab.status)}
-                  className={cn(
-                    'relative flex h-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold transition-colors',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
-                    active ? 'text-white' : 'text-ink-muted hover:text-ink',
-                  )}
-                >
-                  {active && (
-                    <motion.span layoutId={`${tabsId}-indicator`} className="absolute inset-0 rounded-xl bg-brand-700" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />
-                  )}
-                  <span className="relative">{tab.label}</span>
-                  {total !== undefined && (
-                    <span className={cn('relative rounded-full px-1.5 text-xs tabular-nums', active ? 'bg-white/20' : 'bg-brand-50 text-brand-700')}>{total}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div role="tabpanel" id={`${tabsId}-panel`} aria-labelledby={`${tabsId}-tab-${activeTab}`} className="mt-4">
-            {list.loading && list.orders.length === 0 ? (
-              <div className="space-y-2" aria-busy>
-                {Array.from({ length: 5 }, (_, index) => (
-                  <Skeleton key={index} className="h-24 rounded-2xl" />
-                ))}
-              </div>
-            ) : list.error && list.orders.length === 0 ? (
-              <div className="card p-6 text-center" role="alert">
-                <p className="font-semibold">Could not load orders</p>
-                <p className="mt-1 text-sm text-ink-muted">{list.error}</p>
-                <Button variant="secondary" size="sm" className="mt-4" onClick={() => void list.load()}>
-                  Try again
-                </Button>
-              </div>
-            ) : list.orders.length === 0 ? (
-              <div className="card grid place-items-center p-10 text-center">
-                <activeMeta.icon className="h-10 w-10 text-brand-200" aria-hidden />
-                <p className="mt-3 text-sm font-semibold text-ink">{activeMeta.emptyTitle}</p>
-                <p className="mt-1 text-sm text-ink-muted">{activeMeta.emptyHint}</p>
-              </div>
-            ) : (
-              <>
-                {list.error && (
-                  <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-                    <span className="min-w-0">{list.error}</span>
-                    <button type="button" onClick={() => void list.load()} className="min-h-11 shrink-0 px-2 font-semibold underline">
-                      Try again
-                    </button>
+          <section className="mt-12 rounded-3xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+            <header className="border-b border-[#156253]/10 p-5 sm:p-8">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-display text-[24px] font-bold tracking-tight text-[#0F1F1C]">Command Center</h2>
+                    <span className="rounded-full bg-[#156253]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#156253]">
+                      All-Time
+                    </span>
                   </div>
-                )}
-                <ul className={cn('space-y-2 transition-opacity', list.loading && 'opacity-60')}>
-                  {list.orders.map((order) => (
-                    <li key={order.id}>
-                      <CompactOrderCard order={order} selected={order.id === selectedOrderId} onSelect={handleSelect} />
-                    </li>
-                  ))}
-                </ul>
-                {pagination && pagination.page < pagination.totalPages && (
-                  <Button variant="secondary" className="mt-4 w-full" loading={list.loadingMore} onClick={() => void list.load(pagination.page + 1)}>
-                    Load more
+                  <p className="mt-1 text-[14px] text-[#0F1F1C]/60">Manage operations, handle incoming queues, and verify deliveries.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {pending.updatedAt && (
+                    <span className="hidden text-[12px] font-bold uppercase tracking-wider text-[#0F1F1C]/40 sm:block">
+                      Updated {timeFormatter.format(pending.updatedAt)}
+                    </span>
+                  )}
+                  <Button variant="secondary" onClick={refresh} icon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}>
+                    Refresh
                   </Button>
-                )}
-              </>
-            )}
-          </div>
+                </div>
+              </div>
+
+              <div
+                role="tablist"
+                aria-label="Order status"
+                onKeyDown={handleTabKeyDown}
+                className="mt-8 flex w-full max-w-[480px] gap-1 rounded-xl bg-[#F6FAF8] p-1 ring-1 ring-inset ring-[#156253]/10"
+              >
+                {TABS.map((tab) => {
+                  const active = activeTab === tab.status;
+                  const total = lists[tab.status].pagination?.total;
+                  return (
+                    <button
+                      key={tab.status}
+                      id={`${tabsId}-tab-${tab.status}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      aria-controls={`${tabsId}-panel`}
+                      tabIndex={active ? 0 : -1}
+                      onClick={() => setActiveTab(tab.status)}
+                      className={cn(
+                        'relative flex h-11 flex-1 items-center justify-center gap-2 rounded-lg text-[13px] font-bold transition-colors',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+                        active ? 'text-[#0F1F1C]' : 'text-[#0F1F1C]/50 hover:text-[#0F1F1C]/80',
+                      )}
+                    >
+                      {active && (
+                        <motion.span 
+                          layoutId={`${tabsId}-indicator`} 
+                          className="absolute inset-0 rounded-lg bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/5" 
+                          transition={{ type: 'spring', stiffness: 500, damping: 40 }} 
+                        />
+                      )}
+                      <span className="relative z-10 hidden sm:inline">{tab.label}</span>
+                      <tab.icon className="relative z-10 h-4 w-4 sm:hidden" />
+                      {total !== undefined && (
+                        <span className={cn('relative z-10 rounded-md px-1.5 py-0.5 text-[11px] tabular-nums transition-colors', active ? 'bg-[#156253]/10 text-[#156253]' : 'bg-transparent text-[#0F1F1C]/40')}>
+                          {total}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </header>
+
+            <div role="tabpanel" id={`${tabsId}-panel`} aria-labelledby={`${tabsId}-tab-${activeTab}`} className="p-5 sm:p-8 min-h-[400px]">
+              {list.loading && list.orders.length === 0 ? (
+                <div className="space-y-3" aria-busy>
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <Skeleton key={index} className="h-24 rounded-2xl" />
+                  ))}
+                </div>
+              ) : list.error && list.orders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center" role="alert">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600 mb-4">
+                    <AlertTriangle className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-[18px] font-bold text-[#0F1F1C]">Could not load orders</h3>
+                  <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-sm">{list.error}</p>
+                  <Button variant="secondary" className="mt-6" onClick={() => void list.load()}>
+                    Try Again
+                  </Button>
+                </div>
+              ) : list.orders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F6FAF8] text-[#156253]/40 mb-4 ring-1 ring-inset ring-[#156253]/10">
+                    <activeMeta.icon className="h-7 w-7" aria-hidden />
+                  </div>
+                  <h3 className="text-[18px] font-bold text-[#0F1F1C]">{activeMeta.emptyTitle}</h3>
+                  <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-xs">{activeMeta.emptyHint}</p>
+                </div>
+              ) : (
+                <>
+                  {list.error && (
+                    <div role="alert" className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-medium text-red-700">
+                      <span className="min-w-0">{list.error}</span>
+                      <button type="button" onClick={() => void list.load()} className="shrink-0 font-bold underline hover:text-red-900 transition-colors">
+                        Retry
+                      </button>
+                    </div>
+                  )}
+                  <ul className={cn('flex flex-col gap-3 transition-opacity duration-300', list.loading && 'opacity-50 pointer-events-none')}>
+                    {list.orders.map((order) => (
+                      <li key={order.id}>
+                        <CompactOrderCard order={order} selected={order.id === selectedOrderId} onSelect={handleSelect} />
+                      </li>
+                    ))}
+                  </ul>
+                  {pagination && pagination.page < pagination.totalPages && (
+                    <div className="mt-8 flex justify-center">
+                      <Button variant="secondary" onClick={() => void list.load(pagination.page + 1)} loading={list.loadingMore} className="w-full sm:w-auto">
+                        Load Older Orders
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+
         </div>
 
         <OrderSidePanel

@@ -17,10 +17,10 @@ import React, {
   type ReactNode 
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, Info, Loader2, Save, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, Loader2, Save, X, Gift, Truck } from 'lucide-react';
 
 // ============================================================================
-// TYPES (from src/lib/types.ts)
+// TYPES
 // ============================================================================
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
@@ -170,7 +170,7 @@ export interface Pagination {
 }
 
 // ============================================================================
-// CONSTANTS (from src/lib/constant.ts)
+// CONSTANTS
 // ============================================================================
 export const SUPPORT_PHONE_DISPLAY = '+91 84338 18771';
 export const SUPPORT_PHONE_TEL = 'tel:+918433818771';
@@ -191,7 +191,7 @@ export const DEFAULT_PUBLIC_SETTINGS = {
 } as const;
 
 // ============================================================================
-// UTILITIES (from src/lib/cn.ts & src/lib/format.ts)
+// UTILITIES
 // ============================================================================
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -201,7 +201,7 @@ const dateTime = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', da
 export const formatDateTime = (iso: string) => dateTime.format(new Date(iso));
 
 // ============================================================================
-// API CLIENT (from src/lib/api.ts & src/lib/adminApi.ts)
+// API CLIENT
 // ============================================================================
 export interface FieldIssue {
   path: string;
@@ -276,7 +276,7 @@ export async function adminRequest<T>(path: string, options?: AdminOptions): Pro
 }
 
 // ============================================================================
-// UI COMPONENTS (Button, Field, Skeleton, Toast)
+// UI COMPONENTS (Button, Field, Skeleton, Toast, Switch)
 // ============================================================================
 
 // --- Button ---
@@ -284,17 +284,17 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const buttonVariants: Record<Variant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800 shadow-lift disabled:bg-brand-700/60',
-  secondary: 'bg-white text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-50 disabled:text-brand-800/50',
-  ghost: 'text-brand-800 hover:bg-brand-50 disabled:text-brand-800/50',
-  gift: 'bg-gift-500 text-white hover:bg-gift-600 shadow-[0_12px_30px_-12px_rgba(239,148,21,0.7)] disabled:bg-gift-500/60',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/60',
+  primary: 'bg-[#156253] text-[#FFFFFF] hover:bg-[#0F1F1C] shadow-[0_2px_8px_rgba(21,98,83,0.2)] disabled:opacity-50',
+  secondary: 'bg-[#FFFFFF] text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/15 hover:bg-[#F6FAF8] disabled:opacity-50',
+  ghost: 'text-[#156253] hover:bg-[#156253]/5 disabled:opacity-50',
+  gift: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md disabled:opacity-50',
+  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-50',
 };
 
 const buttonSizes: Record<Size, string> = {
-  sm: 'h-9 px-3.5 text-sm gap-1.5 rounded-xl',
-  md: 'h-11 px-5 text-[15px] gap-2 rounded-2xl',
-  lg: 'h-14 px-6 text-base gap-2.5 rounded-2xl',
+  sm: 'h-8 px-3 text-[13px] gap-1.5 rounded-lg',
+  md: 'h-10 px-4 text-[14px] gap-2 rounded-xl',
+  lg: 'h-12 px-6 text-[15px] gap-2.5 rounded-xl',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -315,16 +315,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold transition-[background-color,transform,box-shadow] duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
-        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
+        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+        'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         buttonVariants[variant],
         buttonSizes[size],
         className,
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden /> : icon}
       {children}
     </button>
   );
@@ -349,32 +349,34 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 
   return (
     <div className={className}>
-      <label htmlFor={inputId} className="mb-1.5 flex items-baseline justify-between text-sm font-medium text-ink">
+      <label htmlFor={inputId} className="mb-2 flex items-baseline justify-between text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">
         {label}
-        {optional && <span className="text-xs font-normal text-ink-soft">Optional</span>}
+        {optional && <span className="text-[11px] font-medium normal-case text-[#0F1F1C]/40">Optional</span>}
       </label>
       <div
         className={cn(
-          'flex items-center rounded-2xl bg-white ring-1 ring-inset transition-shadow focus-within:ring-2',
-          error ? 'ring-red-300 focus-within:ring-red-500' : 'ring-brand-100 focus-within:ring-brand-500',
+          'group flex h-12 items-center rounded-xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset transition-all',
+          error 
+            ? 'ring-red-300 focus-within:ring-2 focus-within:ring-red-500' 
+            : 'ring-[#156253]/15 focus-within:ring-2 focus-within:ring-[#156253]',
         )}
       >
-        {leading && <span className="pl-4 text-[15px] font-medium text-ink-muted">{leading}</span>}
+        {leading && <span className="pl-4 pr-2 text-[15px] font-semibold text-[#0F1F1C]/40 transition-colors group-focus-within:text-[#156253]">{leading}</span>}
         <input
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-12 w-full rounded-2xl bg-transparent px-4 text-[15px] text-ink placeholder:text-ink-soft focus:outline-none"
+          className="h-full w-full rounded-r-xl bg-transparent pr-4 text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
           {...props}
         />
       </div>
       {error ? (
-        <p id={`${inputId}-error`} role="alert" className="mt-1.5 text-sm text-red-600">
-          {error}
+        <p id={`${inputId}-error`} role="alert" className="mt-2 text-[13px] font-medium text-red-600 flex items-center gap-1.5">
+          <AlertTriangle className="h-3.5 w-3.5" /> {error}
         </p>
       ) : hint ? (
-        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-ink-soft">
+        <p id={`${inputId}-hint`} className="mt-2 text-[12px] font-medium text-[#0F1F1C]/50 leading-relaxed">
           {hint}
         </p>
       ) : null}
@@ -385,16 +387,42 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 // --- Skeleton ---
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div aria-hidden className={cn('relative overflow-hidden rounded-xl bg-brand-100/60', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+    <div aria-hidden className={cn('relative overflow-hidden bg-[#156253]/5', className)}>
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
+  );
+}
+
+// --- Switch ---
+function NativeSwitch({ checked, onChange, disabled }: { checked: boolean; onChange: (c: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "relative inline-flex h-[32px] w-[54px] shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]",
+        checked ? "bg-[#156253]" : "bg-[#0F1F1C]/15",
+        disabled && "cursor-not-allowed opacity-50"
+      )}
+    >
+      <span className="sr-only">Toggle feature</span>
+      <motion.span
+        layout
+        className="absolute left-[3px] h-[26px] w-[26px] rounded-full bg-white shadow-sm ring-1 ring-black/5"
+        animate={{ x: checked ? 22 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      />
+    </button>
   );
 }
 
 // --- Toast ---
 type ToastTone = 'success' | 'error' | 'info';
 
-interface Toast {
+interface ToastData {
   id: number;
   tone: ToastTone;
   message: string;
@@ -410,13 +438,13 @@ const ToastContext = createContext<ToastApi | null>(null);
 
 const toastIcons = { success: CheckCircle2, error: AlertTriangle, info: Info };
 const toastTones = {
-  success: 'text-brand-700',
-  error: 'text-red-600',
-  info: 'text-ink-muted',
+  success: 'text-[#156253]',
+  error: 'text-[#DC2626]',
+  info: 'text-[#0F1F1C]/70',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
   const nextId = useRef(0);
 
   const dismiss = useCallback((id: number) => setToasts((current) => current.filter((toast) => toast.id !== id)), []);
@@ -442,7 +470,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4 sm:bottom-6">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[999] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
         <AnimatePresence initial={false}>
           {toasts.map((toast) => {
             const Icon = toastIcons[toast.tone];
@@ -450,16 +478,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <motion.div
                 key={toast.id}
                 layout
-                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                initial={{ opacity: 0, y: 16, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 role={toast.tone === 'error' ? 'alert' : 'status'}
-                className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl bg-white px-4 py-3 shadow-lift ring-1 ring-brand-100"
+                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-[#FFFFFF]/95 px-4 py-3.5 shadow-xl ring-1 ring-[#156253]/10 backdrop-blur-md"
               >
                 <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toastTones[toast.tone])} aria-hidden />
-                <p className="flex-1 text-sm text-ink">{toast.message}</p>
-                <button type="button" onClick={() => dismiss(toast.id)} className="text-ink-soft hover:text-ink" aria-label="Dismiss">
+                <p className="flex-1 text-[14px] font-medium text-[#0F1F1C]">{toast.message}</p>
+                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#0F1F1C]/40 hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>
@@ -483,7 +511,6 @@ export function useToast() {
 
 const AMOUNT_PATTERN = /^\d{1,7}(\.\d{1,2})?$/;
 
-// We wrap the internal implementation with the ToastProvider so it has access to useToast
 function SettingsFormInner() {
   const toast = useToast();
   const [settings, setSettings] = useState<AdminSettings | null>(null);
@@ -519,7 +546,7 @@ function SettingsFormInner() {
         body: { deliveryCharge: Number(deliveryCharge), firstOrderMinimumMedicineAmount: Number(threshold), firstOrderOfferEnabled: offerEnabled },
       });
       apply(res.settings);
-      toast.success('Settings saved');
+      toast.success('Preferences successfully updated.');
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -527,47 +554,133 @@ function SettingsFormInner() {
     }
   };
 
-  if (loadError) return <div className="card p-6 text-center text-sm" role="alert">{loadError}</div>;
-  if (!settings) return <Skeleton className="h-96 max-w-xl rounded-3xl" />;
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center max-w-2xl mx-auto mt-8">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <AlertTriangle className="h-8 w-8" />
+        </div>
+        <h3 className="font-display text-[22px] font-bold text-[#0F1F1C]">Could not load settings</h3>
+        <p className="mt-2 text-[14px] font-medium text-[#0F1F1C]/60 max-w-sm">{loadError}</p>
+        <Button onClick={() => window.location.reload()} className="mt-6 shadow-sm" variant="secondary">Reload Page</Button>
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="mx-auto max-w-2xl mt-8">
+        <Skeleton className="h-24 w-[280px] rounded-2xl mb-8 bg-transparent" />
+        <div className="space-y-6">
+          <Skeleton className="h-[140px] w-full rounded-3xl" />
+          <Skeleton className="h-[220px] w-full rounded-3xl" />
+          <Skeleton className="h-14 w-full sm:w-[180px] rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <form onSubmit={submit} className="card max-w-xl space-y-6 p-6 sm:p-8" noValidate>
-      <div>
-        <h1 className="font-display text-2xl font-bold">Settings</h1>
-        {settings.updatedAt && <p className="mt-1 text-xs text-ink-soft">Last updated {formatDateTime(settings.updatedAt)}</p>}
-      </div>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-2xl">
+      <header className="mb-8 border-b border-[#156253]/10 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F1F1C]">Preferences</h1>
+            <p className="mt-1.5 text-[14px] font-medium text-[#0F1F1C]/60">Manage operational parameters and promotional offers.</p>
+          </div>
+          {settings.updatedAt && (
+            <div className="text-[12px] font-bold uppercase tracking-wider text-[#0F1F1C]/40">
+              Last saved {formatDateTime(settings.updatedAt).split(',')[0]}
+            </div>
+          )}
+        </div>
+      </header>
 
-      <Field
-        label="Delivery Charge"
-        leading="₹"
-        inputMode="decimal"
-        value={deliveryCharge}
-        onChange={(event) => setDeliveryCharge(event.target.value.replace(/[^\d.]/g, ''))}
-        error={deliveryCharge ? deliveryError : 'Required'}
-        hint={'Customers see "FREE Delivery" when this is 0. Applied to every bill saved from now on.'}
-      />
+      <form onSubmit={submit} className="space-y-8" noValidate>
+        
+        {/* Delivery Charge Section */}
+        <section className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+          <div className="border-b border-[#156253]/5 bg-[#F6FAF8] px-6 py-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+                <Truck className="h-5 w-5 text-[#156253]" />
+              </div>
+              <h2 className="text-[16px] font-bold text-[#0F1F1C]">Delivery Fees</h2>
+            </div>
+          </div>
+          <div className="p-6 sm:p-8">
+            <Field
+              label="Standard Delivery Charge"
+              leading="₹"
+              inputMode="decimal"
+              value={deliveryCharge}
+              onChange={(event) => setDeliveryCharge(event.target.value.replace(/[^\d.]/g, ''))}
+              error={deliveryCharge ? deliveryError : 'Required'}
+              hint={<>Set to <strong>0</strong> to advertise "FREE Delivery" sitewide. This charge is automatically applied to all new orders.</>}
+              className="max-w-[320px]"
+            />
+          </div>
+        </section>
 
-      <fieldset className="space-y-4 rounded-2xl bg-surface p-4 ring-1 ring-brand-100">
-        <legend className="px-1 text-sm font-semibold">First Order Gift · FREE {GIFT.name}</legend>
-        <label className="flex cursor-pointer items-center justify-between gap-3">
-          <span className="text-sm">Offer enabled</span>
-          <input type="checkbox" role="switch" checked={offerEnabled} onChange={(event) => setOfferEnabled(event.target.checked)} className="h-5 w-5 accent-brand-700" />
-        </label>
-        <Field
-          label="Minimum Medicine Subtotal"
-          leading="₹"
-          inputMode="decimal"
-          value={threshold}
-          onChange={(event) => setThreshold(event.target.value.replace(/[^\d.]/g, ''))}
-          error={threshold ? thresholdError : 'Required'}
-          hint="Checked against the medicine subtotal only. Other items and delivery never count."
-        />
-      </fieldset>
+        {/* First Order Gift Section */}
+        <section className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+          <div className="border-b border-[#156253]/5 bg-gradient-to-r from-[#D8F3E8]/40 to-transparent px-6 py-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+                  <Gift className="h-5 w-5 text-[#156253]" />
+                </div>
+                <div>
+                  <h2 className="text-[16px] font-bold text-[#0F1F1C]">First Order Gift</h2>
+                  <p className="text-[13px] font-medium text-[#0F1F1C]/60">FREE {GIFT.name}</p>
+                </div>
+              </div>
+              <NativeSwitch checked={offerEnabled} onChange={setOfferEnabled} />
+            </div>
+          </div>
+          
+          <AnimatePresence initial={false}>
+            {offerEnabled && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }} 
+                animate={{ height: 'auto', opacity: 1 }} 
+                exit={{ height: 0, opacity: 0 }} 
+                className="overflow-hidden"
+              >
+                <div className="p-6 sm:p-8 pt-6">
+                  <Field
+                    label="Minimum Eligibility Threshold"
+                    leading="₹"
+                    inputMode="decimal"
+                    value={threshold}
+                    onChange={(event) => setThreshold(event.target.value.replace(/[^\d.]/g, ''))}
+                    error={threshold ? thresholdError : 'Required'}
+                    hint="Checked against the medicine subtotal only. Delivery fees and other retail products do not count toward this threshold."
+                    className="max-w-[320px]"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
 
-      <Button type="submit" loading={saving} disabled={Boolean(deliveryError || thresholdError)} icon={<Save className="h-4 w-4" />}>
-        Save Settings
-      </Button>
-    </form>
+        {/* Action Footer */}
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-4">
+          <Button 
+            type="submit" 
+            size="lg" 
+            loading={saving} 
+            disabled={Boolean(deliveryError || thresholdError)} 
+            className="w-full sm:w-auto min-w-[200px] shadow-[0_4px_16px_rgba(21,98,83,0.2)]"
+            icon={<Save className="h-[18px] w-[18px] mr-1.5" />}
+          >
+            Save Preferences
+          </Button>
+          {saving && <span className="text-[13px] font-bold text-[#156253] animate-pulse">Applying updates...</span>}
+        </div>
+        
+      </form>
+    </motion.div>
   );
 }
 

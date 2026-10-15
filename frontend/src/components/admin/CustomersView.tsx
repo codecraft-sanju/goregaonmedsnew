@@ -1,7 +1,9 @@
-//src/components/admin/CustomersView.tsx
+// src/components/admin/CustomersView.tsx
 'use client';
 import React, { useEffect, useState, forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { Search, Users, Loader2 } from 'lucide-react';
+import { Search, Users, Loader2, X, Phone, Gift, ShoppingBag, PackageCheck, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
@@ -150,7 +152,7 @@ export interface Pagination {
 }
 
 // ============================================================================
-// UTILS (from src/lib/cn.ts & src/lib/format.ts)
+// UTILS
 // ============================================================================
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -184,7 +186,7 @@ export function isLateNightInMumbai(date = new Date()) {
 }
 
 // ============================================================================
-// API & ADMIN API (from src/lib/api.ts & src/lib/adminApi.ts)
+// API
 // ============================================================================
 export interface FieldIssue {
   path: string;
@@ -267,12 +269,12 @@ export function safeAdminRedirect(next: string | null) {
 }
 
 // ============================================================================
-// UI COMPONENTS (from src/components/ui/Skeleton.tsx & src/components/ui/Button.tsx)
+// UI COMPONENTS
 // ============================================================================
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div aria-hidden className={cn('relative overflow-hidden rounded-xl bg-brand-100/60', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+    <div aria-hidden className={cn('relative overflow-hidden bg-[#156253]/5', className)}>
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
   );
 }
@@ -281,17 +283,17 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800 shadow-lift disabled:bg-brand-700/60',
-  secondary: 'bg-white text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-50 disabled:text-brand-800/50',
-  ghost: 'text-brand-800 hover:bg-brand-50 disabled:text-brand-800/50',
-  gift: 'bg-gift-500 text-white hover:bg-gift-600 shadow-[0_12px_30px_-12px_rgba(239,148,21,0.7)] disabled:bg-gift-500/60',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/60',
+  primary: 'bg-[#156253] text-[#FFFFFF] hover:bg-[#0F1F1C] shadow-sm disabled:opacity-50',
+  secondary: 'bg-[#FFFFFF] text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/15 hover:bg-[#F6FAF8] shadow-sm disabled:opacity-50',
+  ghost: 'text-[#156253] hover:bg-[#156253]/5 disabled:opacity-50',
+  gift: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md disabled:opacity-50',
+  danger: 'bg-[#DC2626] text-white hover:bg-[#B91C1C] shadow-sm disabled:opacity-50',
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-9 px-3.5 text-sm gap-1.5 rounded-xl',
-  md: 'h-11 px-5 text-[15px] gap-2 rounded-2xl',
-  lg: 'h-14 px-6 text-base gap-2.5 rounded-2xl',
+  sm: 'h-8 px-3 text-[13px] gap-1.5 rounded-lg',
+  md: 'h-10 px-4 text-[14px] gap-2 rounded-xl',
+  lg: 'h-12 px-6 text-[15px] gap-2.5 rounded-xl',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -312,16 +314,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold transition-[background-color,transform,box-shadow] duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
-        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
+        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+        'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         variants[variant],
         sizes[size],
         className,
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden /> : icon}
       {children}
     </button>
   );
@@ -357,92 +359,216 @@ export function CustomersView() {
     setError(null);
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (debounced) params.set('q', debounced);
+    
     adminRequest<Response>(`/customers?${params}`, { signal: controller.signal })
       .then(setData)
       .catch((err: Error) => err.name !== 'AbortError' && setError(err.message))
       .finally(() => !controller.signal.aborted && setLoading(false));
+      
     return () => controller.abort();
   }, [debounced, page]);
 
   return (
-    <div>
-      <h1 className="font-display text-2xl font-bold">Customer History</h1>
-      <div className="mt-4 flex items-center rounded-2xl bg-white ring-1 ring-brand-100 focus-within:ring-2 focus-within:ring-brand-500">
-        <Search className="ml-4 h-4 w-4 text-ink-soft" aria-hidden />
-        <label htmlFor="customer-search" className="sr-only">Search customers</label>
-        <input
-          id="customer-search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by name or mobile number"
-          maxLength={80}
-          className="h-12 w-full rounded-2xl bg-transparent px-3 focus:outline-none"
-        />
-      </div>
+    <div className="mx-auto max-w-5xl">
+      {/* PAGE HEADER */}
+      <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end justify-between border-b border-[#156253]/10 pb-6">
+        <div>
+          <h1 className="font-display text-[26px] font-bold text-[#0F1F1C] tracking-tight">Customer Directory</h1>
+          <p className="mt-1 text-[14px] text-[#0F1F1C]/60">Manage your patient and customer relationships.</p>
+        </div>
+        
+        {/* PREMIUM SEARCH */}
+        <div className="relative w-full max-w-[340px] group">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Search className="h-[18px] w-[18px] text-[#0F1F1C]/40 transition-colors group-focus-within:text-[#156253]" aria-hidden />
+          </div>
+          <label htmlFor="customer-search" className="sr-only">Search customers</label>
+          <input
+            id="customer-search"
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by name or phone..."
+            maxLength={80}
+            className="h-[42px] w-full rounded-xl border-none bg-[#FFFFFF] pl-10 pr-10 text-[14px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all placeholder:text-[#0F1F1C]/30 hover:bg-[#F6FAF8] focus:bg-[#FFFFFF] focus:outline-none focus:ring-4 focus:ring-[#156253]/10"
+          />
+          <AnimatePresence>
+            {query && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute inset-y-0 right-1.5 my-auto flex h-7 w-7 items-center justify-center rounded-lg text-[#0F1F1C]/40 hover:bg-[#0F1F1C]/5 hover:text-[#0F1F1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+      </header>
 
-      <div className="mt-5">
+      <div className="min-h-[400px]">
         {loading && !data ? (
-          <div className="space-y-3">{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
+          <div className="space-y-3 hidden md:block">
+             {Array.from({ length: 10 }, (_, i) => <Skeleton key={`desktop-skel-${i}`} className="h-[52px] rounded-xl" />)}
+          </div>
+        ) : loading && !data ? (
+          <div className="space-y-4 md:hidden">
+             {Array.from({ length: 6 }, (_, i) => <Skeleton key={`mobile-skel-${i}`} className="h-[120px] rounded-2xl" />)}
+          </div>
         ) : error ? (
-          <div className="card p-6 text-center" role="alert">
-            <p className="font-semibold">Could not load customers</p>
-            <p className="mt-1 text-sm text-ink-muted">{error}</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center" role="alert">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600 mb-4">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <h3 className="text-[18px] font-bold text-[#0F1F1C]">Could not load customers</h3>
+            <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-sm">{error}</p>
           </div>
         ) : !data || data.customers.length === 0 ? (
-          <div className="card grid place-items-center p-10 text-center">
-            <Users className="h-10 w-10 text-brand-200" aria-hidden />
-            <p className="mt-3 text-sm text-ink-muted">{debounced ? 'No customers match your search.' : 'Customers appear here after their first order.'}</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F6FAF8] text-[#156253]/40 mb-4 ring-1 ring-inset ring-[#156253]/10">
+              <Users className="h-7 w-7" aria-hidden />
+            </div>
+            <h3 className="text-[18px] font-bold text-[#0F1F1C]">No customers found</h3>
+            <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-sm">
+              {debounced ? `No matches for "${debounced}".` : 'Customers will appear here after their first order.'}
+            </p>
           </div>
         ) : (
-          <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
-            <div className="card hidden overflow-hidden md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-surface text-xs uppercase tracking-wider text-ink-soft">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">Customer Name</th>
-                    <th scope="col" className="px-4 py-3">Mobile Number</th>
-                    <th scope="col" className="px-4 py-3 text-right">Total Orders</th>
-                    <th scope="col" className="px-4 py-3 text-right">Delivered</th>
-                    <th scope="col" className="px-4 py-3">First Order?</th>
-                    <th scope="col" className="px-4 py-3">Offer Claimed?</th>
-                    <th scope="col" className="px-4 py-3">Claimed On</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-brand-100">
-                 {data.customers.map((customer, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-3 font-medium">{customer.fullName}</td>
-                    <td className="px-4 py-3"><a href={`tel:+91${customer.mobileNumber}`} className="text-brand-700">{formatMobile(customer.mobileNumber)}</a></td>
-                    <td className="px-4 py-3 text-right tabular-nums">{customer.totalOrders}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{customer.deliveredOrders}</td>
-                    <td className="px-4 py-3">{customer.isFirstTimeCustomer ? 'Yes' : 'No'}</td>
-                    <td className="px-4 py-3">{customer.offerClaimed ? <span className="font-semibold text-gift-600">Yes</span> : 'No'}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{customer.offerClaimedOrderId ?? '—'}</td>
-                  </tr>
-                 ))}
-                </tbody>
-              </table>
+          <div className={cn("transition-opacity duration-300", loading ? "opacity-50 pointer-events-none" : "opacity-100")}>
+            
+            {/* DESKTOP DATA GRID */}
+            <div className="hidden overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10 md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead className="border-b border-[#156253]/10 bg-[#F6FAF8] text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">
+                    <tr>
+                      <th scope="col" className="px-5 py-3.5 whitespace-nowrap">Customer Name</th>
+                      <th scope="col" className="px-5 py-3.5 whitespace-nowrap">Mobile Number</th>
+                      <th scope="col" className="px-5 py-3.5 text-right whitespace-nowrap">Total Orders</th>
+                      <th scope="col" className="px-5 py-3.5 text-right whitespace-nowrap">Delivered</th>
+                      <th scope="col" className="px-5 py-3.5 text-center whitespace-nowrap">First Order?</th>
+                      <th scope="col" className="px-5 py-3.5 text-center whitespace-nowrap">Offer Claimed?</th>
+                      <th scope="col" className="px-5 py-3.5 whitespace-nowrap">Claimed On</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#156253]/5">
+                   {data.customers.map((customer, index) => (
+                    <tr key={index} className="transition-colors hover:bg-[#F6FAF8]">
+                      <td className="px-5 py-3.5 whitespace-nowrap font-semibold text-[#0F1F1C]">
+                        {customer.fullName}
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <a href={`tel:+91${customer.mobileNumber}`} className="font-medium text-[#156253] hover:underline focus-visible:outline-none focus-visible:underline">
+                          {formatMobile(customer.mobileNumber)}
+                        </a>
+                      </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap font-medium tabular-nums text-[#0F1F1C]">
+                        {customer.totalOrders}
+                      </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap font-medium tabular-nums text-[#0F1F1C]">
+                        {customer.deliveredOrders}
+                      </td>
+                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                        {customer.isFirstTimeCustomer ? (
+                           <span className="inline-flex items-center rounded-full bg-[#D8F3E8]/60 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#156253]">Yes</span>
+                        ) : (
+                           <span className="text-[#0F1F1C]/40 font-medium">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                        {customer.offerClaimed ? (
+                           <span className="inline-flex items-center rounded-full bg-gradient-to-r from-orange-50 to-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-orange-700 ring-1 ring-inset ring-orange-200/50">Yes</span>
+                        ) : (
+                           <span className="text-[#0F1F1C]/40 font-medium">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap font-mono text-[12px] font-medium tracking-wide text-[#0F1F1C]/60">
+                        {customer.offerClaimedOrderId ?? '—'}
+                      </td>
+                    </tr>
+                   ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <ul className="space-y-3 md:hidden">
+
+            {/* MOBILE CARDS */}
+            <ul className="flex flex-col gap-3 md:hidden">
              {data.customers.map((customer, index) => (
-              <li key={index} className="card p-4 text-sm">
-                <div className="flex justify-between gap-2">
-                  <p className="font-semibold">{customer.fullName}</p>
-                  {customer.offerClaimed && <span className="rounded-full bg-gift-100 px-2 py-0.5 text-xs font-semibold text-gift-600">Gift claimed</span>}
+              <li key={index} className="relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-5 shadow-sm ring-1 ring-inset ring-[#156253]/10">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[16px] font-bold text-[#0F1F1C]">{customer.fullName}</p>
+                    <a href={`tel:+91${customer.mobileNumber}`} className="mt-0.5 flex items-center gap-1.5 text-[14px] font-semibold text-[#156253] active:opacity-70">
+                      <Phone className="h-3.5 w-3.5" /> {formatMobile(customer.mobileNumber)}
+                    </a>
+                  </div>
+                  {customer.isFirstTimeCustomer && (
+                     <span className="shrink-0 rounded-lg bg-[#F6FAF8] px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#156253] ring-1 ring-inset ring-[#156253]/10">
+                       New
+                     </span>
+                  )}
                 </div>
-                <a href={`tel:+91${customer.mobileNumber}`} className="text-brand-700">{formatMobile(customer.mobileNumber)}</a>
-                <p className="mt-2 text-xs text-ink-muted">
-                  {customer.totalOrders} orders · {customer.deliveredOrders} delivered · First order: {customer.isFirstTimeCustomer ? 'Yes' : 'No'}
-                  {customer.offerClaimedOrderId && ` · Gift on ${customer.offerClaimedOrderId}`}
-                </p>
+                
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#156253]/10 pt-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/40">
+                      <ShoppingBag className="h-3.5 w-3.5" /> Total
+                    </span>
+                    <span className="text-[15px] font-bold tabular-nums text-[#0F1F1C]">{customer.totalOrders}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/40">
+                      <PackageCheck className="h-3.5 w-3.5" /> Delivered
+                    </span>
+                    <span className="text-[15px] font-bold tabular-nums text-[#0F1F1C]">{customer.deliveredOrders}</span>
+                  </div>
+                </div>
+
+                {customer.offerClaimed && (
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-gradient-to-r from-orange-50/50 to-amber-50/50 px-3 py-2 ring-1 ring-inset ring-orange-200/30">
+                    <span className="flex items-center gap-1.5 text-[12px] font-bold text-orange-700">
+                      <Gift className="h-3.5 w-3.5" /> Gift Claimed
+                    </span>
+                    {customer.offerClaimedOrderId && (
+                      <span className="font-mono text-[11px] font-bold tracking-wide text-orange-700/60">
+                        {customer.offerClaimedOrderId}
+                      </span>
+                    )}
+                  </div>
+                )}
               </li>
              ))}
             </ul>
+
+            {/* PAGINATION */}
             {data.pagination.totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                <span className="text-sm text-ink-muted">Page {data.pagination.page} of {data.pagination.totalPages}</span>
-                <Button variant="secondary" size="sm" disabled={page >= data.pagination.totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+              <div className="mt-8 flex items-center justify-between border-t border-[#156253]/10 pt-6">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="w-24 sm:w-28" 
+                  disabled={page <= 1} 
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Previous
+                </Button>
+                <span className="text-[13px] font-bold text-[#0F1F1C]/60">
+                  Page {data.pagination.page} <span className="font-medium text-[#0F1F1C]/40">/</span> {data.pagination.totalPages}
+                </span>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="w-24 sm:w-28" 
+                  disabled={page >= data.pagination.totalPages} 
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             )}
           </div>
