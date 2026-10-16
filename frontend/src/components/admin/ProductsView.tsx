@@ -7,9 +7,9 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
+  useMemo,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
@@ -26,7 +26,6 @@ import {
   Trash2,
   UploadCloud,
   X,
-  PackageCheck,
   EyeOff,
 } from 'lucide-react';
 
@@ -314,7 +313,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold transition-all duration-200',
+        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
         'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         buttonVariants[variant],
@@ -323,7 +322,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden /> : icon}
       {children}
     </button>
   );
@@ -380,7 +379,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[999] flex flex-col items-center gap-2 px-4 sm:bottom-6">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[999] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
         <AnimatePresence initial={false}>
           {toasts.map((toast) => {
             const Icon = toastIcons[toast.tone];
@@ -393,7 +392,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 role={toast.tone === 'error' ? 'alert' : 'status'}
-                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-white/95 px-4 py-3.5 shadow-xl ring-1 ring-[#156253]/10 backdrop-blur-md"
+                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-[#FFFFFF]/95 px-4 py-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-1 ring-[#156253]/10 backdrop-blur-md"
               >
                 <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toastTones[toast.tone])} aria-hidden />
                 <p className="flex-1 text-[14px] font-medium text-[#0F1F1C]">{toast.message}</p>
@@ -603,24 +602,20 @@ function ProductsViewInner() {
       {/* Main Content */}
       <div className="min-h-[400px]">
         {loading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-[#156253]/5">
-                <div className="h-48 w-full animate-pulse bg-[#156253]/5" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-[#156253]/5" />
-                  <div className="h-5 w-3/4 animate-pulse rounded bg-[#156253]/5" />
-                  <div className="h-4 w-full animate-pulse rounded bg-[#156253]/5" />
-                  <div className="mt-6 flex justify-between pt-4">
-                    <div className="h-6 w-1/4 animate-pulse rounded bg-[#156253]/5" />
-                    <div className="flex gap-2">
-                      <div className="h-10 w-10 animate-pulse rounded-xl bg-[#156253]/5" />
-                      <div className="h-10 w-10 animate-pulse rounded-xl bg-[#156253]/5" />
-                    </div>
+          <div className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-[#156253]/5">
+            <div className="p-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="mb-4 flex items-center gap-4 border-b border-[#156253]/5 pb-4 last:border-0 last:pb-0 last:mb-0">
+                  <div className="h-12 w-12 shrink-0 animate-pulse rounded-xl bg-[#156253]/5" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-1/3 animate-pulse rounded bg-[#156253]/5" />
+                    <div className="h-3 w-1/4 animate-pulse rounded bg-[#156253]/5" />
                   </div>
+                  <div className="h-8 w-20 animate-pulse rounded-full bg-[#156253]/5" />
+                  <div className="h-8 w-16 animate-pulse rounded-md bg-[#156253]/5" />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center">
@@ -632,71 +627,108 @@ function ProductsViewInner() {
             <Button onClick={openAddModal} className="mt-8 shadow-sm" variant="secondary" size="lg">Add your first product</Button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <AnimatePresence>
-              {products.map((product) => (
-                <motion.div 
-                  key={product._id} 
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="group relative flex flex-col overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-lg hover:ring-[#156253]/20"
-                >
-                  <div className="relative h-[200px] w-full bg-[#F6FAF8] overflow-hidden">
-                    {product.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[#156253]/20 bg-gradient-to-br from-[#F6FAF8] to-[#D8F3E8]/30">
-                        <ImageIcon className="h-12 w-12" />
-                      </div>
-                    )}
-                    
-                    {/* Status Badges Overlay */}
-                    <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
-                      {!product.isActive && (
-                        <div className="flex items-center gap-1.5 rounded-full bg-[#0F1F1C]/80 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFFFFF] backdrop-blur-md shadow-sm">
-                          <EyeOff className="h-3 w-3" /> Hidden
-                        </div>
-                      )}
-                      {!product.inStock && (
-                        <div className="flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFFFFF] backdrop-blur-md shadow-sm">
-                          Out of Stock
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-1 flex-col p-5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#156253]">{product.category}</span>
-                    <h3 className="mt-1.5 text-[16px] font-bold leading-tight text-[#0F1F1C] line-clamp-2">{product.name}</h3>
-                    <p className="mt-2 text-[14px] font-medium leading-relaxed text-[#0F1F1C]/60 line-clamp-2">{product.description || 'No description provided.'}</p>
-                    
-                    <div className="mt-auto pt-6 flex items-center justify-between">
-                      <span className="font-display text-[22px] font-bold text-[#0F1F1C]">{formatRupees(product.price)}</span>
-                      <div className="flex items-center gap-1.5">
-                        <button 
-                          onClick={() => openEditModal(product)} 
-                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6FAF8] text-[#0F1F1C]/60 transition-colors hover:bg-[#D8F3E8]/50 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
-                          aria-label="Edit Product"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(product._id)} 
-                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6FAF8] text-[#0F1F1C]/60 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                          aria-label="Delete Product"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+          <div className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px] whitespace-nowrap">
+                <thead className="border-b border-[#156253]/10 bg-[#F6FAF8] text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">
+                  <tr>
+                    <th scope="col" className="px-5 py-4 w-[72px]">Image</th>
+                    <th scope="col" className="px-5 py-4 min-w-[240px] w-full">Product Details</th>
+                    <th scope="col" className="px-5 py-4">Category</th>
+                    <th scope="col" className="px-5 py-4">Price</th>
+                    <th scope="col" className="px-5 py-4 text-center">Visibility</th>
+                    <th scope="col" className="px-5 py-4 text-center">Stock</th>
+                    <th scope="col" className="px-5 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#156253]/5">
+                  <AnimatePresence>
+                    {products.map((product) => (
+                      <motion.tr 
+                        key={product._id} 
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="group transition-colors hover:bg-[#F6FAF8]"
+                      >
+                        <td className="px-5 py-3 align-middle">
+                          <div className="relative h-[46px] w-[46px] overflow-hidden rounded-[12px] bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/10">
+                            {product.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[#156253]/20">
+                                <ImageIcon className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 align-middle">
+                          <p className="text-[14px] font-bold text-[#0F1F1C] truncate max-w-[280px]">
+                            {product.name}
+                          </p>
+                          <p className="mt-0.5 text-[12px] font-medium text-[#0F1F1C]/50 truncate max-w-[280px]">
+                            {product.description || 'No description provided.'}
+                          </p>
+                        </td>
+                        <td className="px-5 py-3 align-middle">
+                          <span className="inline-flex rounded-md bg-[#D8F3E8]/40 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#156253] ring-1 ring-inset ring-[#156253]/10">
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 align-middle">
+                          <span className="font-display text-[15px] font-bold text-[#0F1F1C]">
+                            {formatRupees(product.price)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 align-middle text-center">
+                          {product.isActive ? (
+                            <span className="inline-flex items-center rounded-full bg-[#156253]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#156253]">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F1F1C]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">
+                              <EyeOff className="h-3 w-3" /> Hidden
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 align-middle text-center">
+                          {product.inStock ? (
+                            <span className="inline-flex items-center rounded-full bg-[#D8F3E8]/60 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#156253]">
+                              In Stock
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-red-600 ring-1 ring-inset ring-red-100">
+                              Out of Stock
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 align-middle text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <button 
+                              onClick={() => openEditModal(product)} 
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#0F1F1C]/40 transition-colors hover:bg-[#D8F3E8]/50 hover:text-[#156253]"
+                              aria-label="Edit Product"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(product._id)} 
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#0F1F1C]/40 transition-colors hover:bg-red-50 hover:text-red-600"
+                              aria-label="Delete Product"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

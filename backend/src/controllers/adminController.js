@@ -77,23 +77,31 @@ export function createAdminController({ env, notifier }) {
       res.json({ success: true, settings: toAdminSettings(await updateSettings(req.body)) });
     },
 
-    async getAnalyticsOverview(req, res, next) {
+   async getAnalyticsOverview(req, res, next) {
       try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, allTime } = req.query;
 
-        if (!startDate || !endDate) {
-          return res.status(400).json({ success: false, error: 'startDate and endDate are required.' });
+        let matchQuery = {};
+        let salesMatchQuery = { status: 'Delivered' };
+
+       
+        if (allTime !== 'true') {
+          if (!startDate || !endDate) {
+            return res.status(400).json({ success: false, error: 'startDate and endDate are required unless allTime is true.' });
+          }
+
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+
+          matchQuery.createdAt = { $gte: start, $lte: end };
+          salesMatchQuery.createdAt = { $gte: start, $lte: end };
         }
 
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-
-        const ordersInRange = await Order.find({
-          createdAt: { $gte: start, $lte: end },
-        });
+     
+        const ordersInRange = await Order.find(matchQuery);
 
         const totalOrders = ordersInRange.length;
         const pendingOrders = ordersInRange.filter((o) => o.status === 'Pending').length;
@@ -101,10 +109,7 @@ export function createAdminController({ env, notifier }) {
 
         const salesAggregation = await Order.aggregate([
           {
-            $match: {
-              status: 'Delivered',
-              createdAt: { $gte: start, $lte: end },
-            },
+            $match: salesMatchQuery,
           },
           {
             $group: {
@@ -130,7 +135,7 @@ export function createAdminController({ env, notifier }) {
       }
     },
 
-    // --- NEW: COSMETIC PRODUCTS CONTROLLER METHODS ---
+ 
 
     async listProducts(req, res, next) {
       try {

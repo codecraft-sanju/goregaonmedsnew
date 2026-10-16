@@ -10,7 +10,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  Fragment,
   memo,
   useId,
   type ButtonHTMLAttributes,
@@ -24,7 +23,7 @@ import {
   AlertCircle, AlertTriangle, Ban, BellOff, CheckCircle2, ChevronRight,
   ExternalLink, Gift, Inbox, Info, MapPin, PackageCheck, Phone, Plus,
   RefreshCw, Save, ShoppingBag, Trash2, TrendingUp, User, X, XCircle, Loader2, type LucideIcon,
-  CalendarDays
+  CalendarDays, Activity, Check, CircleSlash
 } from 'lucide-react';
 
 export type OrderType = 'manual_text' | 'prescription_image';
@@ -339,24 +338,37 @@ export function safeAdminRedirect(next: string | null) {
   return next && next.startsWith('/admin') && !next.startsWith('//') && !next.startsWith('/admin/login') ? next : '/admin';
 }
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = () => setMatches(media.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [matches, query]);
+  return matches;
+}
+
 // ============================================================================
 // UI COMPONENTS (Premium Design System)
 // ============================================================================
-type Variant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-[#156253] text-[#FFFFFF] hover:bg-[#0F1F1C] shadow-[0_2px_8px_rgba(21,98,83,0.15)] disabled:opacity-50',
-  secondary: 'bg-[#FFFFFF] text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/15 hover:bg-[#F6FAF8] shadow-sm disabled:opacity-50',
+  primary: 'bg-[#0F1F1C] text-[#FFFFFF] hover:bg-[#156253] shadow-[0_2px_8px_rgba(15,31,28,0.15)] disabled:opacity-50',
+  secondary: 'bg-[#FFFFFF] text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/15 hover:bg-[#F6FAF8] hover:ring-[#156253]/30 shadow-sm disabled:opacity-50',
   ghost: 'text-[#156253] hover:bg-[#156253]/5 disabled:opacity-50',
-  gift: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-md disabled:opacity-50',
-  danger: 'bg-[#DC2626] text-white hover:bg-[#B91C1C] shadow-sm disabled:opacity-50',
+  danger: 'bg-red-50 text-red-700 hover:bg-red-100 ring-1 ring-inset ring-red-200 shadow-sm disabled:opacity-50',
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-[13px] gap-1.5 rounded-lg',
-  md: 'h-10 px-4 text-[14px] gap-2 rounded-xl',
-  lg: 'h-12 px-6 text-[15px] gap-2.5 rounded-xl',
+  sm: 'h-7 px-2.5 text-[12px] gap-1.5 rounded-lg',
+  md: 'h-9 px-3.5 text-[13px] gap-2 rounded-xl',
+  lg: 'h-11 px-5 text-[14px] gap-2.5 rounded-xl',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -377,9 +389,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'inline-flex select-none items-center justify-center font-bold tracking-wide transition-all duration-200',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
-        'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
+        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
         variants[variant],
         sizes[size],
         className,
@@ -417,11 +429,6 @@ interface ToastApi {
 const ToastContext = createContext<ToastApi | null>(null);
 
 const toastIcons = { success: CheckCircle2, error: AlertTriangle, info: Info };
-const toastTones = {
-  success: 'text-[#156253]',
-  error: 'text-[#DC2626]',
-  info: 'text-[#0F1F1C]/70',
-};
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -450,7 +457,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[150] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
         <AnimatePresence initial={false}>
           {toasts.map((toast) => {
             const Icon = toastIcons[toast.tone];
@@ -463,11 +470,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 role={toast.tone === 'error' ? 'alert' : 'status'}
-                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-[#FFFFFF]/95 px-4 py-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-1 ring-[#156253]/10 backdrop-blur-md"
+                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-xl bg-[#0F1F1C] px-4 py-3.5 shadow-2xl ring-1 ring-white/10"
               >
-                <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toastTones[toast.tone])} aria-hidden />
-                <p className="flex-1 text-[14px] font-medium text-[#0F1F1C]">{toast.message}</p>
-                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#0F1F1C]/40 hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
+                <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toast.tone === 'success' ? 'text-emerald-400' : toast.tone === 'error' ? 'text-red-400' : 'text-white/70')} aria-hidden />
+                <p className="flex-1 text-[13px] font-medium text-white">{toast.message}</p>
+                <button type="button" onClick={() => dismiss(toast.id)} className="text-white/40 hover:text-white transition-colors" aria-label="Dismiss">
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>
@@ -491,14 +498,14 @@ export function useToast() {
 
 const STATUS_TONES: Record<OrderStatus, { pill: string; dot: string }> = {
   Pending: { pill: 'bg-amber-50 text-amber-700 ring-amber-200/50', dot: 'bg-amber-500' },
-  Delivered: { pill: 'bg-[#D8F3E8]/50 text-[#156253] ring-[#156253]/10', dot: 'bg-[#156253]' },
+  Delivered: { pill: 'bg-[#D8F3E8]/60 text-[#156253] ring-[#156253]/15', dot: 'bg-[#156253]' },
   Cancelled: { pill: 'bg-red-50 text-red-700 ring-red-100', dot: 'bg-red-500' },
 };
 
 export function OrderStatusBadge({ status, className }: { status: OrderStatus; className?: string }) {
   const tone = STATUS_TONES[status];
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase ring-1 ring-inset', tone.pill, className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wider uppercase ring-1 ring-inset', tone.pill, className)}>
       <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', tone.dot)} />
       {status}
     </span>
@@ -508,7 +515,7 @@ export function OrderStatusBadge({ status, className }: { status: OrderStatus; c
 function buildSummary(order: AdminOrder) {
   const parts: string[] = [];
   if (order.orderType === 'manual_text') {
-    const count = order.medicines.length;
+    const count = order.medicines.length + (order.products?.length || 0);
     parts.push(`${count} ${count === 1 ? 'item' : 'items'}`);
   } else {
     parts.push('Prescription upload');
@@ -532,53 +539,63 @@ export const CompactOrderCard = memo(function CompactOrderCard({
       onClick={(event) => onSelect(order.id, event.currentTarget)}
       aria-current={selected ? 'true' : undefined}
       className={cn(
-        'group relative flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-2xl p-4 text-left transition-all duration-300',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
+        'group relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-xl p-3 text-left transition-all duration-200 outline-none',
         selected 
-          ? 'bg-[#FFFFFF] ring-2 ring-[#156253] shadow-[0_4px_16px_rgba(21,98,83,0.08)] z-10' 
-          : 'bg-[#FFFFFF] ring-1 ring-[#156253]/10 hover:ring-[#156253]/30 hover:shadow-sm hover:-translate-y-[1px]'
+          ? 'bg-[#D8F3E8]/30 ring-1 ring-inset ring-[#156253]/30 shadow-[0_2px_8px_rgba(21,98,83,0.05)] z-10' 
+          : 'bg-[#FFFFFF] ring-1 ring-inset ring-[#156253]/10 hover:bg-[#F6FAF8] hover:ring-[#156253]/20 focus-visible:ring-2 focus-visible:ring-[#156253]'
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="font-mono text-[13px] font-bold tracking-wider text-[#156253] bg-[#D8F3E8]/40 px-2 py-0.5 rounded-md">
+      {selected && (
+        <motion.div 
+          layoutId="active-order-indicator"
+          className="absolute left-0 top-0 bottom-0 w-1 bg-[#156253]"
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        />
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 pl-1">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="truncate text-[14px] font-bold text-[#0F1F1C]">{order.customerName}</span>
+          <span className="text-[12px] font-mono font-semibold text-[#156253]/60 bg-[#156253]/5 px-1.5 py-0.5 rounded">
             {order.orderId}
           </span>
-          <OrderStatusBadge status={order.status} />
           {notNotified && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700" title="Notification failed">
-              <BellOff className="h-3 w-3" /> <span className="hidden sm:inline">No Alert</span>
+            <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1 py-0.5 text-[10px] font-bold text-amber-700 uppercase tracking-wider" title="Notification failed">
+              <BellOff className="h-3 w-3" />
             </span>
           )}
           {giftRequested && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-50 to-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-orange-600 ring-1 ring-inset ring-orange-200/50" title="Gift requested">
-              <Gift className="h-3 w-3" /> <span className="hidden sm:inline">Gift</span>
+            <span className="inline-flex items-center gap-1 rounded bg-orange-50 px-1 py-0.5 text-[10px] font-bold text-orange-600 uppercase tracking-wider ring-1 ring-inset ring-orange-200/50" title="Gift requested">
+              <Gift className="h-3 w-3" />
             </span>
           )}
         </div>
         
-        <div className="flex items-baseline justify-between gap-4">
-          <span className="truncate text-[15px] font-bold text-[#0F1F1C]">{order.customerName}</span>
-          <span className="shrink-0 text-[12px] font-medium text-[#0F1F1C]/60 sm:hidden">{formatDateTime(order.createdAt).split(',')[1]}</span>
-        </div>
-        
-        <div className="flex items-center gap-2 text-[13px] font-medium text-[#0F1F1C]/60">
-          <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{formatMobile(order.mobileNumber)}</span>
-          <span className="text-[#156253]/30">•</span>
+        <div className="flex items-center gap-2 text-[12px] font-medium text-[#0F1F1C]/60 truncate">
+          <span className="flex items-center gap-1 shrink-0"><Phone className="w-3 h-3 text-[#156253]/50" />{formatMobile(order.mobileNumber)}</span>
+          <span className="text-[#156253]/20">•</span>
           <span className="truncate">{buildSummary(order)}</span>
         </div>
       </div>
 
-      <div className="hidden shrink-0 flex-col items-end justify-between sm:flex">
-        <span className="text-[12px] font-medium text-[#0F1F1C]/50">{formatDateTime(order.createdAt)}</span>
-        <ChevronRight className={cn("mt-4 h-5 w-5 text-[#0F1F1C]/30 transition-transform duration-300", selected ? "translate-x-1 text-[#156253]" : "group-hover:translate-x-1 group-hover:text-[#156253]/60")} />
+      <div className="shrink-0 flex flex-col items-end justify-between self-stretch pt-0.5">
+        <span className={cn(
+          "text-[11px] font-semibold",
+          selected ? "text-[#156253]" : "text-[#0F1F1C]/40"
+        )}>
+          {timeFormatter.format(new Date(order.createdAt))}
+        </span>
+        <ChevronRight className={cn(
+          "h-4 w-4 transition-transform duration-200", 
+          selected ? "text-[#156253]" : "text-[#0F1F1C]/20 group-hover:translate-x-0.5 group-hover:text-[#156253]/50"
+        )} />
       </div>
     </button>
   );
 });
 
 // ============================================================================
-// ANALYTICS OVERVIEW COMPONENT
+// ANALYTICS OVERVIEW COMPONENT (Compact Strip)
 // ============================================================================
 interface AnalyticsData {
   totalSales: number;
@@ -589,12 +606,13 @@ interface AnalyticsData {
   };
 }
 
-export function AnalyticsOverview() {
+export function AnalyticsOverview({ refreshKey }: { refreshKey?: number }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [dateRangeType, setDateRangeType] = useState<'today' | 'yesterday' | 'custom'>('today');
+  // 'all-time' state add kar di gayi hai
+  const [dateRangeType, setDateRangeType] = useState<'today' | 'yesterday' | 'custom' | 'all-time'>('today');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
@@ -618,8 +636,9 @@ export function AnalyticsOverview() {
   }, [dateRangeType, customStartDate, customEndDate]);
 
   const dateRangeLabel = 
-    dateRangeType === 'today' ? "Today's" : 
-    dateRangeType === 'yesterday' ? "Yesterday's" : "Custom Range";
+    dateRangeType === 'today' ? "Today" : 
+    dateRangeType === 'yesterday' ? "Yesterday" : 
+    dateRangeType === 'all-time' ? "All Time" : "Custom Range";
 
   useEffect(() => {
     if (dateRangeType === 'custom' && (!customStartDate || !customEndDate)) return;
@@ -628,11 +647,19 @@ export function AnalyticsOverview() {
       setLoading(true);
       setError(null);
       try {
-        const startString = startDate.toISOString().split('T')[0];
-        const endString = endDate.toISOString().split('T')[0];
+        let endpoint = `/analytics/overview`;
+
+        // API Endpoint logic update kiya hai
+        if (dateRangeType === 'all-time') {
+          endpoint += `?allTime=true`;
+        } else {
+          const startString = startDate.toISOString().split('T')[0];
+          const endString = endDate.toISOString().split('T')[0];
+          endpoint += `?startDate=${startString}&endDate=${endString}`;
+        }
         
         const response = await adminRequest<{ success: boolean; totalSales: number; totalOrders: number; breakdown: { pending: number; delivered: number } }>(
-          `/analytics/overview?startDate=${startString}&endDate=${endString}`
+          endpoint
         );
         
         if (response.success) {
@@ -650,29 +677,25 @@ export function AnalyticsOverview() {
     };
 
     fetchAnalytics();
-  }, [startDate, endDate, dateRangeType, customStartDate, customEndDate]);
+  }, [startDate, endDate, dateRangeType, customStartDate, customEndDate, refreshKey]);
 
   return (
-    <section className="mb-10 space-y-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-end justify-between border-b border-[#156253]/10 pb-6">
-        <div>
-          <h2 className="font-display text-[26px] font-bold text-[#0F1F1C] tracking-tight">Sales & Analytics</h2>
-          <p className="mt-1 text-[14px] text-[#0F1F1C]/60">Track revenue and order volume in real-time.</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
+    <section className="mb-6 space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-end">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex items-center">
-            <CalendarDays className="absolute left-3.5 h-4 w-4 text-[#156253]/60" />
+            <CalendarDays className="absolute left-2.5 h-3.5 w-3.5 text-[#156253]/60" />
             <select 
-              className="h-10 cursor-pointer appearance-none rounded-xl border-none bg-[#FFFFFF] pl-10 pr-10 text-[13px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all hover:bg-[#F6FAF8] focus:ring-2 focus:ring-[#156253]"
+              className="h-8 cursor-pointer appearance-none rounded-lg border-none bg-[#FFFFFF] pl-8 pr-8 text-[12px] font-bold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all hover:bg-[#F6FAF8] focus:ring-2 focus:ring-[#156253]"
               value={dateRangeType}
-              onChange={(e) => setDateRangeType(e.target.value as 'today' | 'yesterday' | 'custom')}
+              onChange={(e) => setDateRangeType(e.target.value as any)}
             >
               <option value="today">Today</option>
               <option value="yesterday">Yesterday</option>
               <option value="custom">Custom Range</option>
+              <option value="all-time">All Time</option>
             </select>
-            <ChevronRight className="pointer-events-none absolute right-3 h-4 w-4 rotate-90 text-[#0F1F1C]/40" />
+            <ChevronRight className="pointer-events-none absolute right-2 h-3.5 w-3.5 rotate-90 text-[#0F1F1C]/40" />
           </div>
 
           <AnimatePresence>
@@ -687,14 +710,14 @@ export function AnalyticsOverview() {
                   type="date" 
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="h-10 rounded-xl border-none bg-[#FFFFFF] px-3.5 text-[13px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 focus:ring-2 focus:ring-[#156253]"
+                  className="h-8 rounded-lg border-none bg-[#FFFFFF] px-2.5 text-[12px] font-bold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 focus:ring-2 focus:ring-[#156253]"
                 />
-                <span className="text-[13px] font-medium text-[#0F1F1C]/40">to</span>
+                <span className="text-[12px] font-medium text-[#0F1F1C]/40">to</span>
                 <input 
                   type="date" 
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="h-10 rounded-xl border-none bg-[#FFFFFF] px-3.5 text-[13px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 focus:ring-2 focus:ring-[#156253]"
+                  className="h-8 rounded-lg border-none bg-[#FFFFFF] px-2.5 text-[12px] font-bold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 focus:ring-2 focus:ring-[#156253]"
                 />
               </motion.div>
             )}
@@ -703,87 +726,87 @@ export function AnalyticsOverview() {
       </div>
 
       {error && (
-         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-red-50 p-4 text-[13px] font-medium text-red-700 ring-1 ring-inset ring-red-200">
+         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-red-50 p-3 text-[12px] font-bold text-red-700 ring-1 ring-inset ring-red-200">
            {error}
          </motion.div>
       )}
 
       {loading && !data ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
-          <Skeleton className="h-[132px] rounded-2xl" />
-          <Skeleton className="h-[132px] rounded-2xl" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Skeleton className="h-[92px] rounded-xl" />
+          <Skeleton className="h-[92px] rounded-xl" />
+          <Skeleton className="h-[92px] rounded-xl" />
+          <Skeleton className="h-[92px] rounded-xl" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="group relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-6 shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-md hover:ring-[#156253]/20"
-          >
-            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gradient-to-br from-[#D8F3E8]/50 to-transparent opacity-50 blur-2xl group-hover:opacity-100 transition-opacity" />
-            <div className="relative">
-              <div className="flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/60">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3E8] text-[#156253]">
-                  <TrendingUp className="h-4 w-4" />
-                </span>
-                {dateRangeLabel} Sales
-              </div>
-              <div className="mt-4 flex items-end gap-3">
-                <span className="font-display text-[40px] font-bold tracking-tight text-[#0F1F1C] tabular-nums leading-none">
-                  {formatRupees(data?.totalSales ?? 0)}
-                </span>
-              </div>
-              <p className="mt-2 text-[13px] font-medium text-[#156253]/60">Based strictly on delivered orders.</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Total Sales */}
+          <div className="relative overflow-hidden rounded-xl bg-[#FFFFFF] p-4 shadow-[0_4px_20px_rgba(15,31,28,.035)] border border-[#dce8df]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">{dateRangeLabel} Sales</span>
+              <Activity className="h-4 w-4 text-[#156253]/40" />
             </div>
-          </motion.div>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="font-display text-[24px] font-bold tracking-tight text-[#0F1F1C] tabular-nums leading-none">
+                {formatRupees(data?.totalSales ?? 0)}
+              </span>
+            </div>
+          </div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="group relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-6 shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-md hover:ring-[#156253]/20"
-          >
-            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-gradient-to-br from-amber-100/50 to-transparent opacity-50 blur-2xl group-hover:opacity-100 transition-opacity" />
-            <div className="relative">
-              <div className="flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/60">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0F1F1C]/5 text-[#0F1F1C]">
-                  <ShoppingBag className="h-4 w-4" />
-                </span>
-                {dateRangeLabel} Volume
-              </div>
-              <div className="mt-4 flex items-center justify-between gap-4">
-                <span className="font-display text-[40px] font-bold tracking-tight text-[#0F1F1C] tabular-nums leading-none">
-                  {data?.totalOrders ?? 0}
-                </span>
-                <div className="flex flex-col gap-1.5 text-[12px] font-bold uppercase tracking-wide">
-                  <span className="flex items-center gap-2 text-amber-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> {data?.breakdown.pending ?? 0} Pending
-                  </span>
-                  <span className="flex items-center gap-2 text-[#156253]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#156253]" /> {data?.breakdown.delivered ?? 0} Delivered
-                  </span>
-                </div>
-              </div>
+          {/* Total Orders */}
+          <div className="relative overflow-hidden rounded-xl bg-[#FFFFFF] p-4 shadow-[0_4px_20px_rgba(15,31,28,.035)] border border-[#dce8df]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">{dateRangeLabel} Orders</span>
+              <ShoppingBag className="h-4 w-4 text-[#0F1F1C]/30" />
             </div>
-          </motion.div>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="font-display text-[24px] font-bold tracking-tight text-[#0F1F1C] tabular-nums leading-none">
+                {data?.totalOrders ?? 0}
+              </span>
+            </div>
+          </div>
+
+          {/* Pending */}
+          <div className="relative overflow-hidden rounded-xl bg-[#FFFFFF] p-4 shadow-[0_4px_20px_rgba(15,31,28,.035)] border border-[#dce8df]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700/70">Pending</span>
+              <Inbox className="h-4 w-4 text-amber-500/50" />
+            </div>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="font-display text-[24px] font-bold tracking-tight text-amber-600 tabular-nums leading-none">
+                {data?.breakdown.pending ?? 0}
+              </span>
+            </div>
+          </div>
+
+          {/* Delivered */}
+          <div className="relative overflow-hidden rounded-xl bg-[#FFFFFF] p-4 shadow-[0_4px_20px_rgba(15,31,28,.035)] border border-[#dce8df]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#156253]/70">Delivered</span>
+              <Check className="h-4 w-4 text-[#156253]/40" />
+            </div>
+            <div className="mt-2.5 flex items-baseline gap-2">
+              <span className="font-display text-[24px] font-bold tracking-tight text-[#156253] tabular-nums leading-none">
+                {data?.breakdown.delivered ?? 0}
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </section>
   );
 }
 
-// ============================================================================
-// BILLING PANEL COMPONENT
-// ============================================================================
+
 const AMOUNT_PATTERN = /^\d{1,7}(\.\d{1,2})?$/;
 const parseAmount = (value: string) => (AMOUNT_PATTERN.test(value.trim()) ? Number(value) : null);
 const toInput = (amount: number, billed: boolean) => (billed ? String(amount) : '');
 
 const CHECK_LABELS: Record<keyof AdminOrder['offer']['checks'], string> = {
-  offerEnabled: 'Offer enabled',
+  offerEnabled: 'Offer active',
   firstOrder: 'First order',
-  meetsMedicineThreshold: 'Medicine subtotal eligible',
-  giftNotPreviouslyClaimed: 'Gift not previously claimed',
+  meetsMedicineThreshold: 'Medicine eligible',
+  giftNotPreviouslyClaimed: 'Gift un-claimed',
 };
 
 interface BillingPanelProps {
@@ -791,7 +814,8 @@ interface BillingPanelProps {
   deliveryCharge: number;
   onUpdated: (order: AdminOrder) => void;
   onDelivered: (order: AdminOrder) => void;
-  actionsTarget?: HTMLElement | null;
+  onDirtyChange?: (dirty: boolean) => void;
+  actionsTarget?: HTMLDivElement | null;
 }
 
 interface MedicineInput {
@@ -810,33 +834,29 @@ interface ProductInput {
   price: string;
 }
 
-function AmountInput({ id, label, hint, value, onChange }: { id: string; label?: string; hint?: string; value: string; onChange: (value: string) => void }) {
+function CompactAmountInput({ value, onChange, placeholder = "0.00", disabled = false }: { value: string; onChange: (v: string) => void; placeholder?: string, disabled?: boolean }) {
   const invalid = value.trim() !== '' && !AMOUNT_PATTERN.test(value.trim());
   return (
-    <div>
-      {label && <label htmlFor={id} className="mb-1.5 block text-[13px] font-semibold text-[#0F1F1C]">{label}</label>}
-      <div className={cn(
-        'group flex h-11 items-center rounded-xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset transition-all', 
-        invalid ? 'ring-red-300 focus-within:ring-2 focus-within:ring-red-500' : 'ring-[#156253]/15 focus-within:ring-2 focus-within:ring-[#156253]'
-      )}>
-        <span className="pl-3.5 pr-2 text-[14px] font-medium text-[#0F1F1C]/40 transition-colors group-focus-within:text-[#156253]">₹</span>
-        <input
-          id={id}
-          inputMode="decimal"
-          autoComplete="off"
-          value={value}
-          onChange={(event) => onChange(event.target.value.replace(/[^\d.]/g, ''))}
-          placeholder="0.00"
-          aria-invalid={invalid || undefined}
-          className="h-full w-full rounded-r-xl bg-transparent pr-3.5 text-[15px] font-semibold tabular-nums text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
-        />
-      </div>
-      {hint && <p className="mt-1.5 text-[11px] font-medium text-[#0F1F1C]/50">{hint}</p>}
+    <div className={cn(
+      'flex h-8 items-center rounded-md bg-[#F6FAF8] px-2 ring-1 ring-inset transition-colors', 
+      disabled ? 'opacity-50 ring-transparent bg-transparent' : invalid ? 'ring-red-300 focus-within:ring-red-500 bg-white' : 'ring-[#156253]/15 focus-within:ring-[#156253] bg-white'
+    )}>
+      <span className="text-[12px] font-medium text-[#0F1F1C]/40">₹</span>
+      <input
+        inputMode="decimal"
+        autoComplete="off"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, ''))}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-invalid={invalid || undefined}
+        className="w-full bg-transparent pl-1 text-[13px] font-bold tabular-nums text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
+      />
     </div>
   );
 }
 
-export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, actionsTarget }: BillingPanelProps) {
+export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, onDirtyChange, actionsTarget }: BillingPanelProps) {
   const toast = useToast();
   const billed = Boolean(order.billedAt);
   
@@ -932,12 +952,18 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
     medicinesData.some((m, i) => 
       m.isAvailable !== (order.medicines[i]?.isAvailable ?? true) || 
       m.name !== order.medicines[i]?.name ||
-      m.quantity !== order.medicines[i]?.quantity
+      m.quantity !== order.medicines[i]?.quantity ||
+      m.price !== String(order.medicines[i]?.price || '0')
     ) ||
     productsData.some((p, i) => 
       p.name !== order.products?.[i]?.name ||
-      p.price !== String(order.products?.[i]?.price || '')
+      p.price !== String(order.products?.[i]?.price || '0') ||
+      p.quantity !== String(order.products?.[i]?.quantity || '1')
     );
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   useEffect(() => {
     if (!preview.eligible) setGiftIncluded(false);
@@ -959,21 +985,10 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
     });
   };
 
-  const addMedicine = () => {
-    setMedicinesData(prev => [...prev, { name: '', quantity: '1', price: '', isAvailable: true }]);
-  };
-
-  const removeMedicine = (index: number) => {
-    setMedicinesData(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const addProduct = () => {
-    setProductsData(prev => [...prev, { name: '', quantity: '1', price: '' }]);
-  };
-
-  const removeProduct = (index: number) => {
-    setProductsData(prev => prev.filter((_, i) => i !== index));
-  };
+  const addMedicine = () => setMedicinesData(prev => [...prev, { name: '', quantity: '1', price: '', isAvailable: true }]);
+  const removeMedicine = (index: number) => setMedicinesData(prev => prev.filter((_, i) => i !== index));
+  const addProduct = () => setProductsData(prev => [...prev, { name: '', quantity: '1', price: '' }]);
+  const removeProduct = (index: number) => setProductsData(prev => prev.filter((_, i) => i !== index));
 
   const saveBill = async () => {
     if (!valid) {
@@ -1032,310 +1047,261 @@ export function BillingPanel({ order, deliveryCharge, onUpdated, onDelivered, ac
   const status = billed && !dirty ? { eligible: order.offerEligible, checks: order.offer.checks, saved: true } : { ...preview, saved: false };
 
   const actions = (
-    <div className="space-y-3 pb-safe-offset-2">
-      <div className="grid gap-3 min-[400px]:grid-cols-2">
-        <Button variant="secondary" size="lg" onClick={saveBill} loading={saving} disabled={!valid || delivering} icon={<Save className="h-[18px] w-[18px]" />}>
-          Save Bill
+    <div className="flex flex-col gap-3 pt-2">
+      <AnimatePresence>
+        {(!billed || dirty) && !confirmDelivery && (
+          <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-center text-[12px] font-bold text-amber-700">
+            Unsaved changes. Save bill to enable delivery.
+          </motion.p>
+        )}
+        {confirmDelivery && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <p className="text-[12px] font-bold text-[#156253] bg-[#D8F3E8]/50 p-2.5 rounded-xl border border-[#156253]/20 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Confirm payment collected{order.offerApplied ? ` & free ${GIFT.shortName} handed over.` : '.'}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="flex gap-3">
+        <Button variant="secondary" size="lg" className="flex-1" onClick={saveBill} loading={saving} disabled={!valid || delivering} icon={<Save className="h-4 w-4" />}>
+          Save
         </Button>
         <AnimatePresence mode="wait" initial={false}>
           {confirmDelivery ? (
-            <motion.div key="confirm" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex gap-2">
-              <Button variant="ghost" size="lg" className="flex-1 bg-[#F6FAF8]" onClick={() => setConfirmDelivery(false)} disabled={delivering}>
-                Cancel
+            <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-1 gap-2">
+              <Button variant="ghost" size="lg" className="w-12 px-0 bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-inset ring-red-100" onClick={() => setConfirmDelivery(false)} disabled={delivering}>
+                <X className="h-5 w-5" />
               </Button>
               <Button variant="primary" size="lg" className="flex-1" onClick={deliver} loading={delivering}>
                 Confirm
               </Button>
             </motion.div>
           ) : (
-            <motion.div key="deliver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex">
+            <motion.div key="deliver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-1">
               <Button
                 variant="primary"
                 size="lg"
-                className="w-full shadow-[0_4px_12px_rgba(21,98,83,0.2)]"
+                className="w-full"
                 onClick={() => setConfirmDelivery(true)}
                 disabled={!billed || dirty || saving}
                 title={!billed || dirty ? 'Save the bill first' : undefined}
-                icon={<PackageCheck className="h-[18px] w-[18px]" />}
+                icon={<PackageCheck className="h-4 w-4" />}
               >
-                Mark Delivered
+                Deliver
               </Button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      <AnimatePresence>
-        {confirmDelivery && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <p className="text-[12px] font-medium text-[#156253] bg-[#D8F3E8]/50 p-2.5 rounded-lg border border-[#156253]/10">
-              Confirm payment collected{order.offerApplied ? ` & free ${GIFT.shortName} handed over.` : '.'}
-            </p>
-          </motion.div>
-        )}
-        {(!billed || dirty) && !confirmDelivery && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-[12px] font-medium text-[#0F1F1C]/50">
-            Unsaved changes. Save bill to enable delivery.
-          </motion.p>
-        )}
-      </AnimatePresence>
     </div>
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* MEDICINES SECTION */}
-      <section className="space-y-4">
-        <header className="flex items-center justify-between border-b border-[#156253]/10 pb-2">
-          <h4 className="text-[14px] font-bold text-[#0F1F1C]">Medicines <span className="ml-1 text-[#0F1F1C]/40 font-normal">({medicinesData.length})</span></h4>
-          <Button variant="ghost" size="sm" onClick={addMedicine} className="h-7 px-2 text-[#156253]" icon={<Plus className="w-4 h-4" />}>Add</Button>
+      <section className="rounded-xl border border-[#156253]/10 bg-[#FFFFFF] shadow-sm overflow-hidden">
+        <header className="flex items-center justify-between bg-[#F6FAF8] border-b border-[#156253]/10 px-4 py-2.5">
+          <h4 className="text-[13px] font-bold text-[#0F1F1C]">Medicines <span className="ml-1 text-[#0F1F1C]/40 font-semibold">{medicinesData.length}</span></h4>
+          <Button variant="ghost" size="sm" onClick={addMedicine} className="h-6 px-2 text-[#156253] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10" icon={<Plus className="w-3.5 h-3.5" />}>Add</Button>
         </header>
         
-        <div className="grid gap-3">
+        <ul className="divide-y divide-[#156253]/5">
           <AnimatePresence initial={false}>
             {medicinesData.map((med, index) => (
-              <motion.div 
+              <motion.li 
                 key={med._id || `new-med-${index}`} 
                 layout
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                className={cn(
-                  "group relative overflow-hidden rounded-xl border p-4 transition-all duration-300", 
-                  med.isAvailable ? "bg-[#FFFFFF] border-[#156253]/15 shadow-sm focus-within:ring-2 focus-within:ring-[#156253]" : "bg-[#F6FAF8] border-transparent opacity-75"
-                )}
+                initial={{ opacity: 0, backgroundColor: '#D8F3E8' }}
+                animate={{ opacity: 1, backgroundColor: '#FFFFFF' }}
+                exit={{ opacity: 0, height: 0 }}
+                className={cn("p-3 transition-opacity", !med.isAvailable && "opacity-60 bg-[#F6FAF8]")}
               >
-                {!med._id && (
-                  <button 
-                    onClick={() => removeMedicine(index)} 
-                    className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg bg-red-50 text-red-600 opacity-0 transition-all hover:bg-red-100 group-hover:opacity-100 sm:focus:opacity-100 sm:active:opacity-100"
-                    title="Remove Medicine"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-3 min-w-0">
-                    <div>
-                      <input
-                        value={med.name}
-                        onChange={(e) => updateMedicine(index, 'name', e.target.value)}
-                        placeholder="Medicine Name"
-                        className={cn(
-                          "w-full bg-transparent text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none",
-                          !med.isAvailable && "line-through text-[#0F1F1C]/40"
-                        )}
-                      />
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                  <div className="flex-1 min-w-[120px]">
+                    <input
+                      value={med.name}
+                      onChange={(e) => updateMedicine(index, 'name', e.target.value)}
+                      placeholder="Medicine Name"
+                      className={cn("w-full bg-transparent text-[14px] font-bold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none", !med.isAvailable && "line-through text-[#0F1F1C]/50")}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      value={med.quantity}
+                      onChange={(e) => updateMedicine(index, 'quantity', e.target.value)}
+                      placeholder="Qty"
+                      className="w-16 h-8 rounded-md bg-[#F6FAF8] text-center text-[13px] font-bold text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/10 focus:outline-none focus:ring-2 focus:ring-[#156253]"
+                    />
+                    <div className="w-24">
+                      <CompactAmountInput value={med.price} onChange={(val) => updateMedicine(index, 'price', val)} disabled={!med.isAvailable} />
                     </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 relative">
-                        <label className="sr-only">Quantity</label>
-                        <input
-                          value={med.quantity}
-                          onChange={(e) => updateMedicine(index, 'quantity', e.target.value)}
-                          placeholder="e.g. 1 strip, 10 tabs"
-                          className="w-full bg-transparent text-[13px] font-medium text-[#0F1F1C]/70 placeholder:text-[#0F1F1C]/30 focus:outline-none"
-                        />
-                      </div>
-                      
-                      <label className="flex cursor-pointer items-center gap-2 rounded-md p-1 hover:bg-[#F6FAF8] transition-colors">
-                        <div className={cn("flex h-4 w-8 items-center rounded-full p-0.5 transition-colors", med.isAvailable ? "bg-[#156253]" : "bg-[#0F1F1C]/20")}>
-                          <motion.div layout className="h-3 w-3 rounded-full bg-white shadow-sm" animate={{ x: med.isAvailable ? 16 : 0 }} transition={{ type: "spring", stiffness: 700, damping: 30 }} />
-                        </div>
-                        <input 
-                          type="checkbox" 
-                          className="sr-only" 
-                          checked={med.isAvailable} 
-                          onChange={(e) => {
-                            updateMedicine(index, 'isAvailable', e.target.checked);
-                            if (!e.target.checked) updateMedicine(index, 'price', '0');
-                          }} 
-                        />
-                        <span className="text-[12px] font-bold tracking-wide uppercase text-[#0F1F1C]/60">Stock</span>
-                      </label>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateMedicine(index, 'isAvailable', !med.isAvailable);
+                        if (med.isAvailable) updateMedicine(index, 'price', '0');
+                      }}
+                      className={cn("h-8 w-10 flex items-center justify-center rounded-md font-bold text-[10px] uppercase tracking-wider ring-1 ring-inset transition-colors", med.isAvailable ? "bg-[#D8F3E8] text-[#156253] ring-[#156253]/20" : "bg-red-50 text-red-600 ring-red-200")}
+                      title="Toggle availability"
+                    >
+                      {med.isAvailable ? 'In' : 'Out'}
+                    </button>
+                    {!med._id && (
+                      <button onClick={() => removeMedicine(index)} className="h-8 w-8 flex items-center justify-center rounded-md bg-white text-[#0F1F1C]/30 hover:bg-red-50 hover:text-red-600 transition-colors" title="Remove Medicine">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                
-                <AnimatePresence>
-                  {med.isAvailable && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }} 
-                      animate={{ height: 'auto', opacity: 1 }} 
-                      exit={{ height: 0, opacity: 0 }} 
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-4 border-t border-[#156253]/10 pt-4">
-                        <AmountInput 
-                          id={`price-${index}`} 
-                          label="Medicine Price" 
-                          value={med.price} 
-                          onChange={(val) => updateMedicine(index, 'price', val)} 
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+              </motion.li>
             ))}
           </AnimatePresence>
-        </div>
+        </ul>
       </section>
 
       {/* PRODUCTS SECTION */}
-      <section className="space-y-4">
-        <header className="flex items-center justify-between border-b border-[#156253]/10 pb-2">
-          <h4 className="text-[14px] font-bold text-[#0F1F1C]">Other Products <span className="ml-1 text-[#0F1F1C]/40 font-normal">({productsData.length})</span></h4>
-          <Button variant="ghost" size="sm" onClick={addProduct} className="h-7 px-2 text-[#156253]" icon={<Plus className="w-4 h-4" />}>Add</Button>
+      <section className="rounded-xl border border-[#156253]/10 bg-[#FFFFFF] shadow-sm overflow-hidden">
+        <header className="flex items-center justify-between bg-[#F6FAF8] border-b border-[#156253]/10 px-4 py-2.5">
+          <h4 className="text-[13px] font-bold text-[#0F1F1C]">Products <span className="ml-1 text-[#0F1F1C]/40 font-semibold">{productsData.length}</span></h4>
+          <Button variant="ghost" size="sm" onClick={addProduct} className="h-6 px-2 text-[#156253] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10" icon={<Plus className="w-3.5 h-3.5" />}>Add</Button>
         </header>
         
-        <div className="grid gap-3">
+        <ul className="divide-y divide-[#156253]/5">
           <AnimatePresence initial={false}>
             {productsData.map((prod, index) => (
-              <motion.div 
+              <motion.li 
                 key={prod._id || `new-prod-${index}`} 
                 layout
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                className="group relative overflow-hidden rounded-xl border border-[#156253]/15 bg-[#FFFFFF] p-4 shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#156253]"
+                initial={{ opacity: 0, backgroundColor: '#D8F3E8' }}
+                animate={{ opacity: 1, backgroundColor: '#FFFFFF' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-3"
               >
-                <button 
-                  onClick={() => removeProduct(index)} 
-                  className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg bg-red-50 text-red-600 opacity-0 transition-all hover:bg-red-100 group-hover:opacity-100 sm:focus:opacity-100 sm:active:opacity-100"
-                  title="Remove Product"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-
-                <div className="flex-1 space-y-4 min-w-0 pr-6">
-                  <input
-                    value={prod.name}
-                    onChange={(e) => updateProduct(index, 'name', e.target.value)}
-                    placeholder="Product Name (e.g. Shampoo)"
-                    className="w-full bg-transparent text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
-                  />
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 rounded-lg bg-[#F6FAF8] p-1 ring-1 ring-inset ring-[#156253]/10">
-                      <span className="pl-2 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">Qty</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={prod.quantity}
-                        onChange={(e) => updateProduct(index, 'quantity', e.target.value)}
-                        className="w-12 bg-transparent py-1 text-center text-[14px] font-semibold text-[#0F1F1C] focus:outline-none"
-                      />
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                  <div className="flex-1 min-w-[120px]">
+                    <input
+                      value={prod.name}
+                      onChange={(e) => updateProduct(index, 'name', e.target.value)}
+                      placeholder="Product Name"
+                      className="w-full bg-transparent text-[14px] font-bold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number"
+                      min="1"
+                      value={prod.quantity}
+                      onChange={(e) => updateProduct(index, 'quantity', e.target.value)}
+                      className="w-16 h-8 rounded-md bg-[#F6FAF8] text-center text-[13px] font-bold text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/10 focus:outline-none focus:ring-2 focus:ring-[#156253]"
+                    />
+                    <div className="w-24">
+                      <CompactAmountInput value={prod.price} onChange={(val) => updateProduct(index, 'price', val)} />
                     </div>
-                    
-                    <div className="flex-1">
-                      <AmountInput 
-                        id={`prod-price-${index}`} 
-                        value={prod.price} 
-                        onChange={(val) => updateProduct(index, 'price', val)} 
-                      />
-                    </div>
+                    <button onClick={() => removeProduct(index)} className="h-8 w-8 flex items-center justify-center rounded-md bg-white text-[#0F1F1C]/30 hover:bg-red-50 hover:text-red-600 transition-colors" title="Remove Product">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-              </motion.div>
+              </motion.li>
             ))}
           </AnimatePresence>
-        </div>
+        </ul>
       </section>
 
       {/* FINANCIAL SUMMARY */}
-      <section className="rounded-2xl border border-[#156253]/10 bg-[#FFFFFF] shadow-sm">
-        <div className="grid grid-cols-2 gap-4 border-b border-[#156253]/10 p-5">
-          <AmountInput id={`${order.id}-other`} label="Misc Charges" hint="Extra non-product fees" value={other} onChange={setOther} />
-          <AmountInput id={`${order.id}-discount`} label="Discount" hint="Total order discount" value={discount} onChange={setDiscount} />
+      <section className="rounded-xl border border-[#156253]/10 bg-[#FFFFFF] shadow-sm overflow-hidden">
+        <div className="flex gap-4 border-b border-[#156253]/10 p-4 bg-[#F6FAF8]">
+          <div className="flex-1">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-[#0F1F1C]/50 block mb-1">Misc Charges</label>
+            <CompactAmountInput value={other} onChange={setOther} />
+          </div>
+          <div className="flex-1">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-[#0F1F1C]/50 block mb-1">Discount</label>
+            <CompactAmountInput value={discount} onChange={setDiscount} />
+          </div>
         </div>
 
-        <dl className="p-5 text-[14px]">
-          <div className="flex justify-between gap-4 py-2">
-            <dt className="font-medium text-[#0F1F1C]/60">Medicines Subtotal</dt>
-            <dd className="font-semibold tabular-nums text-[#0F1F1C]">{medicineValue === null ? '—' : formatRupees(medicineValue)}</dd>
+        <dl className="p-4 text-[13px] space-y-2">
+          <div className="flex justify-between items-center">
+            <dt className="font-semibold text-[#0F1F1C]/60">Medicines</dt>
+            <dd className="font-bold tabular-nums text-[#0F1F1C]">{medicineValue === null ? '—' : formatRupees(medicineValue)}</dd>
           </div>
-          <div className="flex justify-between gap-4 py-2">
-            <dt className="font-medium text-[#0F1F1C]/60">Products & Charges</dt>
-            <dd className="font-semibold tabular-nums text-[#0F1F1C]">{combinedNonMedicineSubtotal === null ? '—' : formatRupees(combinedNonMedicineSubtotal)}</dd>
+          <div className="flex justify-between items-center">
+            <dt className="font-semibold text-[#0F1F1C]/60">Products & Misc</dt>
+            <dd className="font-bold tabular-nums text-[#0F1F1C]">{combinedNonMedicineSubtotal === null ? '—' : formatRupees(combinedNonMedicineSubtotal)}</dd>
           </div>
-          <div className="flex justify-between gap-4 py-2">
-            <dt className="font-medium text-[#0F1F1C]/60">Delivery Fee</dt>
-            <dd className="font-semibold tabular-nums text-[#0F1F1C]">{formatRupees(deliveryCharge)}</dd>
+          <div className="flex justify-between items-center">
+            <dt className="font-semibold text-[#0F1F1C]/60">Delivery Fee</dt>
+            <dd className="font-bold tabular-nums text-[#0F1F1C]">{formatRupees(deliveryCharge)}</dd>
           </div>
-          <div className="flex justify-between gap-4 py-2 text-[#156253]">
-            <dt className="font-bold">Discount Applied</dt>
+          <div className="flex justify-between items-center text-[#156253]">
+            <dt className="font-bold">Discount</dt>
             <dd className="font-bold tabular-nums">-{preview.appliedDiscount === null ? '—' : formatRupees(preview.appliedDiscount)}</dd>
           </div>
           
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl bg-[#F6FAF8] p-4 ring-1 ring-inset ring-[#156253]/10">
-            <dt className="text-[16px] font-bold text-[#0F1F1C]">Final Amount</dt>
-            <dd className="font-display text-[28px] font-bold tabular-nums leading-none text-[#156253]">
+          <div className="mt-3 pt-3 flex items-center justify-between border-t border-[#156253]/10">
+            <dt className="text-[14px] font-bold text-[#0F1F1C] uppercase tracking-wide">Final Amount</dt>
+            <dd className="font-display text-[24px] font-bold tabular-nums leading-none text-[#156253]">
               {preview.finalAmount === null ? '—' : formatRupees(preview.finalAmount)}
             </dd>
           </div>
         </dl>
       </section>
 
-      {/* GIFT ELIGIBILITY CARD */}
+      {/* GIFT ELIGIBILITY */}
       <section className={cn(
-        'relative overflow-hidden rounded-2xl p-5 shadow-sm ring-1 ring-inset transition-all duration-300', 
-        status.eligible ? 'bg-gradient-to-br from-[#D8F3E8]/80 to-[#FFFFFF] ring-[#156253]/20' : 'bg-[#FFFFFF] ring-[#156253]/10'
+        'rounded-xl p-4 shadow-sm ring-1 ring-inset transition-all', 
+        status.eligible ? 'bg-gradient-to-r from-[#D8F3E8]/80 to-[#FFFFFF] ring-[#156253]/20' : 'bg-[#FFFFFF] ring-[#156253]/10'
       )}>
-        {status.eligible && <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/3 rounded-full bg-gradient-to-bl from-[#156253]/10 to-transparent blur-2xl" />}
-        
-        <div className="relative">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/50">
-                <Gift className="h-4 w-4 text-[#156253]" /> Gift Status
-              </div>
-              <p className="mt-2 text-[16px] font-bold text-[#0F1F1C]">Free {GIFT.shortName}</p>
-              <p className="mt-1 text-[13px] font-medium text-[#0F1F1C]/60">Requires {formatRupees(order.offer.requiredMedicineAmount)} in medicines.</p>
-            </div>
-            <span className={cn(
-              'shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold tracking-wide uppercase', 
-              status.eligible ? 'bg-[#156253] text-[#FFFFFF] shadow-sm' : 'bg-[#0F1F1C]/5 text-[#0F1F1C]/60'
-            )}>
-              {status.eligible ? 'Qualified' : 'Ineligible'}
-            </span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Gift className={cn("h-4 w-4", status.eligible ? "text-[#156253]" : "text-[#0F1F1C]/30")} />
+            <span className="text-[13px] font-bold text-[#0F1F1C]">Free {GIFT.shortName}</span>
           </div>
-
-          <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
-            {(Object.keys(CHECK_LABELS) as Array<keyof typeof CHECK_LABELS>).map((key) => (
-              <div key={key} className="flex items-center gap-2.5 rounded-lg bg-[#FFFFFF]/50 p-2 text-[12px] font-medium ring-1 ring-inset ring-[#156253]/5">
-                {status.checks[key] ? <CheckCircle2 className="h-4 w-4 text-[#156253]" aria-hidden /> : <XCircle className="h-4 w-4 text-[#0F1F1C]/20" aria-hidden />}
-                <span className={status.checks[key] ? 'text-[#0F1F1C]' : 'text-[#0F1F1C]/50'}>{CHECK_LABELS[key]}</span>
-              </div>
-            ))}
-          </div>
-
-          <label
-            className={cn(
-              'mt-5 flex min-h-14 select-none items-center gap-3.5 rounded-xl bg-[#FFFFFF] px-4 shadow-sm ring-1 ring-inset transition-all',
-              preview.eligible ? 'cursor-pointer ring-[#156253]/20 hover:ring-[#156253]/40' : 'cursor-not-allowed opacity-50 ring-transparent',
-              giftIncluded && 'ring-2 ring-[#156253]'
-            )}
-          >
-            <div className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors", giftIncluded ? "border-[#156253] bg-[#156253]" : "border-[#0F1F1C]/20 bg-transparent")}>
-              {giftIncluded && <CheckCircle2 className="h-4 w-4 text-white" />}
-            </div>
-            <input type="checkbox" className="sr-only" checked={giftIncluded} disabled={!preview.eligible} onChange={(event) => setGiftIncluded(event.target.checked)} />
-            <span className="text-[14px] font-bold text-[#0F1F1C]">Include free gift in delivery</span>
-          </label>
+          <span className={cn(
+            'rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider', 
+            status.eligible ? 'bg-[#156253] text-[#FFFFFF]' : 'bg-[#0F1F1C]/5 text-[#0F1F1C]/50'
+          )}>
+            {status.eligible ? 'Qualified' : 'Ineligible'}
+          </span>
         </div>
+
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mb-4">
+          {(Object.keys(CHECK_LABELS) as Array<keyof typeof CHECK_LABELS>).map((key) => (
+            <div key={key} className="flex items-center gap-1.5 text-[11px] font-bold text-[#0F1F1C]/60">
+              {status.checks[key] ? <CheckCircle2 className="h-3.5 w-3.5 text-[#156253]" /> : <CircleSlash className="h-3 w-3 text-[#0F1F1C]/20" />}
+              <span>{CHECK_LABELS[key]}</span>
+            </div>
+          ))}
+        </div>
+
+        <label
+          className={cn(
+            'flex items-center gap-3 rounded-lg bg-[#FFFFFF] px-3 py-2.5 shadow-sm ring-1 ring-inset transition-all',
+            preview.eligible ? 'cursor-pointer ring-[#156253]/20 hover:ring-[#156253]/40' : 'cursor-not-allowed opacity-60 ring-[#0F1F1C]/5',
+            giftIncluded && 'ring-2 ring-[#156253]'
+          )}
+        >
+          <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors", giftIncluded ? "border-[#156253] bg-[#156253]" : "border-[#0F1F1C]/20 bg-transparent")}>
+            {giftIncluded && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+          </div>
+          <input type="checkbox" className="sr-only" checked={giftIncluded} disabled={!preview.eligible} onChange={(e) => setGiftIncluded(e.target.checked)} />
+          <span className="text-[13px] font-bold text-[#0F1F1C]">Include free gift in order</span>
+        </label>
       </section>
 
-      {actionsTarget === undefined ? actions : actionsTarget ? createPortal(actions, actionsTarget) : null}
+      {/* 
+        This is the critical fix: We safely use the Portal if the container exists.
+        We do NOT render {actionsTarget} as a DOM node here, avoiding the crash.
+      */}
+      {actionsTarget ? createPortal(actions, actionsTarget) : null}
     </div>
   );
 }
 
 // ============================================================================
-// ORDER SIDE PANEL & SUBCOMPONENTS
+// ORDER WORKSPACE (Inspector Content)
 // ============================================================================
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -1382,8 +1348,8 @@ function buildWhatsappLink(order: AdminOrder): string | null {
 function Section({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="rounded-2xl border border-[#156253]/10 bg-[#FFFFFF] p-5 shadow-sm">
-      <h3 id={id} className="mb-4 flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-widest text-[#0F1F1C]/50">
+    <section aria-labelledby={id} className="rounded-xl border border-[#156253]/10 bg-[#FFFFFF] p-4 shadow-sm">
+      <h3 id={id} className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[#0F1F1C]/50">
         {icon}
         {title}
       </h3>
@@ -1394,18 +1360,18 @@ function Section({ title, icon, children }: { title: string; icon?: ReactNode; c
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl bg-[#F6FAF8] p-3 ring-1 ring-inset ring-[#156253]/5">
-      <dt className="text-[12px] font-medium text-[#0F1F1C]/60">{label}</dt>
-      <dd className="text-[15px] font-bold text-[#0F1F1C]">{children}</dd>
+    <div className="flex flex-col gap-0.5 rounded-lg bg-[#F6FAF8] p-2 ring-1 ring-inset ring-[#156253]/5">
+      <dt className="text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">{label}</dt>
+      <dd className="text-[14px] font-bold text-[#0F1F1C]">{children}</dd>
     </div>
   );
 }
 
 function SummaryRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={cn('flex items-center justify-between gap-4', strong && 'border-t border-[#156253]/10 pt-3 mt-1')}>
-      <dt className={cn(strong ? 'text-[15px] font-bold text-[#0F1F1C]' : 'text-[14px] font-medium text-[#0F1F1C]/60')}>{label}</dt>
-      <dd className={cn('tabular-nums', strong ? 'text-[20px] font-bold text-[#156253]' : 'text-[14px] font-semibold text-[#0F1F1C]')}>{value}</dd>
+    <div className={cn('flex items-center justify-between gap-4', strong && 'border-t border-[#156253]/10 pt-2 mt-1')}>
+      <dt className={cn(strong ? 'text-[14px] font-bold text-[#0F1F1C] uppercase tracking-wide' : 'text-[13px] font-medium text-[#0F1F1C]/60')}>{label}</dt>
+      <dd className={cn('tabular-nums', strong ? 'text-[18px] font-bold text-[#156253]' : 'text-[13px] font-semibold text-[#0F1F1C]')}>{value}</dd>
     </div>
   );
 }
@@ -1415,24 +1381,24 @@ function BillSummary({ order }: { order: AdminOrder }) {
   if (!delivered && !order.billedAt) {
     return (
       <Section title="Final Bill">
-        <p className="text-[14px] font-medium text-[#0F1F1C]/50">No bill was generated before cancellation.</p>
+        <p className="text-[13px] font-medium text-[#0F1F1C]/50">No bill was generated before cancellation.</p>
       </Section>
     );
   }
   return (
     <Section title={delivered ? 'Final Bill' : 'Saved Bill'}>
-      <dl className="space-y-2.5">
+      <dl className="space-y-1.5">
         <SummaryRow label="Medicine Subtotal" value={formatRupees(order.medicineSubtotal)} />
         <SummaryRow label="Products & Other" value={formatRupees(order.nonMedicineSubtotal)} />
         <SummaryRow label="Delivery Charge" value={formatRupees(order.deliveryCharge)} />
         <SummaryRow label="Final Amount" value={formatRupees(order.finalAmount)} strong />
       </dl>
-      <div className="mt-5 rounded-xl bg-[#F6FAF8] p-3 text-[13px] font-medium text-[#0F1F1C]/70 ring-1 ring-inset ring-[#156253]/5">
+      <div className="mt-4 rounded-lg bg-[#F6FAF8] p-2.5 text-[12px] font-bold text-[#0F1F1C]/70 ring-1 ring-inset ring-[#156253]/5">
         <p className="flex items-center gap-2">
           <Gift className="h-4 w-4 text-[#156253]" aria-hidden />
           {order.offerApplied ? `Included free ${GIFT.shortName}` : 'No gift applied'}
         </p>
-        {order.deliveredAt && <p className="mt-1 ml-6">Delivered on {formatDateTime(order.deliveredAt)}</p>}
+        {order.deliveredAt && <p className="mt-1 text-[#0F1F1C]/50 pl-6 font-medium">Delivered {formatDateTime(order.deliveredAt)}</p>}
       </div>
     </Section>
   );
@@ -1503,7 +1469,7 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] grid place-items-center p-4">
+    <div className="fixed inset-0 z-[200] grid place-items-center p-4">
       <motion.div
         aria-hidden
         className="absolute inset-0 bg-[#0F1F1C]/40 backdrop-blur-sm"
@@ -1523,33 +1489,36 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-[#FFFFFF] p-6 shadow-2xl sm:p-8"
+        className="relative max-h-[90vh] w-full max-w-[440px] overflow-y-auto rounded-2xl bg-[#FFFFFF] p-6 shadow-2xl"
       >
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 sm:mx-0">
-          <AlertTriangle className="h-6 w-6 text-red-600" />
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+          </div>
+          <div>
+            <h2 id={titleId} className="text-[18px] font-bold text-[#0F1F1C]">Cancel Order</h2>
+            <p className="font-mono text-[13px] font-semibold text-[#156253]">{order.orderId}</p>
+          </div>
         </div>
-        
-        <h2 id={titleId} className="text-center font-display text-[22px] font-bold text-[#0F1F1C] sm:text-left">
-          Cancel Order {order.orderId}
-        </h2>
-        <p id={descriptionId} className="mt-2 text-center text-[14px] font-medium text-[#0F1F1C]/60 sm:text-left">
-          This order will be moved to Cancelled. The reason you select will be permanently saved and visible to {order.customerName}.
+
+        <p id={descriptionId} className="mb-5 text-[13px] font-medium text-[#0F1F1C]/60">
+          This order will be permanently cancelled. The reason selected will be visible to the customer.
         </p>
 
-        <fieldset className="mt-6 space-y-2.5" disabled={submitting}>
+        <fieldset className="space-y-2" disabled={submitting}>
           <legend className="sr-only">Reason for cancellation</legend>
           {CANCEL_REASONS.map((option, index) => (
             <label
               key={option}
               className={cn(
-                'flex min-h-12 cursor-pointer items-center gap-3.5 rounded-xl border p-3 text-[14px] font-semibold transition-all',
+                'flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-[13px] font-bold transition-all',
                 reason === option 
-                  ? 'border-[#156253] bg-[#D8F3E8]/30 ring-1 ring-inset ring-[#156253]/50' 
-                  : 'border-[#156253]/15 bg-[#FFFFFF] hover:bg-[#F6FAF8]'
+                  ? 'border-red-600 bg-red-50 ring-1 ring-inset ring-red-600/20 text-red-900' 
+                  : 'border-[#156253]/15 bg-[#FFFFFF] hover:bg-[#F6FAF8] text-[#0F1F1C]'
               )}
             >
-              <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors", reason === option ? "border-[#156253] bg-[#156253]" : "border-[#0F1F1C]/20 bg-transparent")}>
-                {reason === option && <div className="h-2 w-2 rounded-full bg-white" />}
+              <div className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors", reason === option ? "border-red-600 bg-red-600" : "border-[#0F1F1C]/20 bg-transparent")}>
+                {reason === option && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
               </div>
               <input
                 ref={index === 0 ? firstOptionRef : undefined}
@@ -1560,17 +1529,15 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
                 onChange={() => setReason(option)}
                 className="sr-only"
               />
-              <span className="text-[#0F1F1C]">{option}</span>
+              <span>{option}</span>
             </label>
           ))}
         </fieldset>
 
         <AnimatePresence>
           {reason === CUSTOM_REASON && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
-              <label htmlFor={customId} className="mb-2 block text-[13px] font-bold text-[#0F1F1C]">
-                Custom Reason Detail
-              </label>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 overflow-hidden">
+              <label htmlFor={customId} className="sr-only">Custom Reason Detail</label>
               <textarea
                 id={customId}
                 ref={customRef}
@@ -1578,20 +1545,20 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
                 onChange={(event) => setCustomReason(event.target.value)}
                 disabled={submitting}
                 placeholder="Type the exact reason..."
-                rows={3}
+                rows={2}
                 aria-required
-                className="w-full resize-none rounded-xl border-none bg-[#F6FAF8] p-3.5 text-[14px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all placeholder:text-[#0F1F1C]/30 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]"
+                className="w-full resize-none rounded-xl border-none bg-[#F6FAF8] p-3 text-[13px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all placeholder:text-[#0F1F1C]/30 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button variant="secondary" size="lg" className="sm:w-auto w-full" onClick={onClose} disabled={submitting}>
-            Keep Order
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={onClose} disabled={submitting}>
+            Go Back
           </Button>
-          <Button variant="danger" size="lg" className="sm:w-auto w-full" onClick={submit} loading={submitting} disabled={!canSubmit}>
-            Confirm Cancellation
+          <Button variant="danger" onClick={submit} loading={submitting} disabled={!canSubmit}>
+            Confirm Cancel
           </Button>
         </div>
       </motion.div>
@@ -1599,6 +1566,248 @@ function CancelOrderDialog({ order, onClose, onCancelled }: CancelDialogProps) {
   );
 }
 
+// ----------------------------------------------------------------------------
+// Discard Edits Dialog
+// ----------------------------------------------------------------------------
+function DiscardEditsDialog({ onStay, onDiscard }: { onStay: () => void; onDiscard: () => void }) {
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (e.key === 'Escape') onStay();
+    trapTab(e);
+  };
+  
+  return (
+    <div className="fixed inset-0 z-[300] grid place-items-center p-4">
+      <motion.div aria-hidden className="absolute inset-0 bg-[#0F1F1C]/40 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onStay} />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        onKeyDown={handleKeyDown}
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+        className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[#FFFFFF] p-6 shadow-2xl"
+      >
+        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+          <AlertTriangle className="h-5 w-5 text-amber-600" />
+        </div>
+        <h2 className="text-[18px] font-bold text-[#0F1F1C]">Unsaved Changes</h2>
+        <p className="mt-2 text-[13px] font-medium text-[#0F1F1C]/60">
+          You have unsaved billing changes on this order. If you leave now, your edits will be lost.
+        </p>
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={onStay}>Keep Editing</Button>
+          <Button variant="danger" className="bg-amber-600 hover:bg-amber-700 ring-amber-600 text-white" onClick={onDiscard}>Discard Changes</Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Reusable Order Inspector Content (used both inline and in overlay)
+// ----------------------------------------------------------------------------
+function OrderInspector({
+  order,
+  deliveryCharge,
+  onUpdated,
+  onDelivered,
+  onCancelled,
+  onDirtyChange,
+  onClose,
+}: {
+  order: AdminOrder;
+  deliveryCharge: number;
+  onUpdated: (o: AdminOrder) => void;
+  onDelivered: (o: AdminOrder) => void;
+  onCancelled: (o: AdminOrder) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  onClose?: () => void;
+}) {
+  const titleId = useId();
+  const whatsappLink = buildWhatsappLink(order);
+  
+  // Create a local target for the billing panel portal
+  const [actionsTarget, setActionsTarget] = useState<HTMLDivElement | null>(null);
+
+  return (
+    <div className="flex h-full flex-col">
+      <header className="sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b border-[#156253]/10 bg-[#FFFFFF]/95 px-5 py-4 backdrop-blur-md">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 id={titleId} className="font-mono text-[18px] font-bold tracking-tight text-[#156253]">
+              {order.orderId}
+            </h2>
+            <OrderStatusBadge status={order.status} />
+          </div>
+          <p className="mt-1 flex items-center gap-1.5 text-[12px] font-bold text-[#0F1F1C]/50 uppercase tracking-wide">
+            <span className="flex items-center gap-1">
+              {order.orderType === 'manual_text' ? <Inbox className="h-3 w-3" /> : <PackageCheck className="h-3 w-3" />}
+              {order.orderType === 'manual_text' ? 'Manual' : 'Prescription'}
+            </span>
+            <span className="text-[#156253]/20">•</span>
+            <span>{formatDateTime(order.createdAt)}</span>
+          </p>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close details"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#F6FAF8] text-[#0F1F1C]/40 transition-colors hover:bg-[#156253]/10 hover:text-[#156253] xl:hidden"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        )}
+      </header>
+
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-5">
+        {order.status === 'Cancelled' && (
+          <div className="rounded-xl border border-red-200 bg-white p-4 shadow-sm ring-1 ring-inset ring-red-100">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
+              <div>
+                <h4 className="text-[13px] font-bold text-red-900 uppercase tracking-wider">Cancelled</h4>
+                <p className="mt-0.5 text-[14px] font-bold text-red-700">{order.cancelReason ?? 'No reason provided.'}</p>
+                {whatsappLink && (
+                  <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-[12px] font-bold text-red-700 transition-colors hover:bg-red-100"
+                  >
+                    WhatsApp Customer <ExternalLink className="h-3 w-3" aria-hidden />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* COMPACT CUSTOMER ROW */}
+        <section className="rounded-xl border border-[#156253]/10 bg-[#FFFFFF] p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-[16px] font-bold text-[#0F1F1C]">{order.customerName}</p>
+                <span className="rounded-md bg-[#F6FAF8] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0F1F1C]/60 ring-1 ring-inset ring-[#156253]/10">
+                  {order.firstOrderAtCreation ? 'New' : 'Return'}
+                </span>
+              </div>
+              <a href={`tel:+91${order.mobileNumber}`} className="mt-0.5 inline-flex items-center gap-1 text-[13px] font-bold text-[#156253] hover:underline">
+                <Phone className="h-3 w-3" /> {formatMobile(order.mobileNumber)}
+              </a>
+            </div>
+            
+            <div className="flex gap-2 shrink-0">
+              <Stat label="Orders">{order.previousOrders}</Stat>
+              <Stat label="Claimed">{order.customer?.offerClaimed ? 'Yes' : 'No'}</Stat>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-start gap-2 border-t border-[#156253]/10 pt-3 text-[13px]">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#156253]/40" />
+            <div>
+              <p className="font-semibold text-[#0F1F1C]">{order.address.flat || 'No flat specified'}</p>
+              <p className="text-[#0F1F1C]/60 font-medium">{order.address.area || 'No area specified'}</p>
+              {order.address.landmark && <p className="mt-0.5 text-[#0F1F1C]/50 text-[12px] italic">{order.address.landmark}</p>}
+            </div>
+          </div>
+        </section>
+
+        {/* ITEMS / PRESCRIPTION */}
+        <Section title="Requested Items" icon={<ShoppingBag className="h-3.5 w-3.5" />}>
+          {order.orderType === 'manual_text' ? (
+            <div className="overflow-hidden rounded-lg ring-1 ring-inset ring-[#156253]/10">
+              <ul className="divide-y divide-[#156253]/10 bg-[#F6FAF8]">
+                {order.medicines.map((item, index) => (
+                  <li key={`${item.name}-${index}`} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="min-w-0 break-words text-[13px] font-bold text-[#0F1F1C]">{item.name}</span>
+                    <span className="shrink-0 rounded bg-[#FFFFFF] px-2 py-0.5 text-[12px] font-bold text-[#156253] shadow-sm ring-1 ring-inset ring-[#156253]/10">{item.quantity}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : order.prescriptionUrl ? (
+            <a
+              href={order.prescriptionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center overflow-hidden rounded-lg bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/15 hover:ring-[#156253]/40 transition-all"
+            >
+              <Image
+                src={cloudinaryThumb(order.prescriptionUrl, 160)}
+                alt="Prescription"
+                width={64}
+                height={64}
+                className="h-16 w-16 shrink-0 border-r border-[#156253]/10 object-cover"
+                unoptimized
+              />
+              <div className="flex-1 px-3">
+                <p className="text-[13px] font-bold text-[#0F1F1C]">Prescription Image</p>
+                <p className="text-[11px] font-semibold text-[#0F1F1C]/50 uppercase tracking-wider">Tap to enlarge</p>
+              </div>
+              <div className="px-3 text-[#156253]/40 group-hover:text-[#156253] transition-colors">
+                <ExternalLink className="h-4 w-4" />
+              </div>
+            </a>
+          ) : (
+            <p className="text-[13px] font-medium text-[#0F1F1C]/50">No items attached.</p>
+          )}
+        </Section>
+
+        {!order.telegramNotificationSent && (
+          <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <BellOff className="h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-amber-900">Notification Failed</p>
+              <p className="text-[12px] font-semibold text-amber-800">Ensure the pharmacy team is aware of this order.</p>
+            </div>
+          </div>
+        )}
+
+        {/* OPERATIONS WORKSPACE */}
+        {order.status === 'Pending' ? (
+          <div className="pt-2">
+            <h3 className="mb-3 text-[14px] font-bold text-[#0F1F1C] uppercase tracking-wide">Operations Workspace</h3>
+            <BillingPanel
+              key={order.id}
+              order={order}
+              deliveryCharge={deliveryCharge}
+              onUpdated={onUpdated}
+              onDelivered={onDelivered}
+              onDirtyChange={onDirtyChange}
+              actionsTarget={actionsTarget}
+            />
+          </div>
+        ) : (
+          <BillSummary order={order} />
+        )}
+      </div>
+
+      {/* FOOTER ACTIONS */}
+      {order.status === 'Pending' && (
+        <footer className="sticky bottom-0 z-20 shrink-0 border-t border-[#156253]/10 bg-[#FFFFFF]/95 p-4 pb-safe backdrop-blur-md">
+          {/* Action buttons are portaled here safely by the BillingPanel */}
+          <div ref={setActionsTarget} />
+          
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={() => onCancelled(order)}
+              className="text-[12px] font-bold text-red-600 hover:text-red-700 hover:underline transition-colors uppercase tracking-wider"
+            >
+              Cancel Order
+            </button>
+          </div>
+        </footer>
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Responsive Wrapper for OrderSidePanel
+// ----------------------------------------------------------------------------
 interface OrderSidePanelProps {
   order: AdminOrder | null;
   deliveryCharge: number;
@@ -1607,274 +1816,117 @@ interface OrderSidePanelProps {
   onUpdated: (order: AdminOrder) => void;
   onDelivered: (order: AdminOrder) => void;
   onCancelled: (order: AdminOrder) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export function OrderSidePanel({ order, deliveryCharge, open, onClose, onUpdated, onDelivered, onCancelled }: OrderSidePanelProps) {
+export function OrderSidePanel({ order, deliveryCharge, open, onClose, onUpdated, onDelivered, onCancelled, onDirtyChange }: OrderSidePanelProps) {
+  const isDesktop = useMediaQuery('(min-width: 1280px)');
+  
   const lastOrder = useRef<AdminOrder | null>(null);
   if (order) lastOrder.current = order;
   const shown = order ?? lastOrder.current;
 
-  const titleId = useId();
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const cancelTriggerRef = useRef<HTMLButtonElement>(null);
-  const [actionsTarget, setActionsTarget] = useState<HTMLDivElement | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
 
-  useBodyScrollLock(open);
+  useBodyScrollLock(open && !isDesktop);
 
   useEffect(() => {
-    if (open) closeRef.current?.focus({ preventScroll: true });
-    else setCancelOpen(false);
+    if (!open) setCancelOpen(false);
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !isDesktop) return;
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && !event.defaultPrevented && !cancelOpen) onClose();
+      if (event.key === 'Escape' && !event.defaultPrevented && !cancelOpen) {
+        if (!isDesktop) onClose();
+      }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, cancelOpen, onClose]);
+  }, [open, isDesktop, cancelOpen, onClose]);
 
-  const closeCancelDialog = useCallback(() => {
-    setCancelOpen(false);
-    requestAnimationFrame(() => (cancelTriggerRef.current ?? closeRef.current)?.focus({ preventScroll: true }));
-  }, []);
-
-  const handleCancelled = useCallback(
+  const handleCancelledFlow = useCallback(
     (updated: AdminOrder) => {
       setCancelOpen(false);
       onCancelled(updated);
-      requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }));
     },
-    [onCancelled],
+    [onCancelled]
   );
 
-  const whatsappLink = shown ? buildWhatsappLink(shown) : null;
+  const content = shown ? (
+    <OrderInspector
+      order={shown}
+      deliveryCharge={deliveryCharge}
+      onUpdated={onUpdated}
+      onDelivered={onDelivered}
+      onCancelled={() => setCancelOpen(true)}
+      onDirtyChange={onDirtyChange}
+      onClose={isDesktop ? undefined : onClose}
+    />
+  ) : (
+    <div className="flex h-full flex-col items-center justify-center text-center p-8">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F6FAF8] text-[#156253]/20 mb-4 ring-1 ring-inset ring-[#156253]/10">
+        <Activity className="h-8 w-8" />
+      </div>
+      <h3 className="text-[16px] font-bold text-[#0F1F1C]">Workspace Ready</h3>
+      <p className="mt-2 text-[13px] font-medium text-[#0F1F1C]/50 max-w-[240px]">
+        Select an order from the inbox to inspect details, modify billing, or verify delivery.
+      </p>
+    </div>
+  );
 
   return (
     <>
-      <AnimatePresence>
-        {open && shown && (
-          <div key="order-panel" className="fixed inset-0 z-[80]">
-            <motion.div
-              aria-hidden
-              className="absolute inset-0 bg-[#0F1F1C]/20 backdrop-blur-sm transition-opacity"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              onClick={onClose}
-            />
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby={titleId}
-              onKeyDown={trapTab}
-              initial={{ x: '100%', opacity: 0.5 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '100%', opacity: 0.5 }}
-              transition={{ type: 'spring', damping: 32, stiffness: 350, mass: 0.8 }}
-              className="absolute inset-y-0 right-0 flex w-full flex-col bg-[#F6FAF8] shadow-2xl sm:max-w-[560px] lg:max-w-[640px]"
-            >
-              <header className="relative flex shrink-0 items-start justify-between gap-4 border-b border-[#156253]/10 bg-[#FFFFFF] px-5 py-5 sm:px-8">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 id={titleId} className="font-mono text-[22px] font-bold tracking-tight text-[#156253]">
-                      {shown.orderId}
-                    </h2>
-                    <OrderStatusBadge status={shown.status} />
-                  </div>
-                  <p className="mt-1.5 flex items-center gap-2 text-[13px] font-medium text-[#0F1F1C]/50">
-                    <span className="flex items-center gap-1">
-                      {shown.orderType === 'manual_text' ? <Inbox className="h-3.5 w-3.5" /> : <PackageCheck className="h-3.5 w-3.5" />}
-                      {shown.orderType === 'manual_text' ? 'Manual Order' : 'Prescription Order'}
-                    </span>
-                    <span>•</span>
-                    <span>{formatDateTime(shown.createdAt)}</span>
-                  </p>
-                </div>
-                <button
-                  ref={closeRef}
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Close panel"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F6FAF8] text-[#0F1F1C]/40 transition-colors hover:bg-[#156253]/10 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
-                >
-                  <X className="h-5 w-5" aria-hidden />
-                </button>
-              </header>
+      {/* DESKTOP: Render Inline always */}
+      {isDesktop && (
+        <div className="hidden xl:block h-full overflow-hidden rounded-2xl bg-[#FFFFFF] border border-[#156253]/15 shadow-sm relative">
+          {content}
+        </div>
+      )}
 
-              <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-6 sm:px-8">
-                {shown.status === 'Cancelled' && (
-                  <div className="rounded-2xl border border-red-200 bg-[#FFFFFF] p-5 shadow-sm ring-1 ring-inset ring-red-100">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
-                      <div>
-                        <h4 className="text-[15px] font-bold text-red-900">Order Cancelled</h4>
-                        <p className="mt-1 text-[14px] font-medium text-red-700">{shown.cancelReason ?? 'No reason provided.'}</p>
-                        {whatsappLink && (
-                          <a
-                            href={whatsappLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-[13px] font-bold text-red-700 transition-colors hover:bg-red-100 active:scale-[0.98] w-fit"
-                          >
-                            Notify Customer via WhatsApp <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Section title="Customer Details" icon={<User className="h-4 w-4" aria-hidden />}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#156253]/10 pb-4">
-                    <div>
-                      <p className="text-[18px] font-bold text-[#0F1F1C]">{shown.customerName}</p>
-                      <a href={`tel:+91${shown.mobileNumber}`} className="mt-1 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#156253] hover:underline">
-                        <Phone className="h-3.5 w-3.5" aria-hidden /> {formatMobile(shown.mobileNumber)}
-                      </a>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="rounded-lg bg-[#F6FAF8] px-3 py-1.5 text-[12px] font-bold uppercase tracking-wider text-[#0F1F1C]/60 ring-1 ring-inset ring-[#156253]/10">
-                        {shown.firstOrderAtCreation ? 'New Customer' : 'Returning'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 flex gap-3">
-                    <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#156253]/40" aria-hidden />
-                    <dl className="grid min-w-0 flex-1 gap-1.5 text-[14px]">
-                      <div className="flex gap-2">
-                        <dt className="w-20 shrink-0 font-medium text-[#0F1F1C]/50">Address</dt>
-                        <dd className="font-semibold text-[#0F1F1C]">{shown.address.flat || '—'}</dd>
-                      </div>
-                      <div className="flex gap-2">
-                        <dt className="w-20 shrink-0 font-medium text-[#0F1F1C]/50">Area</dt>
-                        <dd className="font-semibold text-[#0F1F1C]">{shown.address.area || '—'}</dd>
-                      </div>
-                      {shown.address.landmark && (
-                        <div className="flex gap-2">
-                          <dt className="w-20 shrink-0 font-medium text-[#0F1F1C]/50">Landmark</dt>
-                          <dd className="font-semibold text-[#0F1F1C]">{shown.address.landmark}</dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-                </Section>
-
-                <Section title="Customer History" icon={<TrendingUp className="h-4 w-4" />}>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <Stat label="Total Orders">{shown.previousOrders}</Stat>
-                    <Stat label="Completed">{shown.customer?.deliveredOrders ?? 0}</Stat>
-                    <Stat label="First Order">{shown.firstOrderAtCreation ? 'Yes' : 'No'}</Stat>
-                    <Stat label="Gift Claimed">
-                      {shown.customer?.offerClaimed ? <span className="text-[#156253] flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Yes</span> : 'No'}
-                    </Stat>
-                  </div>
-                </Section>
-
-                <Section title="Requested Items" icon={<ShoppingBag className="h-4 w-4" />}>
-                  {shown.orderType === 'manual_text' ? (
-                    <div className="overflow-hidden rounded-xl ring-1 ring-inset ring-[#156253]/10">
-                      <ul className="divide-y divide-[#156253]/10 bg-[#F6FAF8]">
-                        {shown.medicines.map((item, index) => (
-                          <li key={`${item.name}-${index}`} className="flex items-center justify-between gap-4 px-4 py-3">
-                            <span className="min-w-0 break-words text-[14px] font-bold text-[#0F1F1C]">{item.name}</span>
-                            <span className="shrink-0 rounded-md bg-[#FFFFFF] px-2.5 py-1 text-[13px] font-semibold text-[#156253] shadow-sm ring-1 ring-inset ring-[#156253]/10">{item.quantity}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : shown.prescriptionUrl ? (
-                    <a
-                      href={shown.prescriptionUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group relative flex overflow-hidden rounded-xl bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/15 transition-all hover:shadow-md hover:ring-[#156253]/30"
-                    >
-                      <Image
-                        src={cloudinaryThumb(shown.prescriptionUrl, 240)}
-                        alt={`Prescription for ${shown.orderId}`}
-                        width={96}
-                        height={128}
-                        className="h-32 w-24 shrink-0 border-r border-[#156253]/10 object-cover"
-                        unoptimized
-                      />
-                      <div className="flex flex-1 items-center justify-between p-4">
-                        <div>
-                          <p className="text-[15px] font-bold text-[#0F1F1C]">Prescription Image</p>
-                          <p className="mt-1 text-[13px] font-medium text-[#0F1F1C]/50">Tap to open full size</p>
-                        </div>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] text-[#156253] shadow-sm transition-transform group-hover:scale-110">
-                          <ExternalLink className="h-5 w-5" aria-hidden />
-                        </div>
-                      </div>
-                    </a>
-                  ) : (
-                    <p className="text-[14px] font-medium text-[#0F1F1C]/50">No items or prescription attached.</p>
-                  )}
-                </Section>
-
-                {!shown.telegramNotificationSent && (
-                  <div className="flex gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <BellOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
-                    <div>
-                      <p className="text-[14px] font-bold text-amber-900">Telegram Notification Failed</p>
-                      <p className="mt-1 text-[13px] font-medium text-amber-800">Ensure the pharmacy team is aware of this order.</p>
-                    </div>
-                  </div>
-                )}
-
-                {shown.status === 'Pending' ? (
-                  <Section title="Operations Workspace" icon={<Save className="h-4 w-4" />}>
-                    <BillingPanel
-                      key={shown.id}
-                      order={shown}
-                      deliveryCharge={deliveryCharge}
-                      onUpdated={onUpdated}
-                      onDelivered={onDelivered}
-                      actionsTarget={actionsTarget}
-                    />
-                  </Section>
-                ) : (
-                  <BillSummary order={shown} />
-                )}
-              </div>
-
-              {shown.status === 'Pending' && (
-                <footer className="shrink-0 flex flex-col gap-3 border-t border-[#156253]/10 bg-[#FFFFFF] p-5 pb-safe sm:px-8">
-                  {/* Billing actions portaled here */}
-                  <div ref={setActionsTarget} />
-                  
-                  <div className="flex justify-center border-t border-[#156253]/5 pt-3">
-                    <button
-                      ref={cancelTriggerRef}
-                      type="button"
-                      onClick={() => setCancelOpen(true)}
-                      className="text-[13px] font-bold text-red-600 hover:text-red-700 hover:underline transition-colors"
-                    >
-                      Cancel Order...
-                    </button>
-                  </div>
-                </footer>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* MOBILE/TABLET: Render as Overlay */}
+      {!isDesktop && (
+        <AnimatePresence>
+          {open && (
+            <div key="order-mobile-panel" className="fixed inset-0 z-[100] xl:hidden">
+              <motion.div
+                aria-hidden
+                className="absolute inset-0 bg-[#0F1F1C]/40 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={onClose}
+              />
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                onKeyDown={trapTab}
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 32, stiffness: 400, mass: 0.8 }}
+                className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-[#F6FAF8] shadow-2xl"
+              >
+                {content}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      )}
 
       <AnimatePresence>
-        {cancelOpen && shown && <CancelOrderDialog key="cancel-dialog" order={shown} onClose={closeCancelDialog} onCancelled={handleCancelled} />}
+        {cancelOpen && shown && <CancelOrderDialog key="cancel-dialog" order={shown} onClose={() => setCancelOpen(false)} onCancelled={handleCancelledFlow} />}
       </AnimatePresence>
     </>
   );
 }
 
+
 // ============================================================================
-// MAIN COMPONENT (OrdersBoard)
+// MAIN LAYOUT & DATA ORCHESTRATION
 // ============================================================================
+
 const PAGE_SIZE = 20;
 const POLL_MS = 30_000;
 
@@ -1891,13 +1943,13 @@ const PENDING_TAB: TabConfig = {
   label: 'Pending',
   icon: Inbox,
   emptyTitle: 'Inbox Zero',
-  emptyHint: 'No pending orders right now. New ones will appear here.',
+  emptyHint: 'No pending orders right now.',
 };
 
 const TABS: TabConfig[] = [
   PENDING_TAB,
-  { status: 'Delivered', label: 'Delivered', icon: PackageCheck, emptyTitle: 'No deliveries yet.', emptyHint: 'Completed orders will be logged here.' },
-  { status: 'Cancelled', label: 'Cancelled', icon: Ban, emptyTitle: 'No cancellations.', emptyHint: 'Orders that fell through appear here.' },
+  { status: 'Delivered', label: 'Delivered', icon: PackageCheck, emptyTitle: 'No deliveries yet.', emptyHint: 'Completed orders appear here.' },
+  { status: 'Cancelled', label: 'Cancelled', icon: Ban, emptyTitle: 'No cancellations.', emptyHint: 'Fell-through orders appear here.' },
 ];
 
 interface ListState {
@@ -1978,7 +2030,7 @@ function useOrderList(status: OrderStatus) {
   return { ...state, load, replace, remove, prepend };
 }
 
-export function OrdersBoard() {
+function OrdersBoardContent() {
   const pending = useOrderList('Pending');
   const delivered = useOrderList('Delivered');
   const cancelled = useOrderList('Cancelled');
@@ -1986,8 +2038,15 @@ export function OrdersBoard() {
   const [activeTab, setActiveTab] = useState<OrderStatus>('Pending');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Navigation guarding for unsaved edits
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<{ run: () => void } | null>(null);
+
   const triggerRef = useRef<HTMLElement | null>(null);
   const tabsId = useId();
+  const toast = useToast();
 
   const { load: loadPending, replace: replacePending, remove: removePending } = pending;
   const { load: loadDelivered, replace: replaceDelivered, prepend: prependDelivered } = delivered;
@@ -2009,16 +2068,25 @@ export function OrdersBoard() {
   const pendingPage = pending.pagination?.page ?? 1;
   useEffect(() => {
     const timer = setInterval(() => {
-      if (document.visibilityState === 'visible' && pendingPage === 1) void loadPending(1, { silent: true });
+      if (document.visibilityState === 'visible' && pendingPage === 1 && !isDirty) {
+        void loadPending(1, { silent: true });
+      }
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [loadPending, pendingPage]);
+  }, [loadPending, pendingPage, isDirty]);
+
+  const requestNavigation = useCallback((action: () => void) => {
+    if (isDirty) setPendingNavigation({ run: action });
+    else action();
+  }, [isDirty]);
 
   const refresh = () => {
     void loadPending();
     void loadDelivered();
     void loadCancelled();
     loadSettings();
+    setRefreshKey(v => v + 1);
+    toast.info('Refreshed queues and overview');
   };
 
   const selectedOrder = useMemo(() => {
@@ -2039,36 +2107,61 @@ export function OrdersBoard() {
   }, [selectedOrderId]);
 
   const handleSelect = useCallback((id: string, trigger: HTMLElement) => {
-    triggerRef.current = trigger;
-    setSelectedOrderId(id);
-  }, []);
+    requestNavigation(() => {
+      triggerRef.current = trigger;
+      setSelectedOrderId(id);
+    });
+  }, [requestNavigation]);
 
-  const handleClose = useCallback(() => setSelectedOrderId(null), []);
+  const handleClose = useCallback(() => {
+    requestNavigation(() => {
+      setSelectedOrderId(null);
+      setTimeout(() => { if (triggerRef.current?.isConnected) triggerRef.current.focus({ preventScroll: true }); }, 100);
+    });
+  }, [requestNavigation]);
 
   const handleUpdated = useCallback(
     (order: AdminOrder) => {
+      setIsDirty(false);
       replacePending(order);
       replaceDelivered(order);
       replaceCancelled(order);
+      setRefreshKey(v => v + 1);
     },
     [replacePending, replaceDelivered, replaceCancelled],
   );
 
   const handleDelivered = useCallback(
     (order: AdminOrder) => {
+      setIsDirty(false);
       removePending(order.id);
       prependDelivered(order);
+      setSelectedOrderId(null);
+      setActiveTab('Delivered');
+      setRefreshKey(v => v + 1);
     },
     [removePending, prependDelivered],
   );
 
   const handleCancelled = useCallback(
     (order: AdminOrder) => {
+      setIsDirty(false);
       removePending(order.id);
       prependCancelled(order);
+      setSelectedOrderId(null);
+      setActiveTab('Cancelled');
+      setRefreshKey(v => v + 1);
     },
     [removePending, prependCancelled],
   );
+
+  const chooseTab = useCallback((status: OrderStatus) => {
+    if (status === activeTab) return;
+    requestNavigation(() => { 
+      setActiveTab(status); 
+      setSelectedOrderId(null); 
+    });
+  }, [activeTab, requestNavigation]);
 
   const handleTabKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const index = TABS.findIndex((tab) => tab.status === activeTab);
@@ -2083,7 +2176,7 @@ export function OrdersBoard() {
     if (!nextTab) return;
 
     event.preventDefault();
-    setActiveTab(nextTab.status);
+    chooseTab(nextTab.status);
     document.getElementById(`${tabsId}-tab-${nextTab.status}`)?.focus();
   };
 
@@ -2091,38 +2184,35 @@ export function OrdersBoard() {
   const list = lists[activeTab];
   
   const activeMeta = TABS.find((tab) => tab.status === activeTab) ?? PENDING_TAB;
-  
   const refreshing = pending.loading || delivered.loading || cancelled.loading;
   const pagination = list.pagination;
 
   return (
-    <ToastProvider>
-      <MotionConfig reducedMotion="user">
-        <div className="mx-auto max-w-5xl">
-          
-          <AnalyticsOverview />
+    <MotionConfig reducedMotion="user">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+        
+        <AnalyticsOverview refreshKey={refreshKey} />
 
-          <section className="mt-12 rounded-3xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
-            <header className="border-b border-[#156253]/10 p-5 sm:p-8">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h2 className="font-display text-[24px] font-bold tracking-tight text-[#0F1F1C]">Command Center</h2>
-                    <span className="rounded-full bg-[#156253]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#156253]">
-                      All-Time
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[14px] text-[#0F1F1C]/60">Manage operations, handle incoming queues, and verify deliveries.</p>
-                </div>
-                <div className="flex items-center gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(380px,40%)_minmax(500px,60%)] gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+          
+          {/* LEFT PANE: INBOX */}
+          <section className="flex flex-col h-full overflow-hidden bg-[#F6FAF8] rounded-2xl border border-[#156253]/15 shadow-sm">
+            <header className="shrink-0 border-b border-[#156253]/10 bg-[#FFFFFF] px-4 py-3 sm:px-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[16px] font-bold text-[#0F1F1C]">Inbox</h3>
+                <div className="flex items-center gap-3">
                   {pending.updatedAt && (
-                    <span className="hidden text-[12px] font-bold uppercase tracking-wider text-[#0F1F1C]/40 sm:block">
+                    <span className="hidden text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/40 sm:block">
                       Updated {timeFormatter.format(pending.updatedAt)}
                     </span>
                   )}
-                  <Button variant="secondary" onClick={refresh} icon={<RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />}>
-                    Refresh
-                  </Button>
+                  <button 
+                    onClick={refresh} 
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-[#0F1F1C]/50 hover:bg-[#F6FAF8] hover:text-[#156253] transition-colors"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+                  </button>
                 </div>
               </div>
 
@@ -2130,7 +2220,7 @@ export function OrdersBoard() {
                 role="tablist"
                 aria-label="Order status"
                 onKeyDown={handleTabKeyDown}
-                className="mt-8 flex w-full max-w-[480px] gap-1 rounded-xl bg-[#F6FAF8] p-1 ring-1 ring-inset ring-[#156253]/10"
+                className="flex w-full gap-1 rounded-xl bg-[#F6FAF8] p-1 ring-1 ring-inset ring-[#156253]/10"
               >
                 {TABS.map((tab) => {
                   const active = activeTab === tab.status;
@@ -2142,11 +2232,10 @@ export function OrdersBoard() {
                       type="button"
                       role="tab"
                       aria-selected={active}
-                      aria-controls={`${tabsId}-panel`}
                       tabIndex={active ? 0 : -1}
-                      onClick={() => setActiveTab(tab.status)}
+                      onClick={() => chooseTab(tab.status)}
                       className={cn(
-                        'relative flex h-11 flex-1 items-center justify-center gap-2 rounded-lg text-[13px] font-bold transition-colors',
+                        'relative flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-[12px] font-bold transition-colors',
                         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
                         active ? 'text-[#0F1F1C]' : 'text-[#0F1F1C]/50 hover:text-[#0F1F1C]/80',
                       )}
@@ -2154,14 +2243,13 @@ export function OrdersBoard() {
                       {active && (
                         <motion.span 
                           layoutId={`${tabsId}-indicator`} 
-                          className="absolute inset-0 rounded-lg bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/5" 
+                          className="absolute inset-0 rounded-lg bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10" 
                           transition={{ type: 'spring', stiffness: 500, damping: 40 }} 
                         />
                       )}
-                      <span className="relative z-10 hidden sm:inline">{tab.label}</span>
-                      <tab.icon className="relative z-10 h-4 w-4 sm:hidden" />
+                      <span className="relative z-10">{tab.label}</span>
                       {total !== undefined && (
-                        <span className={cn('relative z-10 rounded-md px-1.5 py-0.5 text-[11px] tabular-nums transition-colors', active ? 'bg-[#156253]/10 text-[#156253]' : 'bg-transparent text-[#0F1F1C]/40')}>
+                        <span className={cn('relative z-10 rounded px-1.5 py-0.5 text-[10px] tabular-nums transition-colors', active ? 'bg-[#156253]/10 text-[#156253]' : 'bg-transparent text-[#0F1F1C]/40')}>
                           {total}
                         </span>
                       )}
@@ -2171,43 +2259,39 @@ export function OrdersBoard() {
               </div>
             </header>
 
-            <div role="tabpanel" id={`${tabsId}-panel`} aria-labelledby={`${tabsId}-tab-${activeTab}`} className="p-5 sm:p-8 min-h-[400px]">
+            <div role="tabpanel" id={`${tabsId}-panel`} aria-labelledby={`${tabsId}-tab-${activeTab}`} className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">
               {list.loading && list.orders.length === 0 ? (
-                <div className="space-y-3" aria-busy>
+                <div className="space-y-2" aria-busy>
                   {Array.from({ length: 4 }, (_, index) => (
-                    <Skeleton key={index} className="h-24 rounded-2xl" />
+                    <Skeleton key={index} className="h-20 rounded-xl" />
                   ))}
                 </div>
               ) : list.error && list.orders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center" role="alert">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600 mb-4">
-                    <AlertTriangle className="h-8 w-8" />
+                <div className="flex h-full flex-col items-center justify-center text-center p-6" role="alert">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 mb-3">
+                    <AlertTriangle className="h-6 w-6" />
                   </div>
-                  <h3 className="text-[18px] font-bold text-[#0F1F1C]">Could not load orders</h3>
-                  <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-sm">{list.error}</p>
-                  <Button variant="secondary" className="mt-6" onClick={() => void list.load()}>
-                    Try Again
-                  </Button>
+                  <h3 className="text-[15px] font-bold text-[#0F1F1C]">Could not load orders</h3>
+                  <p className="mt-1 text-[13px] text-[#0F1F1C]/60">{list.error}</p>
+                  <Button variant="secondary" size="sm" className="mt-4" onClick={() => void list.load()}>Retry</Button>
                 </div>
               ) : list.orders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F6FAF8] text-[#156253]/40 mb-4 ring-1 ring-inset ring-[#156253]/10">
-                    <activeMeta.icon className="h-7 w-7" aria-hidden />
+                <div className="flex h-full flex-col items-center justify-center text-center p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EAF5F0] text-[#156253]/40 mb-3">
+                    <activeMeta.icon className="h-6 w-6" aria-hidden />
                   </div>
-                  <h3 className="text-[18px] font-bold text-[#0F1F1C]">{activeMeta.emptyTitle}</h3>
-                  <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-xs">{activeMeta.emptyHint}</p>
+                  <h3 className="text-[14px] font-bold text-[#0F1F1C]">{activeMeta.emptyTitle}</h3>
+                  <p className="mt-1 text-[12px] font-medium text-[#0F1F1C]/60 max-w-[200px]">{activeMeta.emptyHint}</p>
                 </div>
               ) : (
                 <>
                   {list.error && (
-                    <div role="alert" className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-medium text-red-700">
-                      <span className="min-w-0">{list.error}</span>
-                      <button type="button" onClick={() => void list.load()} className="shrink-0 font-bold underline hover:text-red-900 transition-colors">
-                        Retry
-                      </button>
+                    <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-700">
+                      <span className="min-w-0 truncate">{list.error}</span>
+                      <button type="button" onClick={() => void list.load()} className="shrink-0 underline hover:text-red-900 transition-colors">Retry</button>
                     </div>
                   )}
-                  <ul className={cn('flex flex-col gap-3 transition-opacity duration-300', list.loading && 'opacity-50 pointer-events-none')}>
+                  <ul className={cn('flex flex-col gap-2 transition-opacity duration-300', list.loading && 'opacity-50 pointer-events-none')}>
                     {list.orders.map((order) => (
                       <li key={order.id}>
                         <CompactOrderCard order={order} selected={order.id === selectedOrderId} onSelect={handleSelect} />
@@ -2215,8 +2299,8 @@ export function OrdersBoard() {
                     ))}
                   </ul>
                   {pagination && pagination.page < pagination.totalPages && (
-                    <div className="mt-8 flex justify-center">
-                      <Button variant="secondary" onClick={() => void list.load(pagination.page + 1)} loading={list.loadingMore} className="w-full sm:w-auto">
+                    <div className="mt-6 flex justify-center pb-4">
+                      <Button variant="secondary" size="sm" onClick={() => void list.load(pagination.page + 1)} loading={list.loadingMore} className="w-full">
                         Load Older Orders
                       </Button>
                     </div>
@@ -2226,18 +2310,41 @@ export function OrdersBoard() {
             </div>
           </section>
 
-        </div>
+          {/* RIGHT PANE / MOBILE OVERLAY: WORKSPACE */}
+          <OrderSidePanel
+            order={selectedOrder}
+            open={selectedOrder !== null}
+            deliveryCharge={deliveryCharge}
+            onClose={handleClose}
+            onUpdated={handleUpdated}
+            onDelivered={handleDelivered}
+            onCancelled={handleCancelled}
+            onDirtyChange={setIsDirty}
+          />
 
-        <OrderSidePanel
-          order={selectedOrder}
-          open={selectedOrder !== null}
-          deliveryCharge={deliveryCharge}
-          onClose={handleClose}
-          onUpdated={handleUpdated}
-          onDelivered={handleDelivered}
-          onCancelled={handleCancelled}
+        </div>
+      </div>
+      
+      {pendingNavigation && (
+        <DiscardEditsDialog 
+          onStay={() => setPendingNavigation(null)} 
+          onDiscard={() => {
+            const run = pendingNavigation.run;
+            setPendingNavigation(null);
+            setIsDirty(false);
+            run();
+          }} 
         />
-      </MotionConfig>
+      )}
+    </MotionConfig>
+  );
+}
+
+// Wrapper preserving Toast Context Injection
+export function OrdersBoard() {
+  return (
+    <ToastProvider>
+      <OrdersBoardContent />
     </ToastProvider>
   );
 }
