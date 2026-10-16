@@ -7,13 +7,13 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
-  useMemo,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -26,7 +26,9 @@ import {
   Trash2,
   UploadCloud,
   X,
+  PackageCheck,
   EyeOff,
+  Search,
 } from 'lucide-react';
 
 // ============================================================================
@@ -313,7 +315,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'inline-flex select-none items-center justify-center font-semibold transition-[color,background-color,box-shadow,transform] duration-200 motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
         'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         buttonVariants[variant],
@@ -322,7 +324,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
       {children}
     </button>
   );
@@ -379,7 +381,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[999] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[999] md:bottom-6 flex flex-col items-center gap-2 px-4 sm:bottom-6">
         <AnimatePresence initial={false}>
           {toasts.map((toast) => {
             const Icon = toastIcons[toast.tone];
@@ -392,11 +394,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 role={toast.tone === 'error' ? 'alert' : 'status'}
-                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-[#FFFFFF]/95 px-4 py-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-1 ring-[#156253]/10 backdrop-blur-md"
+                className="pointer-events-auto flex w-full max-w-[360px] items-start gap-3 rounded-2xl bg-white/95 px-4 py-3.5 shadow-xl ring-1 ring-[#156253]/10 backdrop-blur-md"
               >
                 <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toastTones[toast.tone])} aria-hidden />
                 <p className="flex-1 text-[14px] font-medium text-[#0F1F1C]">{toast.message}</p>
-                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#0F1F1C]/40 hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
+                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#60756D] hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>
@@ -432,7 +434,7 @@ function ToggleSwitch({ checked, onChange, label }: { checked: boolean; onChange
           transition={{ type: 'spring', stiffness: 600, damping: 35 }}
         />
       </div>
-      <span className={cn("text-[14px] font-semibold transition-colors duration-200", checked ? "text-[#0F1F1C]" : "text-[#0F1F1C]/60")}>{label}</span>
+      <span className={cn("text-[14px] font-semibold transition-colors duration-200", checked ? "text-[#0F1F1C]" : "text-[#52675F]")}>{label}</span>
     </button>
   );
 }
@@ -444,6 +446,10 @@ function ToggleSwitch({ checked, onChange, label }: { checked: boolean; onChange
 function ProductsViewInner() {
   const toast = useToast();
   const [products, setProducts] = useState<Product[]>([]);
+  const [query, setQuery] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const visibleProducts = products.filter(p => `${p.name} ${p.category}`.toLowerCase().includes(query.trim().toLowerCase()));
   const [loading, setLoading] = useState(true);
   
   // Modal State
@@ -468,11 +474,12 @@ function ProductsViewInner() {
   });
 
   const fetchProducts = async () => {
+    setLoading(true); setLoadError(null);
     try {
       const res = await adminRequest<{ products: Product[] }>('/products');
       setProducts(res.products);
     } catch (error) {
-      toast.error('Failed to load products');
+      setLoadError(error instanceof Error ? error.message : 'Failed to load products');
     } finally {
       setLoading(false);
     }
@@ -483,15 +490,22 @@ function ProductsViewInner() {
   }, []);
 
   useEffect(() => {
-    if (isModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    if (!isModalOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const timer = window.setTimeout(() => modalRef.current?.querySelector<HTMLInputElement>('input')?.focus(), 50);
+    return () => { clearTimeout(timer); document.body.style.overflow = overflow; previous?.focus(); };
   }, [isModalOpen]);
+  const closeModal = () => { if (!saving && !isUploading) setIsModalOpen(false); };
+  const handleModalKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') { event.stopPropagation(); closeModal(); }
+    if (event.key !== 'Tab') return;
+    const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href]')).filter(node => node.getClientRects().length > 0);
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  };
 
   const openAddModal = () => {
     setEditingId(null);
@@ -517,7 +531,7 @@ function ProductsViewInner() {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
       await adminRequest(`/products/${id}`, { method: 'DELETE' });
-      setProducts(products.filter(p => p._id !== id));
+      setProducts(current => current.filter(p => p._id !== id));
       toast.success('Product deleted successfully');
     } catch (error) {
       toast.error('Failed to delete product');
@@ -551,6 +565,7 @@ function ProductsViewInner() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving || isUploading) return;
     if (!formData.name || !formData.category || !formData.price) {
       toast.error('Name, category, and price are required.');
       return;
@@ -568,14 +583,14 @@ function ProductsViewInner() {
           method: 'PUT',
           body: payload,
         });
-        setProducts(products.map(p => p._id === editingId ? res.product : p));
+        setProducts(current => current.map(p => p._id === editingId ? res.product : p));
         toast.success('Product updated successfully');
       } else {
         const res = await adminRequest<{ product: Product }>('/products', {
           method: 'POST',
           body: payload,
         });
-        setProducts([res.product, ...products]);
+        setProducts(current => [res.product, ...current]);
         toast.success('Product added successfully');
       }
       setIsModalOpen(false);
@@ -591,144 +606,115 @@ function ProductsViewInner() {
       {/* Header Section */}
       <header className="mb-8 flex flex-col justify-between gap-5 border-b border-[#156253]/10 pb-6 sm:flex-row sm:items-end">
         <div>
-          <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F1F1C]">Inventory Manager</h1>
-          <p className="mt-1.5 text-[14px] font-medium text-[#0F1F1C]/60">Manage your product catalog, visibility, and stock levels.</p>
+          <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F1F1C]">Products</h1>
+          <p className="mt-1.5 text-[14px] font-medium text-[#52675F]">Manage your product catalog, visibility, and stock levels.</p>
         </div>
-        <Button onClick={openAddModal} icon={<Plus className="h-[18px] w-[18px]" />} size="lg" className="w-full shadow-[0_2px_12px_rgba(21,98,83,0.2)] sm:w-auto">
+        <Button onClick={openAddModal} icon={<Plus className="h-[18px] w-[18px]" />} size="md" className="w-full shadow-[0_2px_12px_rgba(21,98,83,0.2)] sm:w-auto">
           Add Product
         </Button>
       </header>
 
+      <div className="mb-5 grid gap-3 sm:grid-cols-3">{[
+        ['Products', products.length], ['Visible on store', products.filter(p => p.isActive).length], ['Out of stock', products.filter(p => !p.inStock).length]
+      ].map(([label, value]) => <div key={label} className="rounded-xl border border-[#156253]/10 bg-white px-4 py-3"><p className="text-xs text-[#60756D]">{label}</p><p className="mt-1 text-2xl font-semibold tabular-nums text-[#0F1F1C]">{loading ? '—' : value}</p></div>)}</div>
+      <label className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-[#156253]/15 bg-white px-3"><Search className="h-4 w-4 text-[#60756D]" aria-hidden /><span className="sr-only">Search products by name or category</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search products or categories…" className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none" /></label>
       {/* Main Content */}
       <div className="min-h-[400px]">
         {loading ? (
-          <div className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-[#156253]/5">
-            <div className="p-5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="mb-4 flex items-center gap-4 border-b border-[#156253]/5 pb-4 last:border-0 last:pb-0 last:mb-0">
-                  <div className="h-12 w-12 shrink-0 animate-pulse rounded-xl bg-[#156253]/5" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-1/3 animate-pulse rounded bg-[#156253]/5" />
-                    <div className="h-3 w-1/4 animate-pulse rounded bg-[#156253]/5" />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-[#156253]/5">
+                <div className="h-48 w-full animate-pulse bg-[#156253]/5" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 w-1/3 animate-pulse rounded bg-[#156253]/5" />
+                  <div className="h-5 w-3/4 animate-pulse rounded bg-[#156253]/5" />
+                  <div className="h-4 w-full animate-pulse rounded bg-[#156253]/5" />
+                  <div className="mt-6 flex justify-between pt-4">
+                    <div className="h-6 w-1/4 animate-pulse rounded bg-[#156253]/5" />
+                    <div className="flex gap-2">
+                      <div className="h-10 w-10 animate-pulse rounded-xl bg-[#156253]/5" />
+                      <div className="h-10 w-10 animate-pulse rounded-xl bg-[#156253]/5" />
+                    </div>
                   </div>
-                  <div className="h-8 w-20 animate-pulse rounded-full bg-[#156253]/5" />
-                  <div className="h-8 w-16 animate-pulse rounded-md bg-[#156253]/5" />
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        ) : products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center">
+        ) : loadError ? (<div role="alert" className="rounded-xl border border-red-200 bg-white p-6"><p className="text-sm text-red-700">{loadError}</p><Button variant="secondary" className="mt-4" onClick={() => void fetchProducts()}>Retry</Button></div>) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/10">
               <PackageSearch className="h-10 w-10 text-[#156253]/60" />
             </div>
             <h3 className="font-display text-[22px] font-bold text-[#0F1F1C]">No products found</h3>
-            <p className="mt-2 text-[14px] font-medium text-[#0F1F1C]/60 max-w-sm">Start building your catalog to showcase items to your customers.</p>
+            <p className="mt-2 text-[14px] font-medium text-[#52675F] max-w-sm">Start building your catalog to showcase items to your customers.</p>
             <Button onClick={openAddModal} className="mt-8 shadow-sm" variant="secondary" size="lg">Add your first product</Button>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[13px] whitespace-nowrap">
-                <thead className="border-b border-[#156253]/10 bg-[#F6FAF8] text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">
-                  <tr>
-                    <th scope="col" className="px-5 py-4 w-[72px]">Image</th>
-                    <th scope="col" className="px-5 py-4 min-w-[240px] w-full">Product Details</th>
-                    <th scope="col" className="px-5 py-4">Category</th>
-                    <th scope="col" className="px-5 py-4">Price</th>
-                    <th scope="col" className="px-5 py-4 text-center">Visibility</th>
-                    <th scope="col" className="px-5 py-4 text-center">Stock</th>
-                    <th scope="col" className="px-5 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#156253]/5">
-                  <AnimatePresence>
-                    {products.map((product) => (
-                      <motion.tr 
-                        key={product._id} 
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="group transition-colors hover:bg-[#F6FAF8]"
-                      >
-                        <td className="px-5 py-3 align-middle">
-                          <div className="relative h-[46px] w-[46px] overflow-hidden rounded-[12px] bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/10">
-                            {product.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[#156253]/20">
-                                <ImageIcon className="h-5 w-5" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3 align-middle">
-                          <p className="text-[14px] font-bold text-[#0F1F1C] truncate max-w-[280px]">
-                            {product.name}
-                          </p>
-                          <p className="mt-0.5 text-[12px] font-medium text-[#0F1F1C]/50 truncate max-w-[280px]">
-                            {product.description || 'No description provided.'}
-                          </p>
-                        </td>
-                        <td className="px-5 py-3 align-middle">
-                          <span className="inline-flex rounded-md bg-[#D8F3E8]/40 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#156253] ring-1 ring-inset ring-[#156253]/10">
-                            {product.category}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 align-middle">
-                          <span className="font-display text-[15px] font-bold text-[#0F1F1C]">
-                            {formatRupees(product.price)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 align-middle text-center">
-                          {product.isActive ? (
-                            <span className="inline-flex items-center rounded-full bg-[#156253]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#156253]">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F1F1C]/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">
-                              <EyeOff className="h-3 w-3" /> Hidden
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 align-middle text-center">
-                          {product.inStock ? (
-                            <span className="inline-flex items-center rounded-full bg-[#D8F3E8]/60 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#156253]">
-                              In Stock
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-red-600 ring-1 ring-inset ring-red-100">
-                              Out of Stock
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 align-middle text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <button 
-                              onClick={() => openEditModal(product)} 
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#0F1F1C]/40 transition-colors hover:bg-[#D8F3E8]/50 hover:text-[#156253]"
-                              aria-label="Edit Product"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(product._id)} 
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#0F1F1C]/40 transition-colors hover:bg-red-50 hover:text-red-600"
-                              aria-label="Delete Product"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <AnimatePresence>
+              {visibleProducts.map((product) => (
+                <motion.div 
+                  key={product._id} 
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-lg hover:ring-[#156253]/20"
+                >
+                  <div className="relative h-[200px] w-full bg-[#F6FAF8] overflow-hidden">
+                    {product.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[#156253]/20 bg-gradient-to-br from-[#F6FAF8] to-[#D8F3E8]/30">
+                        <ImageIcon className="h-12 w-12" />
+                      </div>
+                    )}
+                    
+                    {/* Status Badges Overlay */}
+                    <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
+                      {!product.isActive && (
+                        <div className="flex items-center gap-1.5 rounded-full bg-[#0F1F1C]/80 px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#FFFFFF] backdrop-blur-md shadow-sm">
+                          <EyeOff className="h-3 w-3" /> Hidden
+                        </div>
+                      )}
+                      {!product.inStock && (
+                        <div className="flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#FFFFFF] backdrop-blur-md shadow-sm">
+                          Out of Stock
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-1 flex-col p-5">
+                    <span className="text-[11px] font-bold tracking-wide text-[#156253]">{product.category}</span>
+                    <h3 className="mt-1.5 text-[16px] font-bold leading-tight text-[#0F1F1C] line-clamp-2">{product.name}</h3>
+                    <p className="mt-2 text-[14px] font-medium leading-relaxed text-[#52675F] line-clamp-2">{product.description || 'No description provided.'}</p>
+                    
+                    <div className="mt-auto pt-6 flex items-center justify-between">
+                      <span className="font-display text-[22px] font-bold text-[#0F1F1C]">{formatRupees(product.price)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button 
+                          onClick={() => openEditModal(product)} 
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6FAF8] text-[#52675F] transition-colors hover:bg-[#D8F3E8]/50 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
+                          aria-label="Edit Product"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product._id)} 
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6FAF8] text-[#52675F] transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                          aria-label="Delete Product"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -743,11 +729,13 @@ function ProductsViewInner() {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }} 
               className="absolute inset-0 bg-[#0F1F1C]/30 backdrop-blur-[2px]" 
-              onClick={() => setIsModalOpen(false)} 
+              onClick={closeModal} 
             />
             
             {/* Modal Sheet */}
             <motion.div
+              ref={modalRef}
+              onKeyDown={handleModalKeys}
               role="dialog"
               aria-modal="true"
               aria-labelledby="modal-title"
@@ -755,14 +743,14 @@ function ProductsViewInner() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: '100%', scale: 0.98 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300, mass: 0.8 }}
-              className="relative flex h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[32px] bg-[#FFFFFF] shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-[32px]"
+              className="relative flex h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[32px] bg-[#FFFFFF] shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl"
             >
               {/* Header */}
               <div className="flex shrink-0 items-center justify-between border-b border-[#156253]/10 bg-[#FFFFFF] px-6 py-5">
                 <h2 id="modal-title" className="font-display text-[22px] font-bold text-[#0F1F1C]">{editingId ? 'Edit Product' : 'New Product'}</h2>
                 <button 
-                  onClick={() => setIsModalOpen(false)} 
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F6FAF8] text-[#0F1F1C]/50 transition-colors hover:bg-[#156253]/10 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
+                  onClick={closeModal} 
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F6FAF8] text-[#60756D] transition-colors hover:bg-[#156253]/10 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
                   aria-label="Close modal"
                 >
                   <X className="h-5 w-5" />
@@ -770,25 +758,25 @@ function ProductsViewInner() {
               </div>
               
               {/* Form Body */}
-              <form id="product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain bg-[#FFFFFF] p-6">
+              <form aria-busy={saving || isUploading} id="product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain bg-[#FFFFFF] p-6">
                 <div className="space-y-6">
                   {/* Row 1 */}
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="block text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">Product Name <span className="text-red-500">*</span></label>
+                      <label className="block text-[13px] font-bold tracking-wide text-[#52675F]">Product Name <span className="text-red-500">*</span></label>
                       <input 
                         required 
-                        value={formData.name} 
+                        aria-label="Product name" value={formData.name} 
                         onChange={e => setFormData({...formData, name: e.target.value})} 
                         className="h-12 w-full rounded-xl bg-[#F6FAF8] px-4 text-[15px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]" 
                         placeholder="e.g. Nivea Face Wash" 
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">Category <span className="text-red-500">*</span></label>
+                      <label className="block text-[13px] font-bold tracking-wide text-[#52675F]">Category <span className="text-red-500">*</span></label>
                       <input 
                         required 
-                        value={formData.category} 
+                        aria-label="Category" value={formData.category} 
                         onChange={e => setFormData({...formData, category: e.target.value})} 
                         className="h-12 w-full rounded-xl bg-[#F6FAF8] px-4 text-[15px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]" 
                         placeholder="e.g. Cosmetics" 
@@ -799,15 +787,15 @@ function ProductsViewInner() {
                   {/* Row 2 */}
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="block text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">Price (₹) <span className="text-red-500">*</span></label>
+                      <label className="block text-[13px] font-bold tracking-wide text-[#52675F]">Price (₹) <span className="text-red-500">*</span></label>
                       <div className="relative flex items-center">
-                        <span className="absolute left-4 text-[15px] font-semibold text-[#0F1F1C]/40">₹</span>
+                        <span className="absolute left-4 text-[15px] font-semibold text-[#60756D]">₹</span>
                         <input 
                           required 
                           type="number" 
                           min="0" 
                           step="0.01" 
-                          value={formData.price} 
+                          aria-label="Price in rupees" value={formData.price} 
                           onChange={e => setFormData({...formData, price: e.target.value})} 
                           className="h-12 w-full rounded-xl bg-[#F6FAF8] pl-8 pr-4 text-[15px] font-bold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]" 
                           placeholder="0.00" 
@@ -824,8 +812,8 @@ function ProductsViewInner() {
 
                   {/* Image Upload Area */}
                   <div className="space-y-2">
-                    <label className="flex items-baseline gap-2 text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">
-                      Product Image <span className="text-[11px] font-medium normal-case text-[#0F1F1C]/40">(Optional)</span>
+                    <label className="flex items-baseline gap-2 text-[13px] font-bold tracking-wide text-[#52675F]">
+                      Product Image <span className="text-[11px] font-medium normal-case text-[#60756D]">(Optional)</span>
                     </label>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-2xl bg-[#F6FAF8] p-4 ring-1 ring-inset ring-[#156253]/10">
                       
@@ -856,7 +844,7 @@ function ProductsViewInner() {
                         <div className="flex gap-2">
                           <input 
                             type="url" 
-                            value={formData.imageUrl} 
+                            aria-label="Product image URL" value={formData.imageUrl} 
                             onChange={e => setFormData({...formData, imageUrl: e.target.value})} 
                             disabled={isUploading}
                             className="h-10 w-full rounded-xl bg-[#FFFFFF] px-3.5 text-[14px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:outline-none focus:ring-2 focus:ring-[#156253]" 
@@ -868,24 +856,24 @@ function ProductsViewInner() {
                             variant="secondary" 
                             onClick={() => fileInputRef.current?.click()} 
                             disabled={isUploading} 
-                            className="h-10 shrink-0 rounded-xl px-4"
+                            aria-label="Upload product image" className="h-10 shrink-0 rounded-xl px-4"
                           >
                             <UploadCloud className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Upload</span>
                           </Button>
                         </div>
-                        <p className="text-[12px] font-medium text-[#0F1F1C]/50">Upload a JPG, PNG, WEBP (Max 25MB) or paste a web URL.</p>
+                        <p className="text-[12px] font-medium text-[#60756D]">Upload a JPG, PNG, WEBP (Max 25MB) or paste a web URL.</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Description */}
                   <div className="space-y-2">
-                    <label className="flex items-baseline gap-2 text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">
-                      Description <span className="text-[11px] font-medium normal-case text-[#0F1F1C]/40">(Optional)</span>
+                    <label className="flex items-baseline gap-2 text-[13px] font-bold tracking-wide text-[#52675F]">
+                      Description <span className="text-[11px] font-medium normal-case text-[#60756D]">(Optional)</span>
                     </label>
                     <textarea 
                       rows={3} 
-                      value={formData.description} 
+                      aria-label="Description" value={formData.description} 
                       onChange={e => setFormData({...formData, description: e.target.value})} 
                       className="w-full resize-none rounded-xl bg-[#F6FAF8] p-4 text-[15px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]" 
                       placeholder="Enter a brief product description..." 
@@ -895,10 +883,10 @@ function ProductsViewInner() {
               </form>
 
               {/* Sticky Footer */}
-              <div className="shrink-0 border-t border-[#156253]/10 bg-[#FFFFFF] p-5 pb-safe sm:px-6">
+              <div className="shrink-0 border-t border-[#156253]/10 bg-[#FFFFFF] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6">
                 <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
-                  <Button variant="secondary" size="lg" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto">Cancel</Button>
-                  <Button type="submit" form="product-form" size="lg" loading={saving} className="w-full sm:w-auto shadow-[0_2px_12px_rgba(21,98,83,0.25)]">
+                  <Button variant="secondary" size="lg" onClick={closeModal} className="w-full sm:w-auto">Cancel</Button>
+                  <Button type="submit" form="product-form" size="lg" loading={saving} disabled={isUploading} className="w-full sm:w-auto shadow-[0_2px_12px_rgba(21,98,83,0.25)]">
                     {editingId ? 'Save Changes' : 'Add Product'}
                   </Button>
                 </div>
@@ -913,8 +901,8 @@ function ProductsViewInner() {
 
 export function ProductsView() {
   return (
-    <ToastProvider>
+    <MotionConfig reducedMotion="user"><ToastProvider>
       <ProductsViewInner />
-    </ToastProvider>
+    </ToastProvider></MotionConfig>
   );
 }

@@ -16,7 +16,7 @@ import React, {
   type InputHTMLAttributes, 
   type ReactNode 
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, Info, Loader2, Save, X, Gift, Truck } from 'lucide-react';
 
 // ============================================================================
@@ -315,7 +315,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-[color,background-color,box-shadow,transform] duration-200 motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
         'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         buttonVariants[variant],
@@ -349,9 +349,9 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 
   return (
     <div className={className}>
-      <label htmlFor={inputId} className="mb-2 flex items-baseline justify-between text-[13px] font-bold uppercase tracking-wider text-[#0F1F1C]/60">
+      <label htmlFor={inputId} className="mb-2 flex items-baseline justify-between text-[13px] font-bold tracking-wide text-[#52675F]">
         {label}
-        {optional && <span className="text-[11px] font-medium normal-case text-[#0F1F1C]/40">Optional</span>}
+        {optional && <span className="text-[11px] font-medium normal-case text-[#60756D]">Optional</span>}
       </label>
       <div
         className={cn(
@@ -361,13 +361,13 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
             : 'ring-[#156253]/15 focus-within:ring-2 focus-within:ring-[#156253]',
         )}
       >
-        {leading && <span className="pl-4 pr-2 text-[15px] font-semibold text-[#0F1F1C]/40 transition-colors group-focus-within:text-[#156253]">{leading}</span>}
+        {leading && <span className="pl-4 pr-2 text-[15px] font-semibold text-[#60756D] transition-colors group-focus-within:text-[#156253]">{leading}</span>}
         <input
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-full w-full rounded-r-xl bg-transparent pr-4 text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
+          className="h-full min-w-0 w-full rounded-r-xl bg-transparent px-3 text-[15px] font-semibold text-[#0F1F1C] placeholder:text-[#0F1F1C]/30 focus:outline-none"
           {...props}
         />
       </div>
@@ -376,7 +376,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           <AlertTriangle className="h-3.5 w-3.5" /> {error}
         </p>
       ) : hint ? (
-        <p id={`${inputId}-hint`} className="mt-2 text-[12px] font-medium text-[#0F1F1C]/50 leading-relaxed">
+        <p id={`${inputId}-hint`} className="mt-2 text-[12px] font-medium text-[#60756D] leading-relaxed">
           {hint}
         </p>
       ) : null}
@@ -388,7 +388,8 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div aria-hidden className={cn('relative overflow-hidden bg-[#156253]/5', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+      <style>{`@keyframes gmedShimmer { to { transform: translateX(100%); } }`}</style>
+      <div className="absolute inset-0 -translate-x-full animate-[gmedShimmer_1.8s_ease-in-out_infinite] motion-reduce:animate-none bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
   );
 }
@@ -408,7 +409,7 @@ function NativeSwitch({ checked, onChange, disabled }: { checked: boolean; onCha
         disabled && "cursor-not-allowed opacity-50"
       )}
     >
-      <span className="sr-only">Toggle feature</span>
+      <span className="sr-only">Enable first-order gift</span>
       <motion.span
         layout
         className="absolute left-[3px] h-[26px] w-[26px] rounded-full bg-white shadow-sm ring-1 ring-black/5"
@@ -470,7 +471,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[999] flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[999] md:bottom-6 flex flex-col items-center gap-2 px-4 sm:bottom-6 sm:items-end sm:px-6">
         <AnimatePresence initial={false}>
           {toasts.map((toast) => {
             const Icon = toastIcons[toast.tone];
@@ -487,7 +488,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               >
                 <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', toastTones[toast.tone])} aria-hidden />
                 <p className="flex-1 text-[14px] font-medium text-[#0F1F1C]">{toast.message}</p>
-                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#0F1F1C]/40 hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
+                <button type="button" onClick={() => dismiss(toast.id)} className="text-[#60756D] hover:text-[#0F1F1C] transition-colors" aria-label="Dismiss">
                   <X className="h-4 w-4" />
                 </button>
               </motion.div>
@@ -556,12 +557,12 @@ function SettingsFormInner() {
 
   if (loadError) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center max-w-2xl mx-auto mt-8">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center max-w-[1100px] mx-auto mt-8">
         <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
           <AlertTriangle className="h-8 w-8" />
         </div>
         <h3 className="font-display text-[22px] font-bold text-[#0F1F1C]">Could not load settings</h3>
-        <p className="mt-2 text-[14px] font-medium text-[#0F1F1C]/60 max-w-sm">{loadError}</p>
+        <p className="mt-2 text-[14px] font-medium text-[#52675F] max-w-sm">{loadError}</p>
         <Button onClick={() => window.location.reload()} className="mt-6 shadow-sm" variant="secondary">Reload Page</Button>
       </div>
     );
@@ -569,7 +570,7 @@ function SettingsFormInner() {
 
   if (!settings) {
     return (
-      <div className="mx-auto max-w-2xl mt-8">
+      <div className="mx-auto max-w-[1100px] mt-8">
         <Skeleton className="h-24 w-[280px] rounded-2xl mb-8 bg-transparent" />
         <div className="space-y-6">
           <Skeleton className="h-[140px] w-full rounded-3xl" />
@@ -581,26 +582,26 @@ function SettingsFormInner() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-2xl">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mx-auto max-w-[1100px]">
       <header className="mb-8 border-b border-[#156253]/10 pb-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F1F1C]">Preferences</h1>
-            <p className="mt-1.5 text-[14px] font-medium text-[#0F1F1C]/60">Manage operational parameters and promotional offers.</p>
+            <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F1F1C]">Settings</h1>
+            <p className="mt-1.5 text-[14px] font-medium text-[#52675F]">Delivery pricing and first-order rewards for your storefront.</p>
           </div>
           {settings.updatedAt && (
-            <div className="text-[12px] font-bold uppercase tracking-wider text-[#0F1F1C]/40">
+            <div className="text-[12px] font-bold tracking-wide text-[#60756D]">
               Last saved {formatDateTime(settings.updatedAt).split(',')[0]}
             </div>
           )}
         </div>
       </header>
 
-      <form onSubmit={submit} className="space-y-8" noValidate>
+      <form onSubmit={submit} className="grid items-start gap-5 lg:grid-cols-2" noValidate>
         
         {/* Delivery Charge Section */}
-        <section className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
-          <div className="border-b border-[#156253]/5 bg-[#F6FAF8] px-6 py-5">
+        <section className="overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+          <div className="border-b border-[#156253]/5 bg-[#F6FAF8] px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
                 <Truck className="h-5 w-5 text-[#156253]" />
@@ -608,7 +609,7 @@ function SettingsFormInner() {
               <h2 className="text-[16px] font-bold text-[#0F1F1C]">Delivery Fees</h2>
             </div>
           </div>
-          <div className="p-6 sm:p-8">
+          <div className="p-5 sm:p-6">
             <Field
               label="Standard Delivery Charge"
               leading="₹"
@@ -617,14 +618,14 @@ function SettingsFormInner() {
               onChange={(event) => setDeliveryCharge(event.target.value.replace(/[^\d.]/g, ''))}
               error={deliveryCharge ? deliveryError : 'Required'}
               hint={<>Set to <strong>0</strong> to advertise "FREE Delivery" sitewide. This charge is automatically applied to all new orders.</>}
-              className="max-w-[320px]"
+              className="w-full"
             />
           </div>
         </section>
 
         {/* First Order Gift Section */}
-        <section className="overflow-hidden rounded-[24px] bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
-          <div className="border-b border-[#156253]/5 bg-gradient-to-r from-[#D8F3E8]/40 to-transparent px-6 py-5">
+        <section className="overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
+          <div className="border-b border-[#156253]/5 bg-gradient-to-r from-[#D8F3E8]/40 to-transparent px-5 py-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10">
@@ -632,7 +633,7 @@ function SettingsFormInner() {
                 </div>
                 <div>
                   <h2 className="text-[16px] font-bold text-[#0F1F1C]">First Order Gift</h2>
-                  <p className="text-[13px] font-medium text-[#0F1F1C]/60">FREE {GIFT.name}</p>
+                  <p className="text-[13px] font-medium text-[#52675F]">FREE {GIFT.name}</p>
                 </div>
               </div>
               <NativeSwitch checked={offerEnabled} onChange={setOfferEnabled} />
@@ -647,7 +648,7 @@ function SettingsFormInner() {
                 exit={{ height: 0, opacity: 0 }} 
                 className="overflow-hidden"
               >
-                <div className="p-6 sm:p-8 pt-6">
+                <div className="p-5 sm:p-6 pt-6">
                   <Field
                     label="Minimum Eligibility Threshold"
                     leading="₹"
@@ -656,7 +657,7 @@ function SettingsFormInner() {
                     onChange={(event) => setThreshold(event.target.value.replace(/[^\d.]/g, ''))}
                     error={threshold ? thresholdError : 'Required'}
                     hint="Checked against the medicine subtotal only. Delivery fees and other retail products do not count toward this threshold."
-                    className="max-w-[320px]"
+                    className="w-full"
                   />
                 </div>
               </motion.div>
@@ -665,7 +666,7 @@ function SettingsFormInner() {
         </section>
 
         {/* Action Footer */}
-        <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="lg:col-span-2 sticky bottom-24 z-20 rounded-xl border border-[#156253]/10 bg-white/95 p-4 backdrop-blur-md md:bottom-4 flex flex-col sm:flex-row sm:items-center gap-4">
           <Button 
             type="submit" 
             size="lg" 
@@ -686,8 +687,8 @@ function SettingsFormInner() {
 
 export function SettingsForm() {
   return (
-    <ToastProvider>
+    <MotionConfig reducedMotion="user"><ToastProvider>
       <SettingsFormInner />
-    </ToastProvider>
+    </ToastProvider></MotionConfig>
   );
 }

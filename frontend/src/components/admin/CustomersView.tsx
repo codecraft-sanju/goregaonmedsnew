@@ -2,7 +2,7 @@
 'use client';
 import React, { useEffect, useState, forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Search, Users, Loader2, X, Phone, Gift, ShoppingBag, PackageCheck, AlertCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
@@ -274,7 +274,8 @@ export function safeAdminRedirect(next: string | null) {
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div aria-hidden className={cn('relative overflow-hidden bg-[#156253]/5', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+      <style>{`@keyframes gmedShimmer { to { transform: translateX(100%); } }`}</style>
+      <div className="absolute inset-0 -translate-x-full animate-[gmedShimmer_1.8s_ease-in-out_infinite] motion-reduce:animate-none bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
   );
 }
@@ -314,7 +315,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-all duration-200',
+        'inline-flex select-none items-center justify-center font-semibold tracking-wide transition-[color,background-color,box-shadow,transform] duration-200 motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]',
         'active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         variants[variant],
@@ -332,7 +333,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 // ============================================================================
 // MAIN COMPONENT (CustomersView)
 // ============================================================================
-interface Response {
+interface CustomersResponse {
   customers: Required<CustomerSummary>[];
   pagination: Pagination;
 }
@@ -341,9 +342,10 @@ export function CustomersView() {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(1);
-  const [data, setData] = useState<Response | null>(null);
+  const [data, setData] = useState<CustomersResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -360,27 +362,27 @@ export function CustomersView() {
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (debounced) params.set('q', debounced);
     
-    adminRequest<Response>(`/customers?${params}`, { signal: controller.signal })
+    adminRequest<CustomersResponse>(`/customers?${params}`, { signal: controller.signal })
       .then(setData)
       .catch((err: Error) => err.name !== 'AbortError' && setError(err.message))
       .finally(() => !controller.signal.aborted && setLoading(false));
       
     return () => controller.abort();
-  }, [debounced, page]);
+  }, [debounced, page, retry]);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <MotionConfig reducedMotion="user"><div className="mx-auto max-w-[1400px]">
       {/* PAGE HEADER */}
       <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end justify-between border-b border-[#156253]/10 pb-6">
         <div>
-          <h1 className="font-display text-[26px] font-bold text-[#0F1F1C] tracking-tight">Customer Directory</h1>
-          <p className="mt-1 text-[14px] text-[#0F1F1C]/60">Manage your patient and customer relationships.</p>
+          <h1 className="font-display text-[26px] font-bold text-[#0F1F1C] tracking-tight">Customers</h1>
+          <p className="mt-1 text-[14px] text-[#52675F]">Customer directory, order history and first-order rewards.</p>
         </div>
         
         {/* PREMIUM SEARCH */}
         <div className="relative w-full max-w-[340px] group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Search className="h-[18px] w-[18px] text-[#0F1F1C]/40 transition-colors group-focus-within:text-[#156253]" aria-hidden />
+            <Search className="h-[18px] w-[18px] text-[#60756D] transition-colors group-focus-within:text-[#156253]" aria-hidden />
           </div>
           <label htmlFor="customer-search" className="sr-only">Search customers</label>
           <input
@@ -400,7 +402,7 @@ export function CustomersView() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute inset-y-0 right-1.5 my-auto flex h-7 w-7 items-center justify-center rounded-lg text-[#0F1F1C]/40 hover:bg-[#0F1F1C]/5 hover:text-[#0F1F1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
+                className="absolute inset-y-0 right-1.5 my-auto flex h-7 w-7 items-center justify-center rounded-lg text-[#60756D] hover:bg-[#0F1F1C]/5 hover:text-[#0F1F1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" aria-hidden />
@@ -410,22 +412,23 @@ export function CustomersView() {
         </div>
       </header>
 
-      <div className="min-h-[400px]">
+      <div className="mb-4 flex items-center justify-between text-xs text-[#60756D]"><span>{data ? `${data.pagination.total} ${debounced ? 'matching' : 'registered'} customers` : 'Customer directory'}</span><span>{loading ? 'Updating…' : '20 customers per page'}</span></div>
+      <div className="min-h-[400px]" aria-busy={loading}>
         {loading && !data ? (
-          <div className="space-y-3 hidden md:block">
+          <div aria-busy="true" aria-label="Loading customers"><div className="space-y-3 hidden md:block">
              {Array.from({ length: 10 }, (_, i) => <Skeleton key={`desktop-skel-${i}`} className="h-[52px] rounded-xl" />)}
           </div>
-        ) : loading && !data ? (
+
           <div className="space-y-4 md:hidden">
              {Array.from({ length: 6 }, (_, i) => <Skeleton key={`mobile-skel-${i}`} className="h-[120px] rounded-2xl" />)}
-          </div>
+          </div></div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 text-center" role="alert">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600 mb-4">
               <AlertCircle className="h-8 w-8" />
             </div>
             <h3 className="text-[18px] font-bold text-[#0F1F1C]">Could not load customers</h3>
-            <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-sm">{error}</p>
+            <p className="mt-2 text-[14px] text-[#52675F] max-w-sm">{error}</p><Button variant="secondary" className="mt-4" onClick={() => setRetry(v => v + 1)}>Try again</Button>
           </div>
         ) : !data || data.customers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -433,7 +436,7 @@ export function CustomersView() {
               <Users className="h-7 w-7" aria-hidden />
             </div>
             <h3 className="text-[18px] font-bold text-[#0F1F1C]">No customers found</h3>
-            <p className="mt-2 text-[14px] text-[#0F1F1C]/60 max-w-sm">
+            <p className="mt-2 text-[14px] text-[#52675F] max-w-sm">
               {debounced ? `No matches for "${debounced}".` : 'Customers will appear here after their first order.'}
             </p>
           </div>
@@ -444,7 +447,7 @@ export function CustomersView() {
             <div className="hidden overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10 md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="border-b border-[#156253]/10 bg-[#F6FAF8] text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/50">
+                  <thead className="border-b border-[#156253]/10 bg-[#F6FAF8] text-[11px] font-bold tracking-wide text-[#60756D]">
                     <tr>
                       <th scope="col" className="px-5 py-3.5 whitespace-nowrap">Customer Name</th>
                       <th scope="col" className="px-5 py-3.5 whitespace-nowrap">Mobile Number</th>
@@ -456,8 +459,8 @@ export function CustomersView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#156253]/5">
-                   {data.customers.map((customer, index) => (
-                    <tr key={index} className="transition-colors hover:bg-[#F6FAF8]">
+                   {data.customers.map((customer) => (
+                    <tr key={customer.mobileNumber} className="transition-colors hover:bg-[#F6FAF8]">
                       <td className="px-5 py-3.5 whitespace-nowrap font-semibold text-[#0F1F1C]">
                         {customer.fullName}
                       </td>
@@ -474,19 +477,19 @@ export function CustomersView() {
                       </td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         {customer.isFirstTimeCustomer ? (
-                           <span className="inline-flex items-center rounded-full bg-[#D8F3E8]/60 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#156253]">Yes</span>
+                           <span className="inline-flex items-center rounded-full bg-[#D8F3E8]/60 px-2 py-0.5 text-[11px] font-bold tracking-wide text-[#156253]">Yes</span>
                         ) : (
-                           <span className="text-[#0F1F1C]/40 font-medium">—</span>
+                           <span className="text-[#60756D] font-medium">—</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-center whitespace-nowrap">
                         {customer.offerClaimed ? (
-                           <span className="inline-flex items-center rounded-full bg-gradient-to-r from-orange-50 to-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-orange-700 ring-1 ring-inset ring-orange-200/50">Yes</span>
+                           <span className="inline-flex items-center rounded-full bg-gradient-to-r from-orange-50 to-amber-50 px-2 py-0.5 text-[11px] font-bold tracking-wide text-orange-700 ring-1 ring-inset ring-orange-200/50">Yes</span>
                         ) : (
-                           <span className="text-[#0F1F1C]/40 font-medium">—</span>
+                           <span className="text-[#60756D] font-medium">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap font-mono text-[12px] font-medium tracking-wide text-[#0F1F1C]/60">
+                      <td className="px-5 py-3.5 whitespace-nowrap font-mono text-[12px] font-medium tracking-wide text-[#52675F]">
                         {customer.offerClaimedOrderId ?? '—'}
                       </td>
                     </tr>
@@ -498,8 +501,8 @@ export function CustomersView() {
 
             {/* MOBILE CARDS */}
             <ul className="flex flex-col gap-3 md:hidden">
-             {data.customers.map((customer, index) => (
-              <li key={index} className="relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-5 shadow-sm ring-1 ring-inset ring-[#156253]/10">
+             {data.customers.map((customer) => (
+              <li key={customer.mobileNumber} className="relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-5 shadow-sm ring-1 ring-inset ring-[#156253]/10">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[16px] font-bold text-[#0F1F1C]">{customer.fullName}</p>
@@ -508,7 +511,7 @@ export function CustomersView() {
                     </a>
                   </div>
                   {customer.isFirstTimeCustomer && (
-                     <span className="shrink-0 rounded-lg bg-[#F6FAF8] px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#156253] ring-1 ring-inset ring-[#156253]/10">
+                     <span className="shrink-0 rounded-lg bg-[#F6FAF8] px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#156253] ring-1 ring-inset ring-[#156253]/10">
                        New
                      </span>
                   )}
@@ -516,13 +519,13 @@ export function CustomersView() {
                 
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#156253]/10 pt-4">
                   <div className="flex flex-col gap-1">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/40">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-[#60756D]">
                       <ShoppingBag className="h-3.5 w-3.5" /> Total
                     </span>
                     <span className="text-[15px] font-bold tabular-nums text-[#0F1F1C]">{customer.totalOrders}</span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#0F1F1C]/40">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-[#60756D]">
                       <PackageCheck className="h-3.5 w-3.5" /> Delivered
                     </span>
                     <span className="text-[15px] font-bold tabular-nums text-[#0F1F1C]">{customer.deliveredOrders}</span>
@@ -552,19 +555,19 @@ export function CustomersView() {
                   variant="secondary" 
                   size="sm" 
                   className="w-24 sm:w-28" 
-                  disabled={page <= 1} 
+                  disabled={loading || page <= 1} 
                   onClick={() => setPage((p) => p - 1)}
                 >
                   Previous
                 </Button>
-                <span className="text-[13px] font-bold text-[#0F1F1C]/60">
-                  Page {data.pagination.page} <span className="font-medium text-[#0F1F1C]/40">/</span> {data.pagination.totalPages}
+                <span className="text-[13px] font-bold text-[#52675F]">
+                  Page {data.pagination.page} <span className="font-medium text-[#60756D]">/</span> {data.pagination.totalPages}
                 </span>
                 <Button 
                   variant="secondary" 
                   size="sm" 
                   className="w-24 sm:w-28" 
-                  disabled={page >= data.pagination.totalPages} 
+                  disabled={loading || page >= data.pagination.totalPages} 
                   onClick={() => setPage((p) => p + 1)}
                 >
                   Next
@@ -574,6 +577,6 @@ export function CustomersView() {
           </div>
         )}
       </div>
-    </div>
+    </div></MotionConfig>
   );
 }

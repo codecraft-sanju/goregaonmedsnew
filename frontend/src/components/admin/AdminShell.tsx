@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import { ClipboardList, LogOut, Settings, Users, ShoppingBag } from 'lucide-react';
 
 export function cn(...classes: Array<string | false | null | undefined>) {
@@ -109,7 +109,8 @@ export function Logo({ href = '/' }: { href?: string }) {
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div aria-hidden className={cn('relative overflow-hidden bg-[#D8F3E8]/30', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-[#FFFFFF]/60 to-transparent motion-reduce:animate-none" />
+      <style>{`@keyframes gmedShimmer { to { transform: translateX(100%); } }`}</style>
+      <div className="absolute inset-0 -translate-x-full animate-[gmedShimmer_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-[#FFFFFF]/60 to-transparent motion-reduce:animate-none" />
     </div>
   );
 }
@@ -121,33 +122,54 @@ const nav = [
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-const isActive = (pathname: string, href: string) => (href === '/admin' ? pathname === href : pathname.startsWith(href));
+const isActive = (pathname: string, href: string) => pathname === href || (href !== '/admin' && pathname.startsWith(`${href}/`));
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '';
   const [ready, setReady] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    adminRequest('/session')
-      .then(() => setReady(true))
-      .catch(() => undefined);
-  }, []);
+    const controller = new AbortController();
+    setSessionError(null);
+    adminRequest('/session', { signal: controller.signal })
+      .then(() => { if (!controller.signal.aborted) setReady(true); })
+      .catch(error => { if (!controller.signal.aborted) setSessionError(errorMessage(error)); });
+    return () => controller.abort();
+  }, [attempt]);
 
   const logout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     await apiRequest('/admin/logout', { method: 'POST' }).catch(() => undefined);
     window.location.assign('/admin/login');
   };
 
   return (
-    <div className="min-h-dvh bg-[#F6FAF8] pb-24 md:pb-0 selection:bg-[#D8F3E8] selection:text-[#0F1F1C]">
+    <MotionConfig reducedMotion="user"><div className="gmed-shell min-h-dvh bg-[#F6FAF8] pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 min-[1180px]:pl-[224px] selection:bg-[#D8F3E8] selection:text-[#0F1F1C]">
+      <a href="#admin-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[300] focus:rounded-lg focus:bg-white focus:p-3">Skip to content</a>
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[224px] flex-col border-r border-[#156253]/10 bg-white min-[1180px]:flex">
+        <div className="flex h-[68px] items-center px-5"><Logo href="/admin" /></div>
+        <div className="mx-4 mt-4 rounded-xl border border-[#156253]/10 bg-[#F6FAF8] p-3"><p className="text-[13px] font-semibold text-[#0F1F1C]">Pharmacy workspace</p><p className="mt-1 text-[11px] text-[#60756D]">Goregaon East · Mumbai</p></div>
+        <p className="px-6 pb-2 pt-7 text-[10px] font-semibold uppercase tracking-[.16em] text-[#60756D]">Management</p>
+        <nav aria-label="Workspace" className="space-y-1 px-3">{nav.map(item => { const active = isActive(pathname, item.href); return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} className={cn('relative flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-medium', focusRing, active ? 'text-[#156253]' : 'text-[#52675F] hover:bg-[#F6FAF8]')}>
+          {active && <motion.span layoutId="admin-rail" className="absolute inset-0 rounded-xl bg-[#D8F3E8]/60" transition={{ type: 'spring', stiffness: 450, damping: 38 }} />}
+          <item.icon className="relative h-[18px] w-[18px]" aria-hidden /><span className="relative">{item.label}</span>
+        </Link>; })}</nav>
+        <div className="mt-auto border-t border-[#156253]/10 p-5"><p className="text-xs font-semibold text-[#0F1F1C]">GoregaonMeds Admin</p><p className="mt-1 text-[11px] text-[#60756D]">Orders, customers & care.</p></div>
+      </aside>
+      <style>{`.gmed-shell :where(button,a,input,select,textarea):focus-visible { outline:2px solid #156253;outline-offset:3px } .gmed-shell :where(button):disabled{cursor:not-allowed} @media(prefers-reduced-motion:reduce){.gmed-shell *, .gmed-shell *::before,.gmed-shell *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}`}</style>
       {/* Desktop Navigation */}
       <header className="sticky top-0 z-40 border-b border-[#156253]/[0.06] bg-[#FFFFFF]/70 backdrop-blur-xl supports-[backdrop-filter]:bg-[#FFFFFF]/60">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
-          <Logo href="/admin" />
+        <div className="mx-auto flex h-[68px] max-w-[1600px] items-center justify-between gap-6 px-5 sm:px-8">
+          <div className="min-[1180px]:hidden"><Logo href="/admin" /></div>
+          <div className="hidden min-[1180px]:block"><p className="text-xs text-[#60756D]">Workspace / <span className="font-semibold text-[#0F1F1C]">{nav.find(item => isActive(pathname, item.href))?.label ?? 'Admin'}</span></p></div>
           
-          <nav className="hidden items-center gap-1.5 md:flex" aria-label="Admin">
+          <nav className="hidden items-center gap-1.5 md:flex min-[1180px]:hidden" aria-label="Admin">
             {nav.map((item) => {
               const active = isActive(pathname, item.href);
               return (
@@ -178,8 +200,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={logout}
+          disabled={loggingOut}
+          aria-label="Log out"
             className={cn(
-              'group flex h-9 items-center gap-2.5 rounded-lg px-3.5 text-[14px] font-medium text-[#64748B] transition-all duration-200 hover:bg-[#D8F3E8]/40 hover:text-[#0F1F1C] active:scale-[0.98]',
+              'group flex h-9 items-center gap-2.5 rounded-lg px-3.5 text-[14px] font-medium text-[#64748B] transition-[color,background-color,box-shadow,transform] duration-200 motion-reduce:transition-none hover:bg-[#D8F3E8]/40 hover:text-[#0F1F1C] active:scale-[0.98]',
               focusRing
             )}
           >
@@ -190,9 +214,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main Canvas */}
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
+      <main id="admin-content" className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 sm:py-6">
         {ready ? (
           children
+        ) : sessionError ? (
+          <div role="alert" className="mx-auto my-16 max-w-md rounded-2xl border border-red-100 bg-white p-6 shadow-sm"><h1 className="font-semibold">Could not verify your session</h1><p className="mt-2 text-sm text-[#52675F]">{sessionError}</p><button type="button" onClick={() => setAttempt(v => v + 1)} className="mt-5 rounded-lg bg-[#156253] px-4 py-2 text-sm text-white">Try again</button></div>
         ) : (
           <div className="mx-auto max-w-5xl space-y-6" aria-busy>
             <div className="flex items-center gap-4">
@@ -242,6 +268,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
-    </div>
+    </div></MotionConfig>
   );
 }
