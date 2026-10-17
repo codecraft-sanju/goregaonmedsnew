@@ -1,7 +1,5 @@
 // src/components/order/OrderFlow.tsx
-// src/components/order/OrderFlow.tsx
 'use client';
-
 import Image from 'next/image';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { 

@@ -5,30 +5,110 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowRight, 
-  Clock3, 
-  Gift, 
-  MapPin, 
-  Search, 
-  X, 
-  ArrowUpRight, 
-  Headphones, 
-  ShieldCheck, 
-  Truck,
+import {
+  ArrowRight,
+  Clock3,
+  Gift,
+  MapPin,
+  Search,
+  X,
+  ArrowUpRight,
   Mic
 } from 'lucide-react';
-import { usePublicSettings } from '@/hooks/usePublicSettings';
-import { GIFT, SERVICE_AREA, BRANCHES, SUPPORT_PHONE_TEL } from '@/lib/constants';
-import styles from './HomeExperience.module.css';
+
+
+export interface PublicSettings {
+  deliveryCharge: number;
+  firstOrderOfferEnabled: boolean;
+  firstOrderMinimumMedicineAmount: number;
+}
+
+
+const SERVICE_AREA = 'Goregaon East, Mumbai';
+
+const GIFT = {
+  name: 'Dr. Morepen GlucoOne BG-03',
+  shortName: 'GlucoOne BG-03',
+  mrp: 650,
+  image: '/glucoone-bg03.png',
+} as const;
+
+const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
+  deliveryCharge: 0,
+  firstOrderOfferEnabled: true,
+  firstOrderMinimumMedicineAmount: 500,
+};
+
+const BRANCHES = [
+  {
+    name: 'Apple Pharmacy',
+    shortName: 'Apple Pharmacy',
+    area: 'Aarey Road',
+    address: 'Shop No. 9, Sheetal Krupa Building, Ground Floor, Aarey Road, Goregaon East, Mumbai',
+    tone: 'apple',
+    open24x7: false,
+  },
+  {
+    name: 'Lotus Pharmacy',
+    shortName: 'Lotus Pharmacy',
+    area: 'Jay Prakash Nagar',
+    address: "Shop No. 10, Shreyas Bhavan, Jay Prakash Nagar Road No. 1, Opp. Domino's Pizza, Goregaon East, Mumbai",
+    tone: 'lotus',
+    open24x7: false,
+  },
+  {
+    name: 'Healthzone & Cosmetic',
+    shortName: 'Healthzone',
+    area: 'Aarey Road',
+    address: 'Pednekar Chawl, Shop No. 3, Ground Floor, S.V. Aarey Road, Goregaon East, Mumbai',
+    tone: 'health',
+    open24x7: true,
+  },
+] as const;
 
 const currency = new Intl.NumberFormat('en-IN', {
   style: 'currency', currency: 'INR', maximumFractionDigits: 0,
 });
 
-function Entrance({ children, delay = 0, className }: {
-  children: ReactNode; delay?: number; className?: string;
-}) {
+let cachedSettingsPromise: Promise<PublicSettings> | null = null;
+
+function fetchSettings(): Promise<PublicSettings> {
+  cachedSettingsPromise ??= fetch('/api/settings/public')
+    .then((res) => {
+      if (!res.ok) throw new Error('Failed to fetch settings');
+      return res.json();
+    })
+    .then((data) => data.settings)
+    .catch((error) => {
+      cachedSettingsPromise = null;
+      throw error;
+    });
+  return cachedSettingsPromise;
+}
+
+function usePublicSettings() {
+  const [settings, setSettings] = useState<PublicSettings>(DEFAULT_PUBLIC_SETTINGS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetchSettings()
+      .then((value) => active && setSettings(value))
+      .catch(() => undefined)
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return { settings, loading };
+}
+
+// ==========================================
+// 4. COMPONENTS
+// ==========================================
+
+function Entrance({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string; }) {
   const reduced = useReducedMotion();
   return (
     <motion.div className={className} initial={false}
@@ -52,46 +132,41 @@ function GiftImage({ className }: { className?: string }) {
 }
 
 /** HomeSupport Sub-Component */
-
 function HomeSupport() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isInteracting, setIsInteracting] = useState(false);
 
   useEffect(() => {
-    
     if (isInteracting) return;
-
     const interval = setInterval(() => {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-        
-        // Agar container scrollable nahi hai (jaise desktop pe), toh kuch mat karo
         if (scrollWidth <= clientWidth) return;
-
-        // Aapki CSS mein grid-auto-columns: 85% hai, toh hum 85% width se scroll karenge
         const scrollAmount = clientWidth * 0.85;
 
-        // Agar hum end tak pahuch gaye hain (-10 pixels buffer), toh waapas start pe jao
         if (scrollLeft + clientWidth >= scrollWidth - 10) {
           scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          // Warna agle card pe slide karo
           scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
         }
       }
-    }, 3000); // 3000ms = 3 seconds (Aap isko apne hisaab se change kar sakte hain)
-
+    }, 3000); 
     return () => clearInterval(interval);
   }, [isInteracting]);
 
   return (
-    <div className={styles.support}>
-     
-      <section id="locations" className={styles.locations} aria-labelledby="pharmacies-title">
- 
-      
+    <div className="w-[min(100%-36px,1200px)] mx-auto pb-[30px] md:pb-[50px] text-[#0f1f1c] font-body [&_*]:box-border">
+      <section id="locations" className="scroll-mt-[100px] bg-[linear-gradient(120deg,#eef7f5,#f5faf8)] rounded-[24px] p-[18px_14px] md:p-[25px]" aria-labelledby="pharmacies-title">
+        <div className="flex items-center justify-between gap-[10px] mb-[16px]">
+          <div>
+            <p className="text-[10px] md:text-[12px] text-[#56776b] m-0 mb-[3px]">Visit us</p>
+            <h2 id="pharmacies-title" className="text-[21px] md:text-[29px] font-[800] m-0 font-display tracking-[-0.055em]">Our Pharmacies</h2>
+          </div>
+          <span className="text-[10px] md:text-[12px] font-[600] text-[#156253] whitespace-nowrap">Goregaon East</span>
+        </div>
+        
         <div 
-          className={styles.branchGrid} 
+          className="grid grid-flow-col auto-cols-[85%] md:grid-cols-3 md:grid-flow-row md:auto-cols-auto gap-[12px] overflow-x-auto md:overflow-visible snap-x snap-mandatory p-[3px_3px_12px] [scrollbar-width:thin] [scrollbar-color:#bbd9cd_transparent] md:[&::-webkit-scrollbar]:hidden md:[-ms-overflow-style:none] md:[scrollbar-width:none]" 
           ref={scrollRef}
           onMouseEnter={() => setIsInteracting(true)}
           onMouseLeave={() => setIsInteracting(false)}
@@ -101,21 +176,22 @@ function HomeSupport() {
           {BRANCHES.map((branch) => (
             <a key={branch.name}
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name},${branch.address}`)}`}
-              className={styles.branch} target="_blank" rel="noopener noreferrer" aria-label={`${branch.name}, ${branch.address}. Open map in a new tab.`}>
-              <div className={styles.branchArt}>
+              className="block snap-start rounded-[17px] overflow-hidden bg-white border border-[#e2eee7] transition-all duration-200 text-[#0f1f1c] hover:-translate-y-[2px] hover:shadow-[0_8px_20px_rgba(20,81,63,0.07)] active:scale-[0.985] group/branch no-underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4" 
+              target="_blank" rel="noopener noreferrer" aria-label={`${branch.name}, ${branch.address}. Open map in a new tab.`}>
+              <div className="relative overflow-hidden bg-[#e7f0e8]">
                 <Image src={`/home/pharmacy-${branch.tone}.png`} alt={`Illustrated storefront for ${branch.name}`}
-                  width={480} height={260} sizes="(min-width: 768px) 360px, 250px" />
-                {branch.open24x7 && <span>Open 24×7</span>}
+                  width={480} height={260} sizes="(min-width: 768px) 360px, 250px" className="block w-full h-auto aspect-[480/260] object-cover transition-transform duration-300 group-hover/branch:scale-[1.03]" />
+                {branch.open24x7 && <span className="absolute top-[9px] right-[9px] rounded-[12px] bg-white p-[5px_8px] text-[#156253] text-[10px] font-[700]">Open 24×7</span>}
               </div>
-              <div className={styles.branchInfo}>
-                <MapPin size={19} aria-hidden />
-                <div><h3>{branch.name}</h3><p>{branch.area}</p><small>{branch.address}</small></div>
-                <ArrowUpRight size={17} aria-hidden />
+              <div className="flex items-start gap-[7px] p-[13px_11px] min-[1100px]:p-[17px]">
+                <MapPin size={19} className="shrink-0 text-[#156253] mt-[2px]" aria-hidden />
+                <div><h3 className="m-0 text-[12px] md:text-[13px] min-[1100px]:text-[15px] font-[750] leading-[1.4]">{branch.name}</h3><p className="m-0 mt-1 text-[11px] md:text-[12px] text-[#586963]">{branch.area}</p><small className="block text-[10px] md:text-[11px] leading-[1.5] text-[#586963] mt-[6px]">{branch.address}</small></div>
+                <ArrowUpRight size={17} className="ml-auto shrink-0 text-[#156253] mt-[2px]" aria-hidden />
               </div>
             </a>
           ))}
         </div>
-        <p className={styles.artNote}>Storefront illustrations · Tap a pharmacy for its location.</p>
+        <p className="text-[10px] text-[#526d61] m-[9px_0_0]">Storefront illustrations · Tap a pharmacy for its location.</p>
       </section>
     </div>
   );
@@ -127,7 +203,7 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
   const reduced = useReducedMotion();
   const showOffer = !loading && settings.firstOrderOfferEnabled;
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(''); // Search typing state
+  const [searchQuery, setSearchQuery] = useState(''); 
   
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
@@ -153,34 +229,41 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
 
   return (
     <>
-      <section id="order-methods" className={styles.home} aria-labelledby="methods-title">
-        <Entrance className={styles.hero}>
-          <div className={styles.heroCopy}>
-          <Link href="/#locations" className={styles.location}>
-  <MapPin size={13} aria-hidden />{SERVICE_AREA}
-</Link>
-            <p className={styles.greeting}>Namaste <span aria-hidden>👋</span></p>
-            <h1 id="methods-title">What do you<br />need today?</h1>
-            <p className={styles.intro}>Order your medicines quickly and easily.</p>
+      <style>{`
+        @keyframes sheet-in {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      
+      <section id="order-methods" className="w-[min(100%-36px,1200px)] mx-auto pt-1 md:pt-3 scroll-mt-[90px] text-[#0f1f1c] font-body [&_*]:box-border" aria-labelledby="methods-title">
+        <Entrance className="relative grid grid-cols-[minmax(0,1fr)] md:grid-cols-[1.15fr_1fr] md:grid-rows-[auto_auto] isolate pt-[6px] md:pt-[20px] mb-5 md:mb-[28px] md:px-4 md:min-h-[350px] min-[1100px]:px-[30px] min-[1100px]:min-h-[410px] before:content-[''] before:absolute before:-inset-y-[10px] before:-inset-x-4 before:-z-10 before:bg-[radial-gradient(ellipse_at_90%_32%,#d9f4e6_0%,#effaf480_43%,transparent_72%)] before:rounded-[36px]">
+          <div className="relative z-10 min-h-[135px] min-[560px]:min-h-[230px] md:min-h-0 md:col-start-1 min-[1100px]:pt-[10px] pointer-events-none [&>a]:pointer-events-auto [&>form]:pointer-events-auto">
+          <Link href="/#locations" className="inline-flex items-center gap-1 text-[#156253] text-[9.5px] md:text-[11px] font-[650] mb-2 md:mb-4 no-underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985] transition-transform">
+            <MapPin size={13} aria-hidden />{SERVICE_AREA}
+          </Link>
+            <p className="text-[14px] md:text-[20px] font-semibold text-[#69736f] m-0 mb-[2px] tracking-[-0.025em]">Namaste <span aria-hidden>👋</span></p>
+            <h1 id="methods-title" className="text-[clamp(24px,7vw,30px)] max-[359px]:text-[22px] min-[560px]:text-[42px] md:text-[clamp(38px,4.5vw,60px)] min-[1100px]:text-[61px] leading-[1.05] md:leading-[1.04] font-extrabold m-0 max-w-[65%] md:max-w-full text-balance tracking-[-0.055em] font-display text-[#0f1f1c]">What do you<br />need today?</h1>
+            <p className="text-[11px] min-[560px]:text-[14px] md:text-[15px] leading-[1.5] max-w-[61%] md:max-w-[90%] m-[6px_0_12px] md:m-[16px_0_20px] text-[#586963]">Order your medicines quickly and easily.</p>
           </div>
-          <div className={styles.heroArt} aria-hidden="true">
+          <div className="absolute right-[-10px] top-[15px] max-[359px]:top-[25px] w-[44%] max-[359px]:w-[42%] min-[560px]:w-[46%] max-w-[200px] min-[560px]:max-w-[290px] z-[1] pointer-events-none md:static md:col-start-2 md:row-[1/3] md:w-full md:max-w-[460px] md:right-auto md:top-auto md:self-center" aria-hidden="true">
             <Image src="/home/hero-pharmacy.svg" alt="" width={520} height={440}
-              priority sizes="(min-width: 768px) 450px, 190px" />
-            <span className={styles.hours}><Clock3 size={19} /><span><strong>24×7</strong>Pharmacy</span></span>
+              priority sizes="(min-width: 768px) 450px, 190px" className="w-full h-auto drop-shadow-[0_16px_12px_rgba(36,108,75,0.07)] md:max-h-[350px] min-[1100px]:max-h-[390px] md:object-contain" />
+            <span className="absolute top-[2%] max-[359px]:hidden right-[5%] flex items-center gap-[5px] bg-[rgba(255,255,255,0.93)] shadow-[0_8px_22px_rgba(18,91,75,0.09)] p-[5px_7px] md:p-[12px_16px] rounded-[10px] -rotate-8 text-[#174f46] text-[8px] md:text-[12px] leading-[1.25] md:right-[12%] md:top-[5%]"><Clock3 size={19} className="shrink-0 w-[14px] h-[14px] md:w-[19px] md:h-[19px]" /><span><strong className="block text-[10.5px] md:text-[17px]">24×7</strong>Pharmacy</span></span>
           </div>
           
           {/* Animated Interactive Search Form */}
-          <form action="/search" className={styles.search}>
-            <Search size={21} aria-hidden />
+          <form action="/search" className="relative z-30 flex items-center gap-[11px] min-h-[50px] md:min-h-[56px] p-[5px_5px_5px_14px] md:p-[6px_6px_6px_16px] border border-[#e6eeea] rounded-[30px] bg-[rgba(255,255,255,0.94)] shadow-[0_6px_22px_rgba(28,115,85,0.07)] transition-all duration-200 hover:shadow-[0_6px_25px_rgba(28,115,85,0.13)] pointer-events-auto md:col-start-1 md:self-start md:mt-[6px]">
+            <Search size={21} className="shrink-0 text-[#8fa69d]" aria-hidden />
             <input 
               type="text" 
               name="q"
               placeholder="Search for medicines, vitamins, wellness…" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
+              className="flex-1 border-none bg-transparent text-[13px] text-[#0f1f1c] outline-none font-inherit p-0 placeholder:text-[#799188]"
             />
-            <div className={styles.searchAction}>
+            <div className="relative w-[38px] h-[38px] md:w-10 md:h-10 shrink-0 ml-auto">
               <AnimatePresence>
                 {searchQuery.trim().length > 0 ? (
                   <motion.button
@@ -190,7 +273,7 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
                     animate={{ scale: 1, opacity: 1, rotate: 0 }}
                     exit={{ scale: 0.3, opacity: 0, rotate: 45 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className={styles.searchArrow}
+                    className="absolute inset-0 grid place-items-center w-full h-full rounded-full border-none cursor-pointer bg-[#156253] text-white shadow-[0_4px_10px_rgba(21,98,83,0.25)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985]"
                     aria-label="Search"
                   >
                     <ArrowRight size={18} strokeWidth={2.5} />
@@ -203,7 +286,7 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.3, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className={styles.searchMic}
+                    className="absolute inset-0 grid place-items-center w-full h-full rounded-full border-none cursor-pointer bg-[#f1f8f5] text-[#156253] transition-colors duration-200 hover:bg-[#e2f2eb] focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985]"
                     aria-label="Voice Search"
                   >
                     <Mic size={18} strokeWidth={2.5} />
@@ -214,65 +297,65 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
           </form>
         </Entrance>
 
-        {loading && <div className={styles.offerSkeleton} role="status" aria-label="Loading offer settings" />}
+        {loading && <div className="h-[175px] md:h-[236px] bg-[linear-gradient(110deg,#f6f4ed,#faf8f2)] border border-[#eeeee5] rounded-[20px] mb-4 md:mb-[22px]" role="status" aria-label="Loading offer settings" />}
         {showOffer && (
           <Entrance delay={0.05}>
-            <motion.div className={styles.offer} whileHover={reduced ? undefined : { y: -3 }}>
-              <div className={styles.offerCopy}>
-                <span className={styles.eyebrow}><Gift size={14} aria-hidden />First order gift</span>
-                <h2><span>FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
-                <p>On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
-                <p className={styles.mrp}>Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
-                <button ref={opener} className={styles.knowMore} type="button"
+            <motion.div className="relative isolate overflow-hidden border border-[#f4e4c5] rounded-[20px] bg-[radial-gradient(ellipse_at_90%_70%,#ffe2a6,transparent_58%),linear-gradient(115deg,#fff8e7,#fff0cd)] min-h-[175px] md:min-h-[236px] p-[16px_14px] min-[560px]:p-[25px] md:p-[28px_34px] mb-4 md:mb-[22px] after:content-['✦'] after:absolute after:right-[10px] after:bottom-[18px] after:text-[#fffdf5] after:text-[40px] after:-z-10" whileHover={reduced ? undefined : { y: -3 }}>
+              <div className="relative z-20 w-[62%] max-[359px]:w-[70%] min-[560px]:w-[65%]">
+                <span className="inline-flex items-center gap-[5px] text-[#925004] text-[9px] font-[800] tracking-[0.11em] uppercase"><Gift size={14} aria-hidden />First order gift</span>
+                <h2 className="text-[18px] max-[359px]:text-[17px] min-[560px]:text-[29px] md:text-[32px] min-[1100px]:text-[36px] font-extrabold leading-[1.12] m-[8px_0_6px] tracking-[-0.045em] font-display text-[#0f1f1c]"><span className="text-[#154f41]">FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
+                <p className="text-[11px] min-[560px]:text-[14px] leading-[1.45] max-w-[160px] max-[359px]:max-w-[158px] min-[560px]:max-w-[280px] md:max-w-none m-0 text-[#66563c]">On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
+                <p className="!text-[9px] md:!text-[12px] !mt-[5px] !text-[#765e3b] font-body">Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
+                <button ref={opener} className="inline-flex items-center gap-[6px] min-h-[36px] p-[6px_0_0] border-0 bg-transparent text-[#8a4800] text-[11.5px] font-[750] cursor-pointer [&>svg]:transition-transform hover:[&>svg]:translate-x-[3px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985] font-inherit" type="button"
                   aria-haspopup="dialog" onClick={() => onOpenOffer ? onOpenOffer() : setDetailsOpen(true)}>
                   Know more <ArrowRight size={17} aria-hidden />
                 </button>
               </div>
-              <GiftImage className={styles.giftArt} />
-              <span className={styles.giftSeal} aria-hidden="true"><Gift size={18} />FREE<br />GIFT</span>
+              <GiftImage className="absolute right-[-10px] max-[359px]:right-[-20px] min-[560px]:right-[15px] md:right-[50px] min-[1100px]:right-[110px] bottom-[5px] md:bottom-[-5px] w-[48%] max-[359px]:w-[41%] min-[560px]:w-[35%] md:w-[280px] min-[1100px]:w-[310px] h-auto max-h-[140px] min-[560px]:max-h-[210px] md:max-h-[236px] object-contain z-10 drop-shadow-[0_12px_8px_rgba(149,104,23,0.11)]" />
+              <span className="absolute right-[8px] max-[359px]:right-[8px] min-[560px]:right-[30px] md:right-[24px] min-[1100px]:right-[55px] top-[10px] max-[359px]:top-[15px] md:top-[22px] min-[1100px]:top-[70px] border-2 border-[rgba(255,255,255,0.88)] rounded-full h-[44px] w-[44px] min-[560px]:w-[62px] min-[560px]:h-[62px] md:w-[70px] md:h-[70px] flex flex-col items-center justify-center bg-[linear-gradient(140deg,#288971,#0c4f43)] text-white text-[7.5px] min-[560px]:text-[10px] font-[750] leading-[1.1] rotate-8 shadow-[0_4px_10px_rgba(23,85,65,0.15)] z-20" aria-hidden="true"><Gift size={18} className="mb-0.5 w-[14px] h-[14px]" />FREE<br />GIFT</span>
             </motion.div>
           </Entrance>
         )}
 
-        <div className={styles.methods}>
+        <div className="grid grid-cols-2 gap-[10px] max-[359px]:gap-[8px] min-[430px]:max-md:gap-[14px] md:gap-[22px] items-stretch [&>div]:min-w-0">
           <Entrance delay={0.1}>
-            <Link href="/order?method=prescription" className={`${styles.method} ${styles.prescription}`}>
-              <span className={styles.recommended}>Recommended</span>
-              <h2>Upload<br />Prescription</h2>
-              <p>Take a photo or upload your prescription. We’ll take care of the rest.</p>
-              <Image className={styles.methodArt} src="/home/prescription-art.svg" alt=""
+            <Link href="/order?method=prescription" className="relative flex flex-col isolate overflow-hidden h-[248px] max-[359px]:h-[232px] min-[430px]:max-md:h-[265px] md:h-auto md:min-h-[290px] min-[1100px]:min-h-[305px] min-h-0 rounded-[22px] border border-[#d2eade] p-[14px_12px_12px] max-[359px]:p-[12px_10px_10px] min-[430px]:max-md:p-[16px_14px] md:p-[26px] text-[#0f1f1c] transition-all duration-[0.22s] hover:-translate-y-[3px] hover:shadow-[0_12px_25px_rgba(25,91,69,0.07)] active:scale-[0.985] group no-underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 cursor-pointer bg-[radial-gradient(ellipse_at_100%_65%,#95e9cf_0%,transparent_60%),linear-gradient(140deg,#e0f9ed,#c1f0df)]">
+              <span className="self-start min-h-[20px] p-[4px_6px] rounded-[10px] bg-[#c0e9d6] text-[#195e46] text-[8px] min-[560px]:text-[9px] md:text-[10px] leading-[1.4] font-[800] uppercase tracking-[0.04em] whitespace-nowrap">Recommended</span>
+              <h2 className="text-[clamp(18px,5vw,21px)] max-[359px]:text-[17px] min-[430px]:max-md:text-[22px] min-[560px]:text-[25px] md:text-[32px] min-[1100px]:text-[35px] leading-[1.02] font-extrabold m-[8px_0_6px] tracking-[-0.045em] max-w-[90%] md:max-w-[62%] relative z-20 font-display text-[#0f1f1c]">Upload<br />Prescription</h2>
+              <p className="text-[9.5px] max-[359px]:text-[8.5px] min-[430px]:max-md:text-[10.5px] min-[560px]:text-[12px] md:text-[13px] min-[1100px]:text-[14px] leading-[1.45] max-[359px]:leading-[1.4] m-0 max-w-[92%] max-[359px]:max-w-[90%] md:max-w-[55%] min-[1100px]:max-w-[52%] text-[#3f6257] relative z-20">Take a photo or upload your prescription. We’ll take care of the rest.</p>
+              <Image className="absolute right-[-4px] max-[359px]:right-[-5px] min-[560px]:right-[-5px] md:right-0 min-[1100px]:right-[10px] bottom-[48px] max-[359px]:bottom-[45px] min-[430px]:max-md:bottom-[50px] min-[560px]:bottom-[55px] md:bottom-[50px] min-[1100px]:bottom-[30px] w-[110px] max-[359px]:w-[92px] min-[430px]:max-md:w-[125px] min-[560px]:w-[140px] md:w-[48%] h-[100px] max-[359px]:h-[88px] min-[430px]:max-md:h-[112px] min-[560px]:h-[120px] md:h-[185px] min-[1100px]:h-[230px] object-contain m-0 pointer-events-none z-10 transition-transform duration-300 group-hover:-translate-y-[3px] group-hover:rotate-[2deg]" src="/home/prescription-art.svg" alt=""
                 width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
-              <span className={styles.methodCta}>Upload prescription <ArrowRight size={17} aria-hidden /></span>
+              <span className="absolute left-[11px] right-[11px] bottom-[11px] max-[359px]:left-[9px] max-[359px]:right-[9px] max-[359px]:bottom-[9px] md:relative md:left-auto md:right-auto md:bottom-auto md:mt-[24px] min-h-[38px] max-[359px]:min-h-[36px] min-[430px]:max-md:min-h-[40px] min-[560px]:min-h-[42px] m-0 max-[359px]:mt-0 p-[8px_10px] md:p-[12px_18px] bg-[linear-gradient(110deg,#156253,#0b7561)] text-white shadow-[0_4px_9px_rgba(23,104,80,0.09)] rounded-[999px] md:rounded-[24px] text-[9px] max-[359px]:text-[8px] min-[430px]:max-md:text-[10px] min-[560px]:text-[11px] md:text-[13px] min-[1100px]:text-[11px] font-[700] flex items-center justify-between z-20 md:self-start md:min-w-[190px] max-[359px]:max-w-none">Upload prescription <ArrowRight size={17} aria-hidden className="shrink-0 w-[14px] transition-transform duration-200 group-hover:translate-x-[3px]" /></span>
             </Link>
           </Entrance>
           <Entrance delay={0.15}>
-            <Link href="/order?method=manual" className={`${styles.method} ${styles.manual}`}>
-              <span className={styles.methodKicker}>A few words. All sorted.</span>
-              <h2>Order<br />via Text</h2>
-              <p>Enter medicine names and quantities (e.g. 1 strip, 10 tablets).</p>
-              <Image className={styles.methodArt} src="/home/text-order-art.svg" alt=""
+            <Link href="/order?method=manual" className="relative flex flex-col isolate overflow-hidden h-[248px] max-[359px]:h-[232px] min-[430px]:max-md:h-[265px] md:h-auto md:min-h-[290px] min-[1100px]:min-h-[305px] min-h-0 rounded-[22px] border border-[#d9ebef] p-[14px_12px_12px] max-[359px]:p-[12px_10px_10px] min-[430px]:max-md:p-[16px_14px] md:p-[26px] text-[#0f1f1c] transition-all duration-[0.22s] hover:-translate-y-[3px] hover:shadow-[0_12px_25px_rgba(25,91,69,0.07)] active:scale-[0.985] group no-underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 cursor-pointer bg-[radial-gradient(ellipse_at_100%_65%,#b5e8ef_0%,transparent_65%),linear-gradient(140deg,#ecfaff,#d9f0f5)]">
+              <span className="flex items-center min-h-[20px] text-[#416f72] text-[8px] min-[560px]:text-[9px] md:text-[10px] leading-[1.4] font-[700]">A few words. All sorted.</span>
+              <h2 className="text-[clamp(18px,5vw,21px)] max-[359px]:text-[17px] min-[430px]:max-md:text-[22px] min-[560px]:text-[25px] md:text-[32px] min-[1100px]:text-[35px] leading-[1.02] font-extrabold m-[8px_0_6px] tracking-[-0.045em] max-w-[90%] md:max-w-[62%] relative z-20 font-display text-[#0f1f1c]">Order<br />via Text</h2>
+              <p className="text-[9.5px] max-[359px]:text-[8.5px] min-[430px]:max-md:text-[10.5px] min-[560px]:text-[12px] md:text-[13px] min-[1100px]:text-[14px] leading-[1.45] max-[359px]:leading-[1.4] m-0 max-w-[92%] max-[359px]:max-w-[90%] md:max-w-[55%] min-[1100px]:max-w-[52%] text-[#49666b] relative z-20">Enter medicine names and quantities (e.g. 1 strip, 10 tablets).</p>
+              <Image className="absolute right-[-4px] max-[359px]:right-[-5px] min-[560px]:right-[-5px] md:right-0 min-[1100px]:right-[10px] bottom-[48px] max-[359px]:bottom-[45px] min-[430px]:max-md:bottom-[50px] min-[560px]:bottom-[55px] md:bottom-[50px] min-[1100px]:bottom-[30px] w-[110px] max-[359px]:w-[92px] min-[430px]:max-md:w-[125px] min-[560px]:w-[140px] md:w-[48%] h-[100px] max-[359px]:h-[88px] min-[430px]:max-md:h-[112px] min-[560px]:h-[120px] md:h-[185px] min-[1100px]:h-[230px] object-contain m-0 pointer-events-none z-10 transition-transform duration-300 group-hover:-translate-y-[3px] group-hover:rotate-[2deg]" src="/home/text-order-art.svg" alt=""
                 width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
-              <span className={styles.methodCta}>Order via text <ArrowRight size={17} aria-hidden /></span>
+              <span className="absolute left-[11px] right-[11px] bottom-[11px] max-[359px]:left-[9px] max-[359px]:right-[9px] max-[359px]:bottom-[9px] md:relative md:left-auto md:right-auto md:bottom-auto md:mt-[24px] min-h-[38px] max-[359px]:min-h-[36px] min-[430px]:max-md:min-h-[40px] min-[560px]:min-h-[42px] m-0 max-[359px]:mt-0 p-[8px_10px] md:p-[12px_18px] bg-[linear-gradient(110deg,#156253,#0b7561)] text-white shadow-[0_4px_9px_rgba(23,104,80,0.09)] rounded-[999px] md:rounded-[24px] text-[9px] max-[359px]:text-[8px] min-[430px]:max-md:text-[10px] min-[560px]:text-[11px] md:text-[13px] min-[1100px]:text-[11px] font-[700] flex items-center justify-between z-20 md:self-start md:min-w-[190px] max-[359px]:max-w-none">Order via text <ArrowRight size={17} aria-hidden className="shrink-0 w-[14px] transition-transform duration-200 group-hover:translate-x-[3px]" /></span>
             </Link>
           </Entrance>
         </div>
 
         {/* --- Dialog Code unchanged --- */}
-        <dialog ref={dialog} className={styles.dialog} aria-labelledby="gift-title" aria-describedby="gift-description"
+        <dialog ref={dialog} className="fixed inset-0 min-[601px]:m-auto max-[600px]:inset-[auto_0_0] border border-[#e3eee7] min-[601px]:rounded-[30px] max-[600px]:rounded-[24px_24px_0_0] max-[600px]:border-none bg-white w-[min(94vw,500px)] max-[600px]:w-[100vw] max-[600px]:max-w-[100vw] max-[600px]:m-0 max-h-[85dvh] max-[600px]:max-h-[90dvh] max-[600px]:pb-[env(safe-area-inset-bottom)] p-0 shadow-[0_30px_100px_rgba(13,57,45,0.19)] overflow-auto overscroll-contain backdrop:bg-[#102c2466] backdrop:backdrop-blur-[6px] open:animate-[sheet-in_0.2s_ease-out] text-[#0f1f1c] font-body focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 not-[open]:hidden" aria-labelledby="gift-title" aria-describedby="gift-description"
           onCancel={() => setDetailsOpen(false)} onClose={() => setDetailsOpen(false)}
           onClick={(event) => {
             if (event.target !== event.currentTarget) return;
             const rect = event.currentTarget.getBoundingClientRect();
             if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) setDetailsOpen(false);
           }}>
-          <button ref={closeButton} className={styles.close} aria-label="Close offer details" type="button" onClick={() => setDetailsOpen(false)}><X size={21} /></button>
-          <div className={styles.dialogArt}><GiftImage /></div>
-          <div className={styles.dialogCopy}>
-            <span className={styles.eyebrow}>A little care, on us</span>
-            <h2 id="gift-title">Your first order.<br />An extra reason to smile.</h2>
-            <p id="gift-description">Get a <strong>{GIFT.name}</strong> free with your first qualifying medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)} or more</strong>.</p>
-            <ul><li>The minimum applies to medicines only.</li><li>A one-time gift for eligible first orders.</li><li>Final eligibility is confirmed with your order.</li></ul>
-            <Link href="/order" className={styles.solidButton} onClick={() => setDetailsOpen(false)}>Order medicines <ArrowRight size={18} aria-hidden /></Link>
+          <button ref={closeButton} className="absolute right-[13px] top-[13px] max-[600px]:right-[12px] max-[600px]:top-[12px] z-10 grid place-items-center w-[44px] h-[44px] max-[600px]:w-[38px] max-[600px]:h-[38px] rounded-full border border-[#e7eadd] bg-[rgba(255,255,255,0.93)] text-[#214a3d] cursor-pointer focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985] font-inherit" aria-label="Close offer details" type="button" onClick={() => setDetailsOpen(false)}><X size={21} /></button>
+          <div className="grid place-items-center bg-[radial-gradient(ellipse_at_center,#ffe6ad,#fff7e3)] h-[200px] max-[600px]:h-[180px]"><GiftImage className="w-[220px] h-[185px] max-[600px]:h-[150px] object-contain" /></div>
+          <div className="p-[24px] max-[600px]:p-[20px_20px_30px]">
+            <span className="inline-flex items-center gap-[5px] text-[#925004] text-[9px] font-[800] tracking-[0.11em] uppercase">A little care, on us</span>
+            <h2 id="gift-title" className="text-[29px] max-[600px]:text-[24px] leading-[1.1] font-extrabold m-[10px_0_15px] max-[600px]:m-[8px_0_12px] font-display tracking-[-0.055em] text-[#0f1f1c]">Your first order.<br />An extra reason to smile.</h2>
+            <p id="gift-description" className="text-[14px] leading-[1.65] text-[#51635b]">Get a <strong>{GIFT.name}</strong> free with your first qualifying medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)} or more</strong>.</p>
+            <ul className="pl-[20px] m-[14px_0_20px] list-disc text-[#51635b] text-[14px] leading-[1.65]"><li>The minimum applies to medicines only.</li><li>A one-time gift for eligible first orders.</li><li>Final eligibility is confirmed with your order.</li></ul>
+            <Link href="/order" className="min-h-[48px] flex items-center justify-center gap-[12px] rounded-[24px] bg-[#156253] text-white text-[14px] font-[700] no-underline cursor-pointer focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985] transition-transform font-inherit" onClick={() => setDetailsOpen(false)}>Order medicines <ArrowRight size={18} aria-hidden /></Link>
           </div>
         </dialog>
       </section>
