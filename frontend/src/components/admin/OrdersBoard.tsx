@@ -276,7 +276,10 @@ function mumbaiDay(date = new Date()): string {
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
 function shiftISODate(date: string, days: number): string {
-  const [y, m, d] = date.split('-').map(Number);
+  const parts = date.split('-').map(Number);
+  const y = parts[0] || 0;
+  const m = parts[1] || 1;
+  const d = parts[2] || 1;
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 export function AnalyticsOverview({ refreshKey = 0 }: { refreshKey?: number }) {
