@@ -134,9 +134,6 @@ export function createAdminController({ env, notifier }) {
         next(error);
       }
     },
-
- 
-
     async listProducts(req, res, next) {
       try {
         const products = await Product.find().sort({ createdAt: -1 });

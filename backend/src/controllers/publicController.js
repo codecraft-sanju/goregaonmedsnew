@@ -3,7 +3,7 @@ import { createOrder, trackOrder, fetchOrderHistory, recoverOrderIds } from '../
 import { getSettings, toPublicSettings } from '../services/settingsService.js';
 import { createUploadSignature, isTrustedPrescriptionUrl } from '../services/cloudinaryService.js';
 import { badRequest, notFound } from '../utils/AppError.js';
-import { Product } from '../models/Product.js'; // NEW: Imported Product model
+import { Product } from '../models/Product.js';
 
 export function createPublicController({ env, notifier, logger }) {
   const cloudinary = {
@@ -53,16 +53,71 @@ export function createPublicController({ env, notifier, logger }) {
       res.json({ success: true, upload: { cloudName, apiKey, folder, timestamp, signature, uploadUrl } });
     },
 
-  
-    async getPublicProducts(_req, res) {
-   
-      const products = await Product.find({ isActive: true })
-        .sort({ category: 1, name: 1 }) 
-        .lean();
+    async getCategories(_req, res) {
+      const categories = await Product.distinct('category', { isActive: true, inStock: true });
+      res.set('Cache-Control', 'public, max-age=300'); 
+      res.json({ success: true, categories });
+    },
+
+    async getTrendingProducts(req, res) {
+      const { category } = req.query;
+      const matchQuery = { isActive: true, inStock: true };
       
-     
-      res.set('Cache-Control', 'public, max-age=60'); 
+      if (category && category !== 'All') {
+        matchQuery.category = category;
+      }
+
+      const products = await Product.aggregate([
+        { $match: matchQuery },
+        { $sample: { size: 10 } }
+      ]);
+
+      res.set('Cache-Control', 'no-store'); 
       res.json({ success: true, products });
+    },
+
+  async getPublicProducts(req, res) {
+      // 1. Get query parameters with defaults
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20)); // default 20, max 50
+      const { category, q } = req.query;
+
+      // 2. Build the MongoDB query
+      const matchQuery = { isActive: true };
+
+      if (category && category !== 'All') {
+        matchQuery.category = category;
+      }
+
+      if (q && q.trim().length > 0) {
+        // Case-insensitive search on product name
+        matchQuery.name = { $regex: q.trim(), $options: 'i' }; 
+      }
+
+      // 3. Execute query with pagination
+      const [products, total] = await Promise.all([
+        Product.find(matchQuery)
+          .sort({ category: 1, name: 1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        Product.countDocuments(matchQuery)
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      // 4. Send response
+      res.set('Cache-Control', 'public, max-age=60'); 
+      res.json({ 
+        success: true, 
+        products,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages
+        }
+      });
     }
   };
 }

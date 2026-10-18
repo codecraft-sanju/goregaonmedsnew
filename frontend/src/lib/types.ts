@@ -145,3 +145,8 @@ export interface Pagination {
   total: number;
   totalPages: number;
 }
+export interface PublicProductsResponse {
+  success: boolean;
+  products: Product[];
+  pagination: Pagination;
+}

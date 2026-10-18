@@ -13,9 +13,14 @@ import {
   Search,
   X,
   ArrowUpRight,
-  Mic
+  Mic,
+  ShoppingBag,
+  Plus,
+  Minus,
+  Trash2
 } from 'lucide-react';
-
+import { cn } from '@/lib/cn';
+import { useCartStore } from '@/store/cartStore';
 
 export interface PublicSettings {
   deliveryCharge: number;
@@ -23,6 +28,13 @@ export interface PublicSettings {
   firstOrderMinimumMedicineAmount: number;
 }
 
+export interface Product {
+  _id: string;
+  name: string;
+  category: string;
+  price: number;
+  imageUrl: string | null;
+}
 
 const SERVICE_AREA = 'Goregaon East, Mumbai';
 
@@ -104,10 +116,6 @@ function usePublicSettings() {
   return { settings, loading };
 }
 
-// ==========================================
-// 4. COMPONENTS
-// ==========================================
-
 function Entrance({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string; }) {
   const reduced = useReducedMotion();
   return (
@@ -128,6 +136,200 @@ function GiftImage({ className }: { className?: string }) {
       width={420} height={360} sizes="(min-width: 768px) 320px, 150px"
       className={className} onError={() => setFailed(true)} 
     />
+  );
+}
+
+/** Trending Products Sub-Component */
+function TrendingProducts() {
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [activeCategory, setActiveCategory] = useState('All');
+  
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Cart Hook
+  const { items: cartItems, addItem, updateQuantity, removeItem } = useCartStore();
+
+  // Fetch unique categories on mount
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.categories) {
+          setCategories(['All', ...data.categories]);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Fetch 10 random products when activeCategory changes
+  useEffect(() => {
+    setLoading(true);
+    const url = activeCategory === 'All' 
+      ? '/api/products/trending' 
+      : `/api/products/trending?category=${encodeURIComponent(activeCategory)}`;
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data.products || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [activeCategory]);
+
+  return (
+    <div className="mt-8 md:mt-12 pb-4">
+      {/* Header Section */}
+      <div className="flex items-end justify-between mb-4 md:mb-5 px-1 md:px-0">
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <ShoppingBag className="w-4 h-4 text-[#156253]" />
+            <p className="text-[10px] md:text-[11px] font-bold text-[#156253] uppercase tracking-widest m-0">
+              Trending
+            </p>
+          </div>
+          <h2 className="text-[22px] md:text-[28px] font-extrabold m-0 font-display tracking-tight text-[#0F1F1C]">
+            Everyday Essentials
+          </h2>
+        </div>
+        
+        <Link 
+          href="/store" 
+          className="group flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold text-[#156253] bg-[linear-gradient(120deg,#eef7f5,#f5faf8)] px-4 py-2 md:py-2.5 rounded-full transition-all hover:bg-[#156253] hover:text-white ring-1 ring-inset ring-[#156253]/10 hover:ring-[#156253]"
+        >
+          See all
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+      </div>
+
+      {/* Category Tabs (Horizontal Scroll) */}
+      <div className="flex gap-2.5 overflow-x-auto pb-4 px-1 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+        {categories.map((category) => {
+          const isActive = activeCategory === category;
+          return (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={cn(
+                "relative px-4 md:px-5 py-2 md:py-2.5 rounded-full text-[13px] md:text-[14px] font-bold whitespace-nowrap snap-start transition-colors z-10 active:scale-[0.98]",
+                isActive ? "text-white" : "text-[#52675F] bg-white ring-1 ring-inset ring-gray-200 hover:bg-[#F6FAF8] hover:ring-[#156253]/20"
+              )}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeCategoryTab"
+                  className="absolute inset-0 bg-[#156253] rounded-full -z-10 shadow-[0_4px_12px_rgba(21,98,83,0.25)]"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              {category}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Products Display (Horizontal Snap Slider) */}
+      <div className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory pb-6 pt-1 px-1 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {loading ? (
+          /* Skeleton Loaders */
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="shrink-0 w-[145px] md:w-[170px] snap-start bg-white border border-gray-100 rounded-[20px] p-2.5 md:p-3 animate-pulse">
+              <div className="h-[120px] md:h-[130px] w-full bg-gray-100 rounded-[14px] mb-3" />
+              <div className="h-2.5 w-1/2 bg-gray-100 rounded mb-2.5" />
+              <div className="h-3.5 w-3/4 bg-gray-200 rounded mb-4" />
+              <div className="flex justify-between items-end">
+                <div className="h-5 w-1/3 bg-gray-100 rounded" />
+                <div className="h-7 w-7 bg-gray-100 rounded-full" />
+              </div>
+            </div>
+          ))
+        ) : products.length === 0 ? (
+          <div className="w-full py-8 text-center bg-gray-50 rounded-[24px] border border-gray-100 border-dashed">
+            <p className="text-sm font-medium text-[#52675F]">No products found in this category.</p>
+          </div>
+        ) : (
+          /* Actual Products */
+          products.map((product) => {
+            const cartItem = cartItems.find(item => item.product._id === product._id);
+            return (
+              <div 
+                key={product._id}
+                className={cn(
+                  "shrink-0 w-[145px] md:w-[170px] snap-start bg-white border rounded-[20px] p-2.5 md:p-3 shadow-sm transition-all duration-300 relative group flex flex-col",
+                  cartItem ? "border-[#156253] ring-1 ring-[#156253]" : "border-gray-100 hover:shadow-[0_8px_24px_rgba(21,98,83,0.08)] hover:border-[#156253]/20"
+                )}
+              >
+                {/* Image Area */}
+                <div className="h-[120px] md:h-[130px] w-full bg-[#F8FBFB] rounded-[14px] mb-3 flex items-center justify-center overflow-hidden">
+                  {product.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img 
+                      src={product.imageUrl} 
+                      alt={product.name} 
+                      className="h-full w-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  ) : (
+                    <ShoppingBag className="w-8 h-8 text-[#156253]/15" />
+                  )}
+                </div>
+
+                {/* Product Info */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[9px] font-extrabold text-[#156253] uppercase tracking-widest mb-1.5 line-clamp-1">
+                      {product.category}
+                    </p>
+                    <h3 className="text-[13px] md:text-[14px] font-bold text-[#0F1F1C] line-clamp-2 leading-[1.3] min-h-[34px] md:min-h-[36px]">
+                      {product.name}
+                    </h3>
+                  </div>
+                  
+                  <div className="mt-3 md:mt-4 flex items-end justify-between">
+                    <span className="font-display text-[16px] md:text-[18px] font-extrabold text-[#0F1F1C]">
+                      {currency.format(product.price)}
+                    </span>
+                    
+                    {/* Add to Cart / Quantity Selector */}
+                    {!cartItem ? (
+                      <button 
+                        type="button"
+                        onClick={() => addItem(product)}
+                        className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-[#F6FAF8] text-[#156253] grid place-items-center hover:bg-[#156253] hover:text-white transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#156253] active:scale-95 shadow-sm"
+                        aria-label={`Add ${product.name} to order`}
+                      >
+                        <Plus className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 bg-[#F6FAF8] rounded-full px-1 py-0.5 border border-[#156253]/10">
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            if (cartItem.quantity === 1) removeItem(product._id);
+                            else updateQuantity(product._id, cartItem.quantity - 1);
+                          }} 
+                          className="h-6 w-6 rounded-full bg-white text-[#156253] grid place-items-center shadow-sm active:scale-95"
+                        >
+                          {cartItem.quantity === 1 ? <Trash2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                        </button>
+                        <span className="text-xs font-bold w-4 text-center text-[#156253]">{cartItem.quantity}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => updateQuantity(product._id, cartItem.quantity + 1)} 
+                          className="h-6 w-6 rounded-full bg-[#156253] text-white grid place-items-center shadow-sm active:scale-95"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -340,6 +542,10 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
           </Entrance>
         </div>
 
+        <Entrance delay={0.2}>
+          <TrendingProducts />
+        </Entrance>
+
         {/* --- Dialog Code unchanged --- */}
         <dialog ref={dialog} className="fixed inset-0 min-[601px]:m-auto max-[600px]:inset-[auto_0_0] border border-[#e3eee7] min-[601px]:rounded-[30px] max-[600px]:rounded-[24px_24px_0_0] max-[600px]:border-none bg-white w-[min(94vw,500px)] max-[600px]:w-[100vw] max-[600px]:max-w-[100vw] max-[600px]:m-0 max-h-[85dvh] max-[600px]:max-h-[90dvh] max-[600px]:pb-[env(safe-area-inset-bottom)] p-0 shadow-[0_30px_100px_rgba(13,57,45,0.19)] overflow-auto overscroll-contain backdrop:bg-[#102c2466] backdrop:backdrop-blur-[6px] open:animate-[sheet-in_0.2s_ease-out] text-[#0f1f1c] font-body focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 not-[open]:hidden" aria-labelledby="gift-title" aria-describedby="gift-description"
           onCancel={() => setDetailsOpen(false)} onClose={() => setDetailsOpen(false)}
@@ -363,4 +569,4 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
       <HomeSupport />
     </>
   );
-}
+} 

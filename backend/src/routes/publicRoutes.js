@@ -15,7 +15,8 @@ export function createPublicRouter({ controller, limiters }) {
   router.get('/settings/public', controller.publicSettings);
   router.get('/uploads/signature', limiters.uploadSignature, controller.uploadSignature);
   
- 
+  router.get('/categories', controller.getCategories);
+  router.get('/products/trending', controller.getTrendingProducts);
   router.get('/products', controller.getPublicProducts);
   
   return router;

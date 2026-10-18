@@ -9,7 +9,7 @@ import {
   loginSchema,
   settingsUpdateSchema,
   cancelOrderSchema,
-  createProductSchema, // NEW
+  createProductSchema, 
 } from '../validation/schemas.js';
 
 export function createAdminRouter({ env, controller, limiters }) {

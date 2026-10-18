@@ -24,6 +24,7 @@ import type { CreateOrderPayload, CreateOrderResponse, OrderType, Address, Produ
 import { createRequestId } from '@/lib/uuid';
 import { compressPrescription, ImageCompressionError } from '@/lib/imageCompression';
 import { uploadPrescription, UploadError } from '@/lib/cloudinaryUpload';
+import { useCartStore } from '@/store/cartStore';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -601,9 +602,9 @@ export function OrderFlow() {
   const [rows, setRows] = useState<MedicineRow[]>([{ id: 'initial-row', name: '', quantity: '1 Strip' }]);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   
-  // NEW: State for fetching and selecting Cosmetics/OTC products
+  // Cart Store State
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<{product: Product, quantity: number}[]>([]);
+  const { items: selectedProducts, addItem, removeItem, updateQuantity, clearCart } = useCartStore();
 
   const [upload, setUpload] = useState<UploadState>({ status: 'idle' });
   const [uploadError, setUploadError] = useState<string>();
@@ -625,7 +626,7 @@ export function OrderFlow() {
     if (saved) { setDetails(saved); setSaveDetails(true); }
   }, []);
 
-  // NEW: Fetch active products on load
+  // Fetch active products on load
   useEffect(() => {
     apiRequest<{products: Product[]}>('/products')
       .then(res => setAvailableProducts(res.products))
@@ -658,26 +659,21 @@ export function OrderFlow() {
     window.history.replaceState(null, '', `${pathname}?${newParams.toString()}`);
   };
 
-  // NEW: Handle adding/removing cosmetic products
+  // Handle adding/removing cosmetic products from global cart
   const handleProductToggle = (product: Product) => {
-    setSelectedProducts(prev => {
-      const existing = prev.find(p => p.product._id === product._id);
-      if (existing) {
-        return prev.filter(p => p.product._id !== product._id);
-      } else {
-        return [...prev, { product, quantity: 1 }];
-      }
-    });
+    const existing = selectedProducts.find(p => p.product._id === product._id);
+    if (existing) {
+      removeItem(product._id);
+    } else {
+      addItem(product);
+    }
   };
 
   const handleProductQuantity = (productId: string, increment: boolean) => {
-    setSelectedProducts(prev => prev.map(p => {
-      if (p.product._id === productId) {
-        const newQty = increment ? p.quantity + 1 : Math.max(1, p.quantity - 1);
-        return { ...p, quantity: newQty };
-      }
-      return p;
-    }));
+    const item = selectedProducts.find(p => p.product._id === productId);
+    if (!item) return;
+    const newQty = increment ? item.quantity + 1 : Math.max(1, item.quantity - 1);
+    updateQuantity(productId, newQty);
   };
 
   const hasMedicineInput = rows.some((row) => row.name.trim().length > 0);
@@ -690,7 +686,7 @@ export function OrderFlow() {
       for (const row of filledRows) {
         if (!row.name.trim()) errors[`${row.id}-name`] = 'Required';
       }
-      // NEW: Allow order if either medicine OR product is present
+      // Allow order if either medicine OR product is present
       if (filledRows.length === 0 && !hasProductInput && rows[0]) {
         errors[`${rows[0].id}-name`] = 'Add at least one medicine or product';
       }
@@ -727,7 +723,7 @@ export function OrderFlow() {
 
     clientRequestId.current ??= createRequestId();
     
-    // NEW: Map selected cosmetics/products to payload
+    // Map selected cosmetics/products to payload
     const orderProducts = selectedProducts.map(p => ({
       productId: p.product._id,
       name: p.product.name,
@@ -741,7 +737,7 @@ export function OrderFlow() {
       mobileNumber: normalizeMobile(details.mobileNumber) ?? details.mobileNumber,
       orderType: method,
       medicines: method === 'manual_text' ? filledRows.map(({ name, quantity }) => ({ name: name.trim(), quantity: quantity.trim() })) : [],
-      products: orderProducts, // NEW: Including the products
+      products: orderProducts,
       prescriptionUrl: method === 'prescription_image' && upload.status === 'done' ? upload.url : undefined,
       address: { flat: details.address.flat.trim(), area: details.address.area.trim(), landmark: details.address.landmark.trim() },
       offerOptIn: settings.firstOrderOfferEnabled && offerOptIn,
@@ -751,6 +747,10 @@ export function OrderFlow() {
       const result = await apiRequest<CreateOrderResponse>('/orders/create', { method: 'POST', body: payload });
       if (saveDetails) saveCheckout({ customerName: payload.customerName, mobileNumber: payload.mobileNumber, address: payload.address });
       else clearCheckout();
+      
+      // Clear cart on successful order
+      clearCart();
+      
       router.replace(`/order/success?id=${encodeURIComponent(result.orderId)}&notified=${result.telegramNotificationSent ? '1' : '0'}`);
     } catch (error) {
       submitLock.current = false;
@@ -897,7 +897,7 @@ export function OrderFlow() {
                 )}
               </motion.div>
 
-              {/* NEW: Cosmetics & OTC Products Section */}
+              {/* NEW: Cosmetics & OTC Products Section (Using Global Store) */}
               {availableProducts.length > 0 && (
                 <div className="mt-12 pt-8 border-t border-gray-100 pb-10">
                   <div className="flex items-center gap-2 mb-6">
@@ -995,7 +995,7 @@ export function OrderFlow() {
                   )
                 )}
 
-                {/* NEW: Display selected products in review */}
+                {/* Display selected products in review */}
                 {selectedProducts.length > 0 && (
                   <div className="mt-6 pt-6 border-t border-gray-100">
                     <p className="text-[13px] font-bold uppercase tracking-wider text-ink-muted mb-4">Other Items</p>

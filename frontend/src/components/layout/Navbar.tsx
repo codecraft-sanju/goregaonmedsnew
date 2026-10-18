@@ -1,10 +1,12 @@
 // src/components/layout/Navbar.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowRight, MapPin, Phone, Search } from 'lucide-react';
+import { ArrowRight, MapPin, Phone, Search, ShoppingBag } from 'lucide-react';
+import { useCartStore } from '@/store/cartStore';
 
 // Constants
 const SUPPORT_PHONE_DISPLAY = '+91 84338 18771';
@@ -36,8 +38,13 @@ function Logo({ href = '/' }: { href?: string }) {
 export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  
+  // Cart state
+  const [mounted, setMounted] = useState(false);
+  const totalItems = useCartStore((state) => state.getTotalItems());
 
   useEffect(() => {
+    setMounted(true);
     const update = () => setScrolled(window.scrollY > 12);
     update();
     window.addEventListener('scroll', update, { passive: true });
@@ -107,6 +114,20 @@ export function Navbar() {
             <Phone size={19} aria-hidden />
             <span className="hidden lg:inline">{SUPPORT_PHONE_DISPLAY}</span>
           </a>
+
+          {/* Cart Button */}
+          <Link
+            href="/order"
+            className="relative w-10 h-10 min-[360px]:w-11 min-[360px]:h-11 flex items-center justify-center rounded-full text-[#156253] hover:bg-[#eaf8f1] transition-colors active:scale-[0.985]"
+            aria-label="View Cart"
+          >
+            <ShoppingBag size={21} aria-hidden />
+            {mounted && totalItems > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#dfa442] text-[9px] font-bold text-white shadow-sm">
+                {totalItems}
+              </span>
+            )}
+          </Link>
 
           {/* Order Now Button (Desktop Only) */}
           <Link
