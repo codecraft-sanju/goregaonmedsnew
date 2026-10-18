@@ -6,7 +6,7 @@ import {
   useEffect, useRef, useState, useCallback, ChangeEvent, 
   forwardRef, useId, type InputHTMLAttributes, type ButtonHTMLAttributes, type ReactNode 
 } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
 import { 
   ArrowLeft, ArrowRight, Camera, ClipboardList, Gift, MapPin, 
   ShieldCheck, Wallet, Minus, Plus, Trash2, Info, CheckCircle2, 
@@ -43,7 +43,7 @@ const buttonSizes: Record<ButtonSize, string> = {
   lg: 'h-14 px-6 text-base gap-2.5 rounded-[20px]',
 };
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends HTMLMotionProps<"button"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
