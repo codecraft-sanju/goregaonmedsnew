@@ -1,4 +1,5 @@
 // src/components/home/OrderMethods.tsx
+
 'use client';
 
 import Image from 'next/image';
@@ -21,19 +22,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useCartStore } from '@/store/cartStore';
+import type { Product } from '@/lib/types'; 
 
 export interface PublicSettings {
   deliveryCharge: number;
   firstOrderOfferEnabled: boolean;
   firstOrderMinimumMedicineAmount: number;
-}
-
-export interface Product {
-  _id: string;
-  name: string;
-  category: string;
-  price: number;
-  imageUrl: string | null;
 }
 
 const SERVICE_AREA = 'Goregaon East, Mumbai';
