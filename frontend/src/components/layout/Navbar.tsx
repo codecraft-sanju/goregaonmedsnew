@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowRight, MapPin, Phone, Search, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Phone, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 
 // Constants
@@ -57,22 +57,13 @@ export function Navbar() {
       data-scrolled={scrolled}
     >
       <nav
-        className="w-[min(100%-32px,1200px)] mx-auto min-h-[68px] md:min-h-[78px] flex items-center gap-2.5 md:gap-3"
+      className="w-[min(100%-32px,1200px)] mx-auto min-h-[56px] md:min-h-[66px] flex items-center gap-2.5 md:gap-3"
         aria-label="Main navigation"
       >
         {/* Logo */}
         <div className="min-w-0 shrink-0 flex items-center [&>a]:max-w-full">
           <Logo />
         </div>
-
-        {/* Mobile Location (Hidden on Desktop) */}
-        <Link
-          href="/#locations"
-          className="flex md:hidden items-center gap-1.5 px-2.5 py-2 rounded-full bg-[#eaf8f1] text-[#156253] whitespace-nowrap text-[10px] ml-auto active:scale-[0.985] transition-transform"
-        >
-          <MapPin size={14} aria-hidden />
-          Goregaon East
-        </Link>
 
         {/* Desktop Links (Hidden on Mobile) */}
         <div className="hidden md:flex gap-0.5 ml-auto">
@@ -94,17 +85,9 @@ export function Navbar() {
           })}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-0 min-[360px]:gap-[3px] shrink-0">
-          {/* Search Button */}
-          <Link
-            href="/search"
-            className="w-10 h-10 min-[360px]:w-11 min-[360px]:h-11 flex items-center justify-center rounded-full text-[#156253] hover:bg-[#eaf8f1] transition-colors active:scale-[0.985]"
-            aria-label="Search medicines"
-          >
-            <Search size={21} aria-hidden />
-          </Link>
-
+        {/* Action Buttons (Shifted completely to the right) */}
+        <div className="flex items-center gap-0 min-[360px]:gap-[3px] shrink-0 ml-auto md:ml-0">
+          
           {/* Call Support Button */}
           <a
             href={SUPPORT_PHONE_TEL}
