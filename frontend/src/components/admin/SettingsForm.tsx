@@ -617,7 +617,7 @@ function SettingsFormInner() {
               value={deliveryCharge}
               onChange={(event) => setDeliveryCharge(event.target.value.replace(/[^\d.]/g, ''))}
               error={deliveryCharge ? deliveryError : 'Required'}
-              hint={<>Set to <strong>0</strong> to advertise "FREE Delivery" sitewide. This charge is automatically applied to all new orders.</>}
+            hint={<>Set to <strong>0</strong> to advertise &quot;FREE Delivery&quot; sitewide. This charge is automatically applied to all new orders.</>}
               className="w-full"
             />
           </div>

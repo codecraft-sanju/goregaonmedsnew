@@ -1009,7 +1009,7 @@ function ProductsViewInner() {
                                     onClick={() => setFormData({...formData, category: formData.category.trim()})}
                                     className="cursor-pointer mt-1 border-t border-[#156253]/10 pt-1 px-4 py-2.5 rounded-lg text-[14px] font-bold text-[#156253] hover:bg-[#F6FAF8] transition-colors flex items-center gap-2"
                                   >
-                                    <Plus className="w-4 h-4 shrink-0" /> Create "{formData.category.trim()}"
+                              <Plus className="w-4 h-4 shrink-0" /> Create &quot;{formData.category.trim()}&quot;
                                   </div>
                                 )}
                                 

@@ -13,7 +13,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  PackageX
+  PackageX,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useCartStore } from '@/store/cartStore';
