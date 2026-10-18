@@ -5,8 +5,7 @@ import { Providers } from '@/components/Providers';
 import './globals.css';
 
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', display: 'swap', weight: ['600', '700', '800'] });
-
+const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 export const metadata: Metadata = {
   title: { default: 'GoregaonMeds · Medicines delivered in Goregaon East', template: '%s · GoregaonMeds' },
   description:
