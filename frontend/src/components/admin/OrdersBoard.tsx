@@ -599,9 +599,9 @@ function trapTab(event: ReactKeyboardEvent<HTMLElement>) {
   if (event.key !== 'Tab') return;
   const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(el => el.getClientRects().length > 0);
   if (!nodes.length) return;
-  const first = nodes[0], last = nodes[nodes.length - 1], active = document.activeElement;
-  if (event.shiftKey && (active === first || !event.currentTarget.contains(active))) { event.preventDefault(); last.focus(); }
-  else if (!event.shiftKey && (active === last || !event.currentTarget.contains(active))) { event.preventDefault(); first.focus(); }
+const first = nodes[0], last = nodes[nodes.length - 1], active = document.activeElement;
+  if (event.shiftKey && (active === first || !event.currentTarget.contains(active))) { event.preventDefault(); last?.focus(); }
+  else if (!event.shiftKey && (active === last || !event.currentTarget.contains(active))) { event.preventDefault(); first?.focus(); }
 }
 function useDesktopBreakpoint() {
   const [desktop, setDesktop] = useState(false);
