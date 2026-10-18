@@ -48,6 +48,7 @@ interface ButtonProps extends HTMLMotionProps<"button"> {
   size?: ButtonSize;
   loading?: boolean;
   icon?: ReactNode;
+  children?: ReactNode;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
