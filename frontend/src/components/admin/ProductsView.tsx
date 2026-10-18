@@ -1,4 +1,3 @@
-// src/components/admin/ProductsView.tsx
 'use client';
 
 import React, {
@@ -26,9 +25,12 @@ import {
   Trash2,
   UploadCloud,
   X,
-  PackageCheck,
   EyeOff,
   Search,
+  ChevronDown,
+  Eye,
+  Package,
+  PackageX
 } from 'lucide-react';
 
 // ============================================================================
@@ -279,15 +281,23 @@ export async function uploadPrescription(file: File, onProgress: (percent: numbe
 // UI COMPONENTS
 // ============================================================================
 
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div aria-hidden className={cn('relative overflow-hidden bg-[#156253]/5', className)}>
+      <style>{`@keyframes gmedShimmer { to { transform: translateX(100%); } }`}</style>
+      <div className="absolute inset-0 -translate-x-full animate-[gmedShimmer_1.8s_ease-in-out_infinite] motion-reduce:animate-none bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+    </div>
+  );
+}
+
 // --- Button ---
-type Variant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const buttonVariants: Record<Variant, string> = {
   primary: 'bg-[#156253] text-white hover:bg-[#0F1F1C] shadow-[0_2px_8px_rgba(21,98,83,0.25)] disabled:opacity-50 disabled:hover:bg-[#156253]',
   secondary: 'bg-[#FFFFFF] text-[#0F1F1C] ring-1 ring-inset ring-[#156253]/10 hover:bg-[#F6FAF8] hover:ring-[#156253]/20 disabled:opacity-50',
   ghost: 'text-[#156253] hover:bg-[#156253]/10 disabled:opacity-50',
-  gift: 'bg-orange-500 text-white hover:bg-orange-600 shadow-md disabled:opacity-50',
   danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm disabled:opacity-50',
 };
 
@@ -324,7 +334,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden /> : icon}
       {children}
     </button>
   );
@@ -452,11 +462,20 @@ function ProductsViewInner() {
   const visibleProducts = products.filter(p => `${p.name} ${p.category}`.toLowerCase().includes(query.trim().toLowerCase()));
   const [loading, setLoading] = useState(true);
   
+  // Extract Unique Categories for the Dropdown Combobox
+  const existingCategories = useMemo(() => {
+    const categoriesSet = new Set(products.map(p => p.category));
+    return Array.from(categoriesSet).sort();
+  }, [products]);
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   
+  // Combobox State
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+
   // Upload State
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -497,6 +516,7 @@ function ProductsViewInner() {
     const timer = window.setTimeout(() => modalRef.current?.querySelector<HTMLInputElement>('input')?.focus(), 50);
     return () => { clearTimeout(timer); document.body.style.overflow = overflow; previous?.focus(); };
   }, [isModalOpen]);
+
   const closeModal = () => { if (!saving && !isUploading) setIsModalOpen(false); };
   const handleModalKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') { event.stopPropagation(); closeModal(); }
@@ -546,12 +566,10 @@ function ProductsViewInner() {
     setIsUploading(true);
     setUploadProgress(0);
     try {
-      // Compress the image before uploading
       const compressed = await compressPrescription(file);
       const url = await uploadPrescription(compressed, (progress) => {
         setUploadProgress(progress);
       });
-      // Set the Cloudinary URL to formData
       setFormData(prev => ({ ...prev, imageUrl: url }));
       toast.success('Image uploaded successfully');
     } catch (error) {
@@ -559,14 +577,18 @@ function ProductsViewInner() {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-      if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving || isUploading) return;
-    if (!formData.name || !formData.category || !formData.price) {
+    
+    const finalCategory = formData.category.trim();
+    const finalName = formData.name.trim();
+    
+    if (!finalName || !finalCategory || !formData.price) {
       toast.error('Name, category, and price are required.');
       return;
     }
@@ -574,6 +596,8 @@ function ProductsViewInner() {
     setSaving(true);
     const payload = {
       ...formData,
+      name: finalName,
+      category: finalCategory,
       price: Number(formData.price),
     };
 
@@ -602,45 +626,84 @@ function ProductsViewInner() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl">
-      {/* Header Section */}
-      <header className="mb-8 flex flex-col justify-between gap-5 border-b border-[#156253]/10 pb-6 sm:flex-row sm:items-end">
+    <div className="mx-auto max-w-[1400px]">
+      {/* PAGE HEADER */}
+      <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end justify-between border-b border-[#156253]/10 pb-6">
         <div>
-          <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F1F1C]">Products</h1>
-          <p className="mt-1.5 text-[14px] font-medium text-[#52675F]">Manage your product catalog, visibility, and stock levels.</p>
+          <h1 className="font-display text-[26px] font-bold text-[#0F1F1C] tracking-tight">Products</h1>
+          <p className="mt-1 text-[14px] text-[#52675F]">Manage your product catalog, visibility, and stock levels.</p>
         </div>
-        <Button onClick={openAddModal} icon={<Plus className="h-[18px] w-[18px]" />} size="md" className="w-full shadow-[0_2px_12px_rgba(21,98,83,0.2)] sm:w-auto">
-          Add Product
-        </Button>
+        
+        {/* Actions & Search */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
+          {/* SEARCH BAR */}
+          <div className="relative w-full max-w-[340px] group">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Search className="h-[18px] w-[18px] text-[#60756D] transition-colors group-focus-within:text-[#156253]" aria-hidden />
+            </div>
+            <label htmlFor="product-search" className="sr-only">Search products</label>
+            <input
+              id="product-search"
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by name or category..."
+              className="h-[42px] w-full rounded-xl border-none bg-[#FFFFFF] pl-10 pr-10 text-[14px] font-medium text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/15 transition-all placeholder:text-[#0F1F1C]/30 hover:bg-[#F6FAF8] focus:bg-[#FFFFFF] focus:outline-none focus:ring-4 focus:ring-[#156253]/10"
+            />
+            <AnimatePresence>
+              {query && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="absolute inset-y-0 right-1.5 my-auto flex h-7 w-7 items-center justify-center rounded-lg text-[#60756D] hover:bg-[#0F1F1C]/5 hover:text-[#0F1F1C]"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <Button onClick={openAddModal} icon={<Plus className="h-[18px] w-[18px]" />} size="md" className="w-full shadow-[0_2px_12px_rgba(21,98,83,0.2)] sm:w-auto shrink-0">
+            Add Product
+          </Button>
+        </div>
       </header>
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-3">{[
-        ['Products', products.length], ['Visible on store', products.filter(p => p.isActive).length], ['Out of stock', products.filter(p => !p.inStock).length]
-      ].map(([label, value]) => <div key={label} className="rounded-xl border border-[#156253]/10 bg-white px-4 py-3"><p className="text-xs text-[#60756D]">{label}</p><p className="mt-1 text-2xl font-semibold tabular-nums text-[#0F1F1C]">{loading ? '—' : value}</p></div>)}</div>
-      <label className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-[#156253]/15 bg-white px-3"><Search className="h-4 w-4 text-[#60756D]" aria-hidden /><span className="sr-only">Search products by name or category</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search products or categories…" className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none" /></label>
-      {/* Main Content */}
-      <div className="min-h-[400px]">
-        {loading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-[#156253]/5">
-                <div className="h-48 w-full animate-pulse bg-[#156253]/5" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-[#156253]/5" />
-                  <div className="h-5 w-3/4 animate-pulse rounded bg-[#156253]/5" />
-                  <div className="h-4 w-full animate-pulse rounded bg-[#156253]/5" />
-                  <div className="mt-6 flex justify-between pt-4">
-                    <div className="h-6 w-1/4 animate-pulse rounded bg-[#156253]/5" />
-                    <div className="flex gap-2">
-                      <div className="h-10 w-10 animate-pulse rounded-xl bg-[#156253]/5" />
-                      <div className="h-10 w-10 animate-pulse rounded-xl bg-[#156253]/5" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+      {/* QUICK STATS */}
+      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+        {[
+          ['Total Products', products.length], 
+          ['Visible on store', products.filter(p => p.isActive).length], 
+          ['Out of stock', products.filter(p => !p.inStock).length]
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-[#156253]/10 bg-white px-4 py-3">
+            <p className="text-xs text-[#60756D]">{label}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-[#0F1F1C]">{loading ? '—' : value}</p>
           </div>
-        ) : loadError ? (<div role="alert" className="rounded-xl border border-red-200 bg-white p-6"><p className="text-sm text-red-700">{loadError}</p><Button variant="secondary" className="mt-4" onClick={() => void fetchProducts()}>Retry</Button></div>) : products.length === 0 ? (
+        ))}
+      </div>
+      
+      {/* MAIN CONTENT AREA */}
+      <div className="min-h-[400px]" aria-busy={loading}>
+        {loading ? (
+          <div aria-label="Loading products">
+            <div className="space-y-3 hidden md:block">
+              {Array.from({ length: 10 }, (_, i) => <Skeleton key={`desktop-skel-${i}`} className="h-[60px] rounded-xl" />)}
+            </div>
+            <div className="space-y-4 md:hidden">
+              {Array.from({ length: 6 }, (_, i) => <Skeleton key={`mobile-skel-${i}`} className="h-[140px] rounded-2xl" />)}
+            </div>
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-xl border border-red-200 bg-white p-6 text-center">
+            <p className="text-sm text-red-700">{loadError}</p>
+            <Button variant="secondary" className="mt-4" onClick={() => void fetchProducts()}>Retry</Button>
+          </div>
+        ) : products.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#156253]/20 bg-[#FFFFFF]/50 py-24 text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#F6FAF8] ring-1 ring-inset ring-[#156253]/10">
               <PackageSearch className="h-10 w-10 text-[#156253]/60" />
@@ -650,71 +713,198 @@ function ProductsViewInner() {
             <Button onClick={openAddModal} className="mt-8 shadow-sm" variant="secondary" size="lg">Add your first product</Button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <AnimatePresence>
-              {visibleProducts.map((product) => (
-                <motion.div 
-                  key={product._id} 
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all hover:shadow-lg hover:ring-[#156253]/20"
-                >
-                  <div className="relative h-[200px] w-full bg-[#F6FAF8] overflow-hidden">
-                    {product.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[#156253]/20 bg-gradient-to-br from-[#F6FAF8] to-[#D8F3E8]/30">
-                        <ImageIcon className="h-12 w-12" />
+          <div className={cn("transition-opacity duration-300", loading ? "opacity-50 pointer-events-none" : "opacity-100")}>
+            
+            {/* DESKTOP DATA TABLE */}
+            <div className="hidden overflow-hidden rounded-2xl bg-[#FFFFFF] shadow-sm ring-1 ring-inset ring-[#156253]/10 md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead className="border-b border-[#156253]/10 bg-[#F6FAF8] text-[11px] font-bold tracking-wide text-[#60756D]">
+                    <tr>
+                      <th scope="col" className="px-5 py-4 whitespace-nowrap w-24">Image</th>
+                      <th scope="col" className="px-5 py-4 whitespace-nowrap">Product Details</th>
+                      <th scope="col" className="px-5 py-4 whitespace-nowrap text-right">Price</th>
+                      <th scope="col" className="px-5 py-4 whitespace-nowrap text-center">Status</th>
+                      <th scope="col" className="px-5 py-4 whitespace-nowrap text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <motion.tbody layout className="divide-y divide-[#156253]/5">
+                    <AnimatePresence>
+                      {visibleProducts.map((product) => (
+                        <motion.tr 
+                          key={product._id} 
+                          layout
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, backgroundColor: '#fef2f2' }}
+                          transition={{ duration: 0.2 }}
+                          className="transition-colors hover:bg-[#F6FAF8] group"
+                        >
+                          {/* Image Cell */}
+                          <td className="px-5 py-3 whitespace-nowrap">
+                            <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-[#F8FBFB] ring-1 ring-[#156253]/10">
+                              {product.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover mix-blend-multiply" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[#156253]/20">
+                                  <ImageIcon className="h-5 w-5" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          
+                          {/* Details Cell */}
+                          <td className="px-5 py-3">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#156253] mb-0.5">
+                                {product.category}
+                              </span>
+                              <span className="font-bold text-[#0F1F1C] text-[14px]">
+                                {product.name}
+                              </span>
+                              {product.description && (
+                                <span className="text-[12px] text-[#60756D] line-clamp-1 max-w-sm mt-0.5">
+                                  {product.description}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Price Cell */}
+                          <td className="px-5 py-3 text-right whitespace-nowrap">
+                            <span className="font-display font-bold text-[15px] text-[#0F1F1C]">
+                              {formatRupees(product.price)}
+                            </span>
+                          </td>
+
+                          {/* Status Cell */}
+                          <td className="px-5 py-3 text-center whitespace-nowrap">
+                            <div className="flex flex-col items-center gap-1.5">
+                              {product.isActive ? (
+                                <span className="inline-flex items-center rounded-full bg-[#D8F3E8]/60 px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#156253]">
+                                  <Eye className="w-3 h-3 mr-1" /> Visible
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-[#0F1F1C]/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#0F1F1C]/70">
+                                  <EyeOff className="w-3 h-3 mr-1" /> Hidden
+                                </span>
+                              )}
+
+                              {product.inStock ? (
+                                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-blue-700 ring-1 ring-inset ring-blue-200">
+                                  <Package className="w-3 h-3 mr-1" /> In Stock
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-red-700 ring-1 ring-inset ring-red-200">
+                                  <PackageX className="w-3 h-3 mr-1" /> Out of Stock
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Actions Cell */}
+                          <td className="px-5 py-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                              <button 
+                                onClick={() => openEditModal(product)} 
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#60756D] hover:bg-[#F6FAF8] hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#156253]"
+                                aria-label="Edit Product"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(product._id)} 
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#60756D] hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
+                                aria-label="Delete Product"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </motion.tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* MOBILE COMPACT LIST */}
+            <ul className="flex flex-col gap-3 md:hidden">
+              <AnimatePresence>
+                {visibleProducts.map((product) => (
+                  <motion.li 
+                    key={product._id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative overflow-hidden rounded-2xl bg-[#FFFFFF] p-4 shadow-sm ring-1 ring-inset ring-[#156253]/10"
+                  >
+                    <div className="flex gap-4">
+                      {/* Mobile Image */}
+                      <div className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-[12px] bg-[#F8FBFB] ring-1 ring-[#156253]/10">
+                        {product.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover mix-blend-multiply" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[#156253]/20">
+                            <ImageIcon className="h-6 w-6" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                    
-                    {/* Status Badges Overlay */}
-                    <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
-                      {!product.isActive && (
-                        <div className="flex items-center gap-1.5 rounded-full bg-[#0F1F1C]/80 px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#FFFFFF] backdrop-blur-md shadow-sm">
-                          <EyeOff className="h-3 w-3" /> Hidden
-                        </div>
-                      )}
-                      {!product.inStock && (
-                        <div className="flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#FFFFFF] backdrop-blur-md shadow-sm">
-                          Out of Stock
-                        </div>
-                      )}
+                      
+                      {/* Mobile Info */}
+                      <div className="flex flex-1 flex-col justify-center min-w-0">
+                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#156253] mb-0.5 line-clamp-1">
+                          {product.category}
+                        </span>
+                        <h3 className="text-[14px] font-bold text-[#0F1F1C] line-clamp-2 leading-tight">
+                          {product.name}
+                        </h3>
+                        <span className="font-display font-bold text-[16px] text-[#0F1F1C] mt-2">
+                          {formatRupees(product.price)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex flex-1 flex-col p-5">
-                    <span className="text-[11px] font-bold tracking-wide text-[#156253]">{product.category}</span>
-                    <h3 className="mt-1.5 text-[16px] font-bold leading-tight text-[#0F1F1C] line-clamp-2">{product.name}</h3>
-                    <p className="mt-2 text-[14px] font-medium leading-relaxed text-[#52675F] line-clamp-2">{product.description || 'No description provided.'}</p>
-                    
-                    <div className="mt-auto pt-6 flex items-center justify-between">
-                      <span className="font-display text-[22px] font-bold text-[#0F1F1C]">{formatRupees(product.price)}</span>
-                      <div className="flex items-center gap-1.5">
+
+                    {/* Mobile Badges & Actions */}
+                    <div className="mt-4 flex items-center justify-between border-t border-[#156253]/5 pt-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {!product.isActive && (
+                          <span className="inline-flex items-center rounded-md bg-[#0F1F1C]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#0F1F1C]/70">
+                            Hidden
+                          </span>
+                        )}
+                        {!product.inStock && (
+                          <span className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-700 ring-1 ring-inset ring-red-200">
+                            Out of Stock
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
                         <button 
                           onClick={() => openEditModal(product)} 
-                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6FAF8] text-[#52675F] transition-colors hover:bg-[#D8F3E8]/50 hover:text-[#156253] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#156253]"
-                          aria-label="Edit Product"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F6FAF8] text-[#52675F] hover:bg-[#D8F3E8]/50 hover:text-[#156253]"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button 
                           onClick={() => handleDelete(product._id)} 
-                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F6FAF8] text-[#52675F] transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                          aria-label="Delete Product"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F6FAF8] text-[#52675F] hover:bg-red-50 hover:text-red-600"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+
           </div>
         )}
       </div>
@@ -772,15 +962,68 @@ function ProductsViewInner() {
                         placeholder="e.g. Nivea Face Wash" 
                       />
                     </div>
-                    <div className="space-y-2">
+                    
+                    {/* COMBOBOX CATEGORY INPUT */}
+                    <div className="space-y-2 relative">
                       <label className="block text-[13px] font-bold tracking-wide text-[#52675F]">Category <span className="text-red-500">*</span></label>
-                      <input 
-                        required 
-                        aria-label="Category" value={formData.category} 
-                        onChange={e => setFormData({...formData, category: e.target.value})} 
-                        className="h-12 w-full rounded-xl bg-[#F6FAF8] px-4 text-[15px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]" 
-                        placeholder="e.g. Cosmetics" 
-                      />
+                      <div className="relative">
+                        <input 
+                          required 
+                          aria-label="Category" 
+                          value={formData.category} 
+                          onChange={e => {
+                            setFormData({...formData, category: e.target.value});
+                            setIsCategoryDropdownOpen(true);
+                          }}
+                          onFocus={() => setIsCategoryDropdownOpen(true)}
+                          onBlur={() => setTimeout(() => setIsCategoryDropdownOpen(false), 200)}
+                          className="h-12 w-full rounded-xl bg-[#F6FAF8] pl-4 pr-10 text-[15px] font-semibold text-[#0F1F1C] shadow-sm ring-1 ring-inset ring-[#156253]/10 transition-all placeholder:text-[#0F1F1C]/30 hover:ring-[#156253]/20 focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#156253]" 
+                          placeholder="e.g. Cosmetics" 
+                        />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#60756D] pointer-events-none" />
+                        
+                        <AnimatePresence>
+                          {isCategoryDropdownOpen && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }} 
+                              animate={{ opacity: 1, y: 0 }} 
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute z-[110] mt-2 w-full max-h-48 overflow-y-auto rounded-xl bg-white shadow-[0_12px_30px_rgba(15,31,28,0.15)] ring-1 ring-[#156253]/15"
+                            >
+                              <div className="p-1">
+                                {existingCategories
+                                  .filter(c => c.toLowerCase().includes(formData.category.toLowerCase()))
+                                  .map(cat => (
+                                    <div 
+                                      key={cat} 
+                                      onClick={() => setFormData({...formData, category: cat})} 
+                                      className="cursor-pointer px-4 py-2.5 rounded-lg text-[14px] font-semibold text-[#0F1F1C] hover:bg-[#F6FAF8] hover:text-[#156253] transition-colors"
+                                    >
+                                      {cat}
+                                    </div>
+                                ))}
+                                
+                                {/* CREATE NEW OPTION */}
+                                {!existingCategories.some(c => c.toLowerCase() === formData.category.trim().toLowerCase()) && formData.category.trim() && (
+                                  <div 
+                                    onClick={() => setFormData({...formData, category: formData.category.trim()})}
+                                    className="cursor-pointer mt-1 border-t border-[#156253]/10 pt-1 px-4 py-2.5 rounded-lg text-[14px] font-bold text-[#156253] hover:bg-[#F6FAF8] transition-colors flex items-center gap-2"
+                                  >
+                                    <Plus className="w-4 h-4 shrink-0" /> Create "{formData.category.trim()}"
+                                  </div>
+                                )}
+                                
+                                {/* EMPTY STATE */}
+                                {existingCategories.length === 0 && !formData.category.trim() && (
+                                  <div className="px-4 py-3 text-xs text-[#60756D] text-center">
+                                    Type to create your first category
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
                   </div>
 
