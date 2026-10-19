@@ -1,9 +1,8 @@
 // src/components/home/OrderMethods.tsx
-
 'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,11 +17,21 @@ import {
   ShoppingBag,
   Plus,
   Minus,
-  Trash2
+  Trash2,
+  Camera,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useCartStore } from '@/store/cartStore';
+import { useToast } from '@/components/ui/Toast'; // <-- Added Toast
 import type { Product } from '@/lib/types'; 
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 export interface PublicSettings {
   deliveryCharge: number;
@@ -141,10 +150,8 @@ function TrendingProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Cart Hook
   const { items: cartItems, addItem, updateQuantity, removeItem } = useCartStore();
 
-  // Fetch unique categories on mount
   useEffect(() => {
     fetch('/api/categories')
       .then((res) => res.json())
@@ -156,7 +163,6 @@ function TrendingProducts() {
       .catch(console.error);
   }, []);
 
-  // Fetch 10 random products when activeCategory changes
   useEffect(() => {
     setLoading(true);
     const url = activeCategory === 'All' 
@@ -174,7 +180,6 @@ function TrendingProducts() {
 
   return (
     <div className="mt-8 md:mt-12 pb-4">
-      {/* Header Section */}
       <div className="flex items-end justify-between mb-4 md:mb-5 px-1 md:px-0">
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
@@ -190,14 +195,13 @@ function TrendingProducts() {
         
         <Link 
           href="/store" 
-          className="group flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold text-[#156253] bg-[linear-gradient(120deg,#eef7f5,#f5faf8)] px-4 py-2 md:py-2.5 rounded-full transition-all hover:bg-[#156253] hover:text-white ring-1 ring-inset ring-[#156253]/10 hover:ring-[#156253]"
+          className="group flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold text-[#156253] bg-[#eef7f5] px-4 py-2 md:py-2.5 rounded-full transition-all hover:bg-[#156253] hover:text-white ring-1 ring-inset ring-[#156253]/10 hover:ring-[#156253]"
         >
           See all
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
 
-      {/* Category Tabs (Horizontal Scroll) */}
       <div className="flex gap-2.5 overflow-x-auto pb-4 px-1 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
         {categories.map((category) => {
           const isActive = activeCategory === category;
@@ -223,10 +227,8 @@ function TrendingProducts() {
         })}
       </div>
 
-      {/* Products Display (Horizontal Snap Slider) */}
       <div className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory pb-6 pt-1 px-1 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {loading ? (
-          /* Skeleton Loaders */
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="shrink-0 w-[145px] md:w-[170px] snap-start bg-white border border-gray-100 rounded-[20px] p-2.5 md:p-3 animate-pulse">
               <div className="h-[120px] md:h-[130px] w-full bg-gray-100 rounded-[14px] mb-3" />
@@ -243,7 +245,6 @@ function TrendingProducts() {
             <p className="text-sm font-medium text-[#52675F]">No products found in this category.</p>
           </div>
         ) : (
-          /* Actual Products */
           products.map((product) => {
             const cartItem = cartItems.find(item => item.product._id === product._id);
             return (
@@ -254,7 +255,6 @@ function TrendingProducts() {
                   cartItem ? "border-[#156253] ring-1 ring-[#156253]" : "border-gray-100 hover:shadow-[0_8px_24px_rgba(21,98,83,0.08)] hover:border-[#156253]/20"
                 )}
               >
-                {/* Image Area */}
                 <div className="h-[120px] md:h-[130px] w-full bg-[#F8FBFB] rounded-[14px] mb-3 flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -268,7 +268,6 @@ function TrendingProducts() {
                   )}
                 </div>
 
-                {/* Product Info */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <p className="text-[9px] font-extrabold text-[#156253] uppercase tracking-widest mb-1.5 line-clamp-1">
@@ -284,7 +283,6 @@ function TrendingProducts() {
                       {currency.format(product.price)}
                     </span>
                     
-                    {/* Add to Cart / Quantity Selector */}
                     {!cartItem ? (
                       <button 
                         type="button"
@@ -395,11 +393,14 @@ function HomeSupport() {
 
 /** Main OrderMethods Component */
 export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {}) {
+  const router = useRouter();
+  const toast = useToast(); // <-- Added Toast
   const { settings, loading } = usePublicSettings();
   const reduced = useReducedMotion();
   const showOffer = !loading && settings.firstOrderOfferEnabled;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(''); 
+  const [isListening, setIsListening] = useState(false);
   
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
@@ -422,6 +423,63 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
   }, [detailsOpen, showOffer]);
 
   useEffect(() => { if (!showOffer) setDetailsOpen(false); }, [showOffer]);
+
+  // Standard Text Search Handler
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/store?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  // Industry Standard Web Speech API (Voice Search) Handler
+  const handleVoiceSearch = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error("Voice search is not supported in your browser.");
+      return;
+    }
+
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+    
+    recognition.lang = 'en-IN'; // Indian English
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setSearchQuery(''); // Clear input while speaking
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+      // Auto-submit search after voice recognition
+      setTimeout(() => {
+        router.push(`/store?q=${encodeURIComponent(transcript)}`);
+      }, 500);
+    };
+
+    // FIXED: Proper Error Handling via Toast
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      
+      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+        toast.error('Microphone access blocked. Please enable it in browser settings.');
+      } else if (event.error === 'no-speech') {
+        toast.error('No speech detected. Try again.');
+      } else {
+        toast.error('Voice search error. Please type to search.');
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   return (
     <>
@@ -448,16 +506,15 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
             <span className="absolute top-[2%] max-[359px]:hidden right-[5%] flex items-center gap-[5px] bg-[rgba(255,255,255,0.93)] shadow-[0_8px_22px_rgba(18,91,75,0.09)] p-[5px_7px] md:p-[12px_16px] rounded-[10px] -rotate-8 text-[#174f46] text-[8px] md:text-[12px] leading-[1.25] md:right-[12%] md:top-[5%]"><Clock3 size={19} className="shrink-0 w-[14px] h-[14px] md:w-[19px] md:h-[19px]" /><span><strong className="block text-[10.5px] md:text-[17px]">24×7</strong>Pharmacy</span></span>
           </div>
           
-          {/* Animated Interactive Search Form */}
-          <form action="/search" className="relative z-30 flex items-center gap-[11px] min-h-[50px] md:min-h-[56px] p-[5px_5px_5px_14px] md:p-[6px_6px_6px_16px] border border-[#e6eeea] rounded-[30px] bg-[rgba(255,255,255,0.94)] shadow-[0_6px_22px_rgba(28,115,85,0.07)] transition-all duration-200 hover:shadow-[0_6px_25px_rgba(28,115,85,0.13)] pointer-events-auto md:col-start-1 md:self-start md:mt-[6px]">
+          <form onSubmit={handleSearchSubmit} className="relative z-30 flex items-center gap-[11px] min-h-[50px] md:min-h-[56px] p-[5px_5px_5px_14px] md:p-[6px_6px_6px_16px] border border-[#e6eeea] rounded-[30px] bg-[rgba(255,255,255,0.94)] shadow-[0_6px_22px_rgba(28,115,85,0.07)] transition-all duration-200 hover:shadow-[0_6px_25px_rgba(28,115,85,0.13)] pointer-events-auto md:col-start-1 md:self-start md:mt-[6px]">
             <Search size={21} className="shrink-0 text-[#8fa69d]" aria-hidden />
             <input 
               type="text" 
               name="q"
-              placeholder="Search for medicines, vitamins, wellness…" 
+              placeholder={isListening ? "Listening..." : "Search for medicines, vitamins..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 border-none bg-transparent text-[13px] text-[#0f1f1c] outline-none font-inherit p-0 placeholder:text-[#799188]"
+              className={cn("flex-1 border-none bg-transparent text-[13px] text-[#0f1f1c] outline-none font-inherit p-0 placeholder:text-[#799188]", isListening && "text-[#156253] font-medium")}
             />
             <div className="relative w-[38px] h-[38px] md:w-10 md:h-10 shrink-0 ml-auto">
               <AnimatePresence>
@@ -478,14 +535,23 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
                   <motion.button
                     key="mic"
                     type="button"
+                    onClick={handleVoiceSearch}
                     initial={{ scale: 0.3, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    animate={{ 
+                      scale: isListening ? [1, 1.15, 1] : 1, 
+                      opacity: 1,
+                      backgroundColor: isListening ? '#ffebee' : '#f1f8f5',
+                      color: isListening ? '#d32f2f' : '#156253'
+                    }}
                     exit={{ scale: 0.3, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="absolute inset-0 grid place-items-center w-full h-full rounded-full border-none cursor-pointer bg-[#f1f8f5] text-[#156253] transition-colors duration-200 hover:bg-[#e2f2eb] focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985]"
-                    aria-label="Voice Search"
+                    transition={{ 
+                      type: 'spring', stiffness: 400, damping: 25,
+                      scale: isListening ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" } : undefined
+                    }}
+                    className="absolute inset-0 grid place-items-center w-full h-full rounded-full border-none cursor-pointer focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985]"
+                    aria-label={isListening ? "Listening" : "Voice Search"}
                   >
-                    <Mic size={18} strokeWidth={2.5} />
+                    <Mic size={18} strokeWidth={2.5} className={cn(isListening && "animate-pulse")} />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -513,25 +579,17 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
           </Entrance>
         )}
 
-        <div className="grid grid-cols-2 gap-[10px] max-[359px]:gap-[8px] min-[430px]:max-md:gap-[14px] md:gap-[22px] items-stretch [&>div]:min-w-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mt-3 md:mt-4">
           <Entrance delay={0.1}>
-            <Link href="/order?method=prescription" className="relative flex flex-col isolate overflow-hidden h-[248px] max-[359px]:h-[232px] min-[430px]:max-md:h-[265px] md:h-auto md:min-h-[290px] min-[1100px]:min-h-[305px] min-h-0 rounded-[22px] border border-[#d2eade] p-[14px_12px_12px] max-[359px]:p-[12px_10px_10px] min-[430px]:max-md:p-[16px_14px] md:p-[26px] text-[#0f1f1c] transition-all duration-[0.22s] hover:-translate-y-[3px] hover:shadow-[0_12px_25px_rgba(25,91,69,0.07)] active:scale-[0.985] group no-underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 cursor-pointer bg-[radial-gradient(ellipse_at_100%_65%,#95e9cf_0%,transparent_60%),linear-gradient(140deg,#e0f9ed,#c1f0df)]">
-              <span className="self-start min-h-[20px] p-[4px_6px] rounded-[10px] bg-[#c0e9d6] text-[#195e46] text-[8px] min-[560px]:text-[9px] md:text-[10px] leading-[1.4] font-[800] uppercase tracking-[0.04em] whitespace-nowrap">Recommended</span>
-              <h2 className="text-[clamp(18px,5vw,21px)] max-[359px]:text-[17px] min-[430px]:max-md:text-[22px] min-[560px]:text-[25px] md:text-[32px] min-[1100px]:text-[35px] leading-[1.02] font-extrabold m-[8px_0_6px] tracking-[-0.045em] max-w-[90%] md:max-w-[62%] relative z-20 font-display text-[#0f1f1c]">Upload<br />Prescription</h2>
-              <p className="text-[9.5px] max-[359px]:text-[8.5px] min-[430px]:max-md:text-[10.5px] min-[560px]:text-[12px] md:text-[13px] min-[1100px]:text-[14px] leading-[1.45] max-[359px]:leading-[1.4] m-0 max-w-[92%] max-[359px]:max-w-[90%] md:max-w-[55%] min-[1100px]:max-w-[52%] text-[#3f6257] relative z-20">Take a photo or upload your prescription. We’ll take care of the rest.</p>
-              <Image className="absolute right-[-4px] max-[359px]:right-[-5px] min-[560px]:right-[-5px] md:right-0 min-[1100px]:right-[10px] bottom-[48px] max-[359px]:bottom-[45px] min-[430px]:max-md:bottom-[50px] min-[560px]:bottom-[55px] md:bottom-[50px] min-[1100px]:bottom-[30px] w-[110px] max-[359px]:w-[92px] min-[430px]:max-md:w-[125px] min-[560px]:w-[140px] md:w-[48%] h-[100px] max-[359px]:h-[88px] min-[430px]:max-md:h-[112px] min-[560px]:h-[120px] md:h-[185px] min-[1100px]:h-[230px] object-contain m-0 pointer-events-none z-10 transition-transform duration-300 group-hover:-translate-y-[3px] group-hover:rotate-[2deg]" src="/home/prescription-art.svg" alt=""
-                width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
-              <span className="absolute left-[11px] right-[11px] bottom-[11px] max-[359px]:left-[9px] max-[359px]:right-[9px] max-[359px]:bottom-[9px] md:relative md:left-auto md:right-auto md:bottom-auto md:mt-[24px] min-h-[38px] max-[359px]:min-h-[36px] min-[430px]:max-md:min-h-[40px] min-[560px]:min-h-[42px] m-0 max-[359px]:mt-0 p-[8px_10px] md:p-[12px_18px] bg-[linear-gradient(110deg,#156253,#0b7561)] text-white shadow-[0_4px_9px_rgba(23,104,80,0.09)] rounded-[999px] md:rounded-[24px] text-[9px] max-[359px]:text-[8px] min-[430px]:max-md:text-[10px] min-[560px]:text-[11px] md:text-[13px] min-[1100px]:text-[11px] font-[700] flex items-center justify-between z-20 md:self-start md:min-w-[190px] max-[359px]:max-w-none">Upload prescription <ArrowRight size={17} aria-hidden className="shrink-0 w-[14px] transition-transform duration-200 group-hover:translate-x-[3px]" /></span>
+            <Link href="/order?method=prescription" className="relative flex items-center justify-center gap-3 h-[56px] md:h-[64px] bg-[#156253] text-white rounded-[20px] shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] hover:bg-[#0f4b3f] active:scale-[0.98] transition-all no-underline px-4 group">
+              <Camera size={22} strokeWidth={2.5} className="shrink-0" />
+              <span className="text-[14px] md:text-[16px] font-bold leading-none mt-[2px]">Upload Prescription</span>
             </Link>
           </Entrance>
           <Entrance delay={0.15}>
-            <Link href="/order?method=manual" className="relative flex flex-col isolate overflow-hidden h-[248px] max-[359px]:h-[232px] min-[430px]:max-md:h-[265px] md:h-auto md:min-h-[290px] min-[1100px]:min-h-[305px] min-h-0 rounded-[22px] border border-[#d9ebef] p-[14px_12px_12px] max-[359px]:p-[12px_10px_10px] min-[430px]:max-md:p-[16px_14px] md:p-[26px] text-[#0f1f1c] transition-all duration-[0.22s] hover:-translate-y-[3px] hover:shadow-[0_12px_25px_rgba(25,91,69,0.07)] active:scale-[0.985] group no-underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 cursor-pointer bg-[radial-gradient(ellipse_at_100%_65%,#b5e8ef_0%,transparent_65%),linear-gradient(140deg,#ecfaff,#d9f0f5)]">
-              <span className="flex items-center min-h-[20px] text-[#416f72] text-[8px] min-[560px]:text-[9px] md:text-[10px] leading-[1.4] font-[700]">A few words. All sorted.</span>
-              <h2 className="text-[clamp(18px,5vw,21px)] max-[359px]:text-[17px] min-[430px]:max-md:text-[22px] min-[560px]:text-[25px] md:text-[32px] min-[1100px]:text-[35px] leading-[1.02] font-extrabold m-[8px_0_6px] tracking-[-0.045em] max-w-[90%] md:max-w-[62%] relative z-20 font-display text-[#0f1f1c]">Order<br />via Text</h2>
-              <p className="text-[9.5px] max-[359px]:text-[8.5px] min-[430px]:max-md:text-[10.5px] min-[560px]:text-[12px] md:text-[13px] min-[1100px]:text-[14px] leading-[1.45] max-[359px]:leading-[1.4] m-0 max-w-[92%] max-[359px]:max-w-[90%] md:max-w-[55%] min-[1100px]:max-w-[52%] text-[#49666b] relative z-20">Enter medicine names and quantities (e.g. 1 strip, 10 tablets).</p>
-              <Image className="absolute right-[-4px] max-[359px]:right-[-5px] min-[560px]:right-[-5px] md:right-0 min-[1100px]:right-[10px] bottom-[48px] max-[359px]:bottom-[45px] min-[430px]:max-md:bottom-[50px] min-[560px]:bottom-[55px] md:bottom-[50px] min-[1100px]:bottom-[30px] w-[110px] max-[359px]:w-[92px] min-[430px]:max-md:w-[125px] min-[560px]:w-[140px] md:w-[48%] h-[100px] max-[359px]:h-[88px] min-[430px]:max-md:h-[112px] min-[560px]:h-[120px] md:h-[185px] min-[1100px]:h-[230px] object-contain m-0 pointer-events-none z-10 transition-transform duration-300 group-hover:-translate-y-[3px] group-hover:rotate-[2deg]" src="/home/text-order-art.svg" alt=""
-                width={300} height={260} sizes="(min-width: 768px) 220px, 140px" />
-              <span className="absolute left-[11px] right-[11px] bottom-[11px] max-[359px]:left-[9px] max-[359px]:right-[9px] max-[359px]:bottom-[9px] md:relative md:left-auto md:right-auto md:bottom-auto md:mt-[24px] min-h-[38px] max-[359px]:min-h-[36px] min-[430px]:max-md:min-h-[40px] min-[560px]:min-h-[42px] m-0 max-[359px]:mt-0 p-[8px_10px] md:p-[12px_18px] bg-[linear-gradient(110deg,#156253,#0b7561)] text-white shadow-[0_4px_9px_rgba(23,104,80,0.09)] rounded-[999px] md:rounded-[24px] text-[9px] max-[359px]:text-[8px] min-[430px]:max-md:text-[10px] min-[560px]:text-[11px] md:text-[13px] min-[1100px]:text-[11px] font-[700] flex items-center justify-between z-20 md:self-start md:min-w-[190px] max-[359px]:max-w-none">Order via text <ArrowRight size={17} aria-hidden className="shrink-0 w-[14px] transition-transform duration-200 group-hover:translate-x-[3px]" /></span>
+            <Link href="/order?method=manual" className="relative flex items-center justify-center gap-3 h-[56px] md:h-[64px] bg-white text-[#156253] ring-1 ring-inset ring-[#156253]/20 hover:ring-[#156253]/40 rounded-[20px] shadow-sm hover:bg-[#f4fafa] active:scale-[0.98] transition-all no-underline px-4 group">
+              <FileText size={22} strokeWidth={2.5} className="shrink-0" />
+              <span className="text-[14px] md:text-[16px] font-bold leading-none mt-[2px]">Enter Medicines</span>
             </Link>
           </Entrance>
         </div>
@@ -540,7 +598,6 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
           <TrendingProducts />
         </Entrance>
 
-        {/* --- Dialog Code unchanged --- */}
         <dialog ref={dialog} className="fixed inset-0 min-[601px]:m-auto max-[600px]:inset-[auto_0_0] border border-[#e3eee7] min-[601px]:rounded-[30px] max-[600px]:rounded-[24px_24px_0_0] max-[600px]:border-none bg-white w-[min(94vw,500px)] max-[600px]:w-[100vw] max-[600px]:max-w-[100vw] max-[600px]:m-0 max-h-[85dvh] max-[600px]:max-h-[90dvh] max-[600px]:pb-[env(safe-area-inset-bottom)] p-0 shadow-[0_30px_100px_rgba(13,57,45,0.19)] overflow-auto overscroll-contain backdrop:bg-[#102c2466] backdrop:backdrop-blur-[6px] open:animate-[sheet-in_0.2s_ease-out] text-[#0f1f1c] font-body focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 not-[open]:hidden" aria-labelledby="gift-title" aria-describedby="gift-description"
           onCancel={() => setDetailsOpen(false)} onClose={() => setDetailsOpen(false)}
           onClick={(event) => {
@@ -563,4 +620,4 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
       <HomeSupport />
     </>
   );
-} 
+}

@@ -100,7 +100,7 @@ export function Navbar() {
 
           {/* Cart Button */}
           <Link
-            href="/order"
+            href="/cart"
             className="relative w-10 h-10 min-[360px]:w-11 min-[360px]:h-11 flex items-center justify-center rounded-full text-[#156253] hover:bg-[#eaf8f1] transition-colors active:scale-[0.985]"
             aria-label="View Cart"
           >
