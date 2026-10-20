@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, FileText, ArrowLeft, Pill } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { formatRupees } from '@/lib/format';
-import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 
 export default function CartPage() {
@@ -34,19 +33,43 @@ export default function CartPage() {
   const validMedicines = medicines.filter(m => m.name.trim() !== '');
   const hasItems = items.length > 0 || validMedicines.length > 0 || prescription !== null;
   const productsTotal = items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  const totalItemsCount = getTotalItems() + validMedicines.length + (prescription ? 1 : 0);
+
+  // Custom Professional Header
+  const CartHeader = () => (
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+      <div className="max-w-[1000px] mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => router.back()} 
+            className="p-2 -ml-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors text-ink"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-xl font-extrabold text-ink tracking-tight">My Cart</h1>
+        </div>
+        {hasItems && (
+          <div className="text-sm font-bold text-[#156253] bg-[#eaf4f4] px-3.5 py-1.5 rounded-full ring-1 ring-[#156253]/10">
+            {totalItemsCount} {totalItemsCount === 1 ? 'Item' : 'Items'}
+          </div>
+        )}
+      </div>
+    </header>
+  );
 
   // EMPTY CART VIEW
   if (!hasItems) {
     return (
       <div className="flex flex-col min-h-screen bg-[#fafcfa]">
-        <Navbar />
-        <main className="flex-1 flex flex-col items-center justify-center px-4">
-          <div className="w-24 h-24 bg-[#eaf4f4] rounded-full flex items-center justify-center mb-6">
+        <CartHeader />
+        <main className="flex-1 flex flex-col items-center justify-center px-4 -mt-16">
+          <div className="w-24 h-24 bg-[#eaf4f4] rounded-full flex items-center justify-center mb-6 shadow-inner">
             <ShoppingBag className="w-12 h-12 text-[#156253]" />
           </div>
-          <h1 className="text-2xl font-extrabold text-ink mb-2 text-center">Your cart is empty</h1>
-          <p className="text-ink-muted mb-8 text-center max-w-sm">Looks like you haven't added any medicines or products to your cart yet.</p>
-          <Link href="/" className="bg-[#156253] text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-[#0f4b3f] transition-all flex items-center gap-2">
+          <h2 className="text-2xl font-extrabold text-ink mb-2 text-center">Your cart is empty</h2>
+          <p className="text-ink-muted mb-8 text-center max-w-sm leading-relaxed">Looks like you haven't added any medicines or products to your cart yet.</p>
+          <Link href="/" className="bg-[#156253] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] hover:bg-[#0f4b3f] active:scale-95 transition-all flex items-center gap-2">
             Start Shopping <ArrowRight size={18} />
           </Link>
         </main>
@@ -58,23 +81,16 @@ export default function CartPage() {
   // FILLED CART VIEW
   return (
     <div className="flex flex-col min-h-screen bg-[#fafcfa]">
-      <Navbar />
+      <CartHeader />
       
       <main className="flex-1 w-[min(100%-32px,1000px)] mx-auto py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors">
-            <ArrowLeft size={24} className="text-ink" />
-          </button>
-          <h1 className="text-3xl font-extrabold text-ink">Your Cart</h1>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           {/* LEFT COLUMN: Cart Items */}
           <div className="space-y-6">
             
             {/* 1. PRESCRIPTION SECTION */}
             {prescription && (
-              <div className="bg-white rounded-3xl p-5 ring-1 ring-gray-200 shadow-sm">
+              <div className="bg-white rounded-3xl p-5 ring-1 ring-gray-200 shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-center gap-2 mb-4 text-[#156253]">
                   <FileText size={20} />
                   <h2 className="text-sm font-bold uppercase tracking-wider">Uploaded Prescription</h2>
@@ -87,7 +103,7 @@ export default function CartPage() {
                   <div className="flex-1 flex flex-col justify-center">
                     <p className="font-bold text-ink text-sm line-clamp-1 mb-1">{prescription.fileName}</p>
                     <p className="text-xs text-ink-muted mb-3">Pharmacist will review this</p>
-                    <button onClick={() => setPrescription(null)} className="text-xs font-bold text-red-500 hover:text-red-700 self-start transition-colors">
+                    <button onClick={() => setPrescription(null)} className="text-xs font-bold text-red-500 hover:text-red-700 self-start transition-colors px-2 py-1 -ml-2 rounded-md hover:bg-red-50">
                       Remove
                     </button>
                   </div>
@@ -97,7 +113,7 @@ export default function CartPage() {
 
             {/* 2. MANUAL MEDICINES SECTION */}
             {(validMedicines.length > 0 || !prescription) && (
-              <div className="bg-white rounded-3xl p-5 ring-1 ring-gray-200 shadow-sm">
+              <div className="bg-white rounded-3xl p-5 ring-1 ring-gray-200 shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 text-[#156253]">
                     <Pill size={20} />
@@ -113,26 +129,26 @@ export default function CartPage() {
                         placeholder="e.g. Dolo 650"
                         value={med.name}
                         onChange={(e) => updateMedicine(med._id!, 'name', e.target.value)}
-                        className="flex-1 h-12 bg-[#f8fbfb] rounded-xl px-4 font-bold text-ink text-sm ring-1 ring-gray-100 focus:outline-none focus:ring-2 focus:ring-[#156253]/20"
+                        className="flex-1 h-12 bg-[#f8fbfb] rounded-xl px-4 font-bold text-ink text-sm ring-1 ring-gray-100 focus:outline-none focus:ring-2 focus:ring-[#156253]/30 transition-all"
                       />
                       <input 
                         type="text" 
                         placeholder="Qty (e.g. 1 Strip)"
                         value={med.quantity}
                         onChange={(e) => updateMedicine(med._id!, 'quantity', e.target.value)}
-                        className="w-28 md:w-32 h-12 bg-[#f8fbfb] rounded-xl px-4 font-bold text-ink text-sm ring-1 ring-gray-100 focus:outline-none focus:ring-2 focus:ring-[#156253]/20"
+                        className="w-28 md:w-32 h-12 bg-[#f8fbfb] rounded-xl px-4 font-bold text-ink text-sm ring-1 ring-gray-100 focus:outline-none focus:ring-2 focus:ring-[#156253]/30 transition-all"
                       />
                       <button 
                         onClick={() => removeMedicine(med._id!)}
                         disabled={medicines.length === 1 && !med.name}
-                        className="w-12 h-12 flex items-center justify-center shrink-0 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        className="w-12 h-12 flex items-center justify-center shrink-0 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-50 disabled:hover:bg-red-50 transition-colors"
                       >
                         <Trash2 size={18} />
                       </button>
                     </div>
                   ))}
                   
-                  <button onClick={addMedicine} className="text-[#156253] font-bold text-sm flex items-center gap-1.5 mt-2 hover:underline">
+                  <button onClick={addMedicine} className="text-[#156253] font-bold text-sm flex items-center gap-1.5 mt-4 px-2 py-1 rounded-lg hover:bg-[#eaf4f4] transition-colors w-max">
                     <Plus size={16} /> Add Another Medicine
                   </button>
                 </div>
@@ -141,7 +157,7 @@ export default function CartPage() {
 
             {/* 3. OTC PRODUCTS SECTION */}
             {items.length > 0 && (
-              <div className="bg-white rounded-3xl p-5 ring-1 ring-gray-200 shadow-sm">
+              <div className="bg-white rounded-3xl p-5 ring-1 ring-gray-200 shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-center gap-2 mb-4 text-[#156253]">
                   <ShoppingBag size={20} />
                   <h2 className="text-sm font-bold uppercase tracking-wider">Everyday Essentials</h2>
@@ -149,7 +165,7 @@ export default function CartPage() {
                 <div className="space-y-4">
                   {items.map(({ product, quantity }) => (
                     <div key={product._id} className="flex gap-4 items-center">
-                      <div className="w-16 h-16 bg-[#f8fbfb] rounded-xl p-1 shrink-0 flex items-center justify-center">
+                      <div className="w-16 h-16 bg-[#f8fbfb] rounded-xl p-1 shrink-0 flex items-center justify-center ring-1 ring-gray-100">
                         {product.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover mix-blend-multiply" />
@@ -160,7 +176,7 @@ export default function CartPage() {
                       
                       <div className="flex-1">
                         <h3 className="font-bold text-sm text-ink line-clamp-1">{product.name}</h3>
-                        <p className="text-sm font-extrabold mt-1">{formatRupees(product.price)}</p>
+                        <p className="text-sm font-extrabold mt-1 text-[#156253]">{formatRupees(product.price)}</p>
                       </div>
 
                       <div className="flex items-center gap-3 bg-[#f8fbfb] rounded-full p-1 ring-1 ring-gray-100">
@@ -186,7 +202,7 @@ export default function CartPage() {
           </div>
 
           {/* RIGHT COLUMN: Bill Summary & Checkout */}
-          <div className="lg:sticky lg:top-[100px] h-fit">
+          <div className="lg:sticky lg:top-[90px] h-fit">
             <div className="bg-white rounded-3xl p-6 ring-1 ring-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
               <h2 className="text-lg font-extrabold text-ink mb-5">Bill Summary</h2>
               
@@ -201,7 +217,7 @@ export default function CartPage() {
                 {(validMedicines.length > 0 || prescription) && (
                   <div className="flex justify-between text-sm">
                     <span className="font-medium text-ink-muted">Medicines Total</span>
-                    <span className="font-bold text-[#dfa442]">To be calculated</span>
+                    <span className="font-bold text-[#dfa442] bg-[#fdf8f0] px-2 py-0.5 rounded-md">To be calculated</span>
                   </div>
                 )}
               </div>
@@ -213,7 +229,7 @@ export default function CartPage() {
               </div>
 
               <button 
-                onClick={() => router.push('/order?step=2')} // Step 2 is Delivery Details in your OrderFlow
+                onClick={() => router.push('/order?step=2')}
                 className="w-full bg-[#156253] text-white h-14 rounded-2xl font-bold text-base shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] hover:bg-[#0f4b3f] active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 Proceed to Delivery <ArrowRight size={18} />

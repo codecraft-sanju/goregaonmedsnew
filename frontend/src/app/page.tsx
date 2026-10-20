@@ -2,7 +2,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Footer } from '@/components/layout/Footer';
-
 import { OfferPopup } from '@/components/home/OfferPopup';
 import { OrderMethods } from '@/components/home/OrderMethods';
 import { WhyChoose } from '@/components/home/WhyChoose';

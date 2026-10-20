@@ -160,7 +160,7 @@ export function OfferPopup() {
             after pharmacy billing. Tapping the button below starts your order; it does not redeem the gift.
           </p>
 
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-6 flex flex-col">
             <Link
               href="/order?gift=1"
               onClick={close}
@@ -169,13 +169,6 @@ export function OfferPopup() {
               Claim with my first order
               <ArrowRight className="h-5 w-5" aria-hidden />
             </Link>
-            <button
-              type="button"
-              onClick={close}
-              className="inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-ink-muted transition-colors hover:bg-brand-50 hover:text-ink"
-            >
-              No thanks, continue browsing
-            </button>
           </div>
         </div>
       </motion.div>

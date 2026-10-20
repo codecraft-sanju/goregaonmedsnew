@@ -10,10 +10,8 @@ import {
   Clock3,
   Gift,
   MapPin,
-  Search,
   X,
   ArrowUpRight,
-  Mic,
   ShoppingBag,
   Plus,
   Minus,
@@ -25,13 +23,6 @@ import { cn } from '@/lib/cn';
 import { useCartStore } from '@/store/cartStore';
 import { useToast } from '@/components/ui/Toast'; // <-- Added Toast
 import type { Product } from '@/lib/types'; 
-
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
 
 export interface PublicSettings {
   deliveryCharge: number;
@@ -394,13 +385,11 @@ function HomeSupport() {
 /** Main OrderMethods Component */
 export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {}) {
   const router = useRouter();
-  const toast = useToast(); // <-- Added Toast
+  const toast = useToast(); 
   const { settings, loading } = usePublicSettings();
   const reduced = useReducedMotion();
   const showOffer = !loading && settings.firstOrderOfferEnabled;
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(''); 
-  const [isListening, setIsListening] = useState(false);
   
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
@@ -423,63 +412,6 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
   }, [detailsOpen, showOffer]);
 
   useEffect(() => { if (!showOffer) setDetailsOpen(false); }, [showOffer]);
-
-  // Standard Text Search Handler
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/store?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  // Industry Standard Web Speech API (Voice Search) Handler
-  const handleVoiceSearch = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      toast.error("Voice search is not supported in your browser.");
-      return;
-    }
-
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognitionAPI();
-    
-    recognition.lang = 'en-IN'; // Indian English
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setSearchQuery(''); // Clear input while speaking
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setSearchQuery(transcript);
-      // Auto-submit search after voice recognition
-      setTimeout(() => {
-        router.push(`/store?q=${encodeURIComponent(transcript)}`);
-      }, 500);
-    };
-
-    // FIXED: Proper Error Handling via Toast
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      
-      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-        toast.error('Microphone access blocked. Please enable it in browser settings.');
-      } else if (event.error === 'no-speech') {
-        toast.error('No speech detected. Try again.');
-      } else {
-        toast.error('Voice search error. Please type to search.');
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-  };
 
   return (
     <>
@@ -505,58 +437,6 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
               priority sizes="(min-width: 768px) 450px, 190px" className="w-full h-auto drop-shadow-[0_16px_12px_rgba(36,108,75,0.07)] md:max-h-[350px] min-[1100px]:max-h-[390px] md:object-contain" />
             <span className="absolute top-[2%] max-[359px]:hidden right-[5%] flex items-center gap-[5px] bg-[rgba(255,255,255,0.93)] shadow-[0_8px_22px_rgba(18,91,75,0.09)] p-[5px_7px] md:p-[12px_16px] rounded-[10px] -rotate-8 text-[#174f46] text-[8px] md:text-[12px] leading-[1.25] md:right-[12%] md:top-[5%]"><Clock3 size={19} className="shrink-0 w-[14px] h-[14px] md:w-[19px] md:h-[19px]" /><span><strong className="block text-[10.5px] md:text-[17px]">24×7</strong>Pharmacy</span></span>
           </div>
-          
-          <form onSubmit={handleSearchSubmit} className="relative z-30 flex items-center gap-[11px] min-h-[50px] md:min-h-[56px] p-[5px_5px_5px_14px] md:p-[6px_6px_6px_16px] border border-[#e6eeea] rounded-[30px] bg-[rgba(255,255,255,0.94)] shadow-[0_6px_22px_rgba(28,115,85,0.07)] transition-all duration-200 hover:shadow-[0_6px_25px_rgba(28,115,85,0.13)] pointer-events-auto md:col-start-1 md:self-start md:mt-[6px]">
-            <Search size={21} className="shrink-0 text-[#8fa69d]" aria-hidden />
-            <input 
-              type="text" 
-              name="q"
-              placeholder={isListening ? "Listening..." : "Search for medicines, vitamins..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn("flex-1 border-none bg-transparent text-[13px] text-[#0f1f1c] outline-none font-inherit p-0 placeholder:text-[#799188]", isListening && "text-[#156253] font-medium")}
-            />
-            <div className="relative w-[38px] h-[38px] md:w-10 md:h-10 shrink-0 ml-auto">
-              <AnimatePresence>
-                {searchQuery.trim().length > 0 ? (
-                  <motion.button
-                    key="send"
-                    type="submit"
-                    initial={{ scale: 0.3, opacity: 0, rotate: -45 }}
-                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                    exit={{ scale: 0.3, opacity: 0, rotate: 45 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="absolute inset-0 grid place-items-center w-full h-full rounded-full border-none cursor-pointer bg-[#156253] text-white shadow-[0_4px_10px_rgba(21,98,83,0.25)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985]"
-                    aria-label="Search"
-                  >
-                    <ArrowRight size={18} strokeWidth={2.5} />
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    key="mic"
-                    type="button"
-                    onClick={handleVoiceSearch}
-                    initial={{ scale: 0.3, opacity: 0 }}
-                    animate={{ 
-                      scale: isListening ? [1, 1.15, 1] : 1, 
-                      opacity: 1,
-                      backgroundColor: isListening ? '#ffebee' : '#f1f8f5',
-                      color: isListening ? '#d32f2f' : '#156253'
-                    }}
-                    exit={{ scale: 0.3, opacity: 0 }}
-                    transition={{ 
-                      type: 'spring', stiffness: 400, damping: 25,
-                      scale: isListening ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" } : undefined
-                    }}
-                    className="absolute inset-0 grid place-items-center w-full h-full rounded-full border-none cursor-pointer focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985]"
-                    aria-label={isListening ? "Listening" : "Voice Search"}
-                  >
-                    <Mic size={18} strokeWidth={2.5} className={cn(isListening && "animate-pulse")} />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </form>
         </Entrance>
 
         {loading && <div className="h-[175px] md:h-[236px] bg-[linear-gradient(110deg,#f6f4ed,#faf8f2)] border border-[#eeeee5] rounded-[20px] mb-4 md:mb-[22px]" role="status" aria-label="Loading offer settings" />}
