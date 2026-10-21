@@ -1,4 +1,4 @@
-//src/app/page.tsx
+// src/app/page.tsx
 import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Footer } from '@/components/layout/Footer';
@@ -9,16 +9,20 @@ import { Highlight24x7 } from '@/components/home/Highlight24x7';
 import { HowItWorks } from '@/components/home/HowItWorks';
 import { DeliveryInfo } from '@/components/home/DeliveryInfo';
 import { TrackCta } from '@/components/home/TrackCta';
-
 import { Faq } from '@/components/home/Faq';
 import { LateNightBanner } from '@/components/home/LateNightBanner';
 import { PharmacyNotice } from '@/components/home/PharmacyNotice';
+
+import { InstallPrompt } from '@/components/layout/InstallPrompt'; 
 
 export default function HomePage() {
   return (
     <>
       <LateNightBanner />
       <Navbar />
+    
+      <InstallPrompt />
+      
       <main> 
         <OrderMethods />
         <WhyChoose />
@@ -26,7 +30,7 @@ export default function HomePage() {
         <HowItWorks />
         <DeliveryInfo />
         <TrackCta />
-       
+        
         <Faq />
         <div className="container-app">
           <PharmacyNotice />

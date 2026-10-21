@@ -2,7 +2,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from 'next/font/google';
 import { Providers } from '@/components/Providers';
-import { InstallPrompt } from '@/components/layout/InstallPrompt'; 
+ 
 import './globals.css';
 
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-IN" className={`${sans.variable} ${display.variable}`}>
       <body className="min-h-dvh font-sans">
         <Providers>
-          <InstallPrompt /> {/* <-- Add component here */}
+         
           {children}
         </Providers>
       </body>

@@ -420,6 +420,10 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes shimmer {
+          from { background-position: 200% 0; }
+          to { background-position: -200% 0; }
+        }
       `}</style>
       
       <section id="order-methods" className="w-[min(100%-36px,1200px)] mx-auto pt-1 md:pt-3 scroll-mt-[90px] text-[#0f1f1c] font-body [&_*]:box-border" aria-labelledby="methods-title">
@@ -439,37 +443,47 @@ export function OrderMethods({ onOpenOffer }: { onOpenOffer?: () => void } = {})
           </div>
         </Entrance>
 
-        {loading && <div className="h-[175px] md:h-[236px] bg-[linear-gradient(110deg,#f6f4ed,#faf8f2)] border border-[#eeeee5] rounded-[20px] mb-4 md:mb-[22px]" role="status" aria-label="Loading offer settings" />}
+        {loading && <div className="h-[140px] md:h-[190px] bg-[linear-gradient(110deg,#f6f4ed,#faf8f2)] border border-[#eeeee5] rounded-[20px] mb-4 md:mb-[22px]" role="status" aria-label="Loading offer settings" />}
         {showOffer && (
           <Entrance delay={0.05}>
-            <motion.div className="relative isolate overflow-hidden border border-[#f4e4c5] rounded-[20px] bg-[radial-gradient(ellipse_at_90%_70%,#ffe2a6,transparent_58%),linear-gradient(115deg,#fff8e7,#fff0cd)] min-h-[175px] md:min-h-[236px] p-[16px_14px] min-[560px]:p-[25px] md:p-[28px_34px] mb-4 md:mb-[22px] after:content-['✦'] after:absolute after:right-[10px] after:bottom-[18px] after:text-[#fffdf5] after:text-[40px] after:-z-10" whileHover={reduced ? undefined : { y: -3 }}>
+            <motion.div className="relative isolate overflow-hidden border border-[#f4e4c5] rounded-[20px] bg-[radial-gradient(ellipse_at_90%_70%,#ffe2a6,transparent_58%),linear-gradient(115deg,#fff8e7,#fff0cd)] min-h-[140px] md:min-h-[190px] p-[12px_14px] min-[560px]:p-[20px] md:p-[24px_30px] mb-4 md:mb-[22px] after:content-['✦'] after:absolute after:right-[10px] after:bottom-[18px] after:text-[#fffdf5] after:text-[40px] after:-z-10" whileHover={reduced ? undefined : { y: -3 }}>
               <div className="relative z-20 w-[62%] max-[359px]:w-[70%] min-[560px]:w-[65%]">
                 <span className="inline-flex items-center gap-[5px] text-[#925004] text-[9px] font-[800] tracking-[0.11em] uppercase"><Gift size={14} aria-hidden />First order gift</span>
-                <h2 className="text-[18px] max-[359px]:text-[17px] min-[560px]:text-[29px] md:text-[32px] min-[1100px]:text-[36px] font-extrabold leading-[1.12] m-[8px_0_6px] tracking-[-0.045em] font-display text-[#0f1f1c]"><span className="text-[#154f41]">FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
-                <p className="text-[11px] min-[560px]:text-[14px] leading-[1.45] max-w-[160px] max-[359px]:max-w-[158px] min-[560px]:max-w-[280px] md:max-w-none m-0 text-[#66563c]">On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
-                <p className="!text-[9px] md:!text-[12px] !mt-[5px] !text-[#765e3b] font-body">Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
+                <h2 className="text-[16px] max-[359px]:text-[15px] min-[560px]:text-[24px] md:text-[28px] font-extrabold leading-[1.12] m-[8px_0_6px] tracking-[-0.045em] font-display text-[#0f1f1c]"><span className="text-[#154f41]">FREE</span> Dr. Morepen<br />{GIFT.shortName}</h2>
+                <p className="text-[10px] min-[560px]:text-[13px] leading-[1.45] max-w-[160px] max-[359px]:max-w-[158px] min-[560px]:max-w-[280px] md:max-w-none m-0 text-[#66563c]">On your first medicine order of <strong>{currency.format(settings.firstOrderMinimumMedicineAmount)}+</strong>.</p>
+                <p className="!text-[9px] md:!text-[11px] !mt-[5px] !text-[#765e3b] font-body">Gift MRP <s>{currency.format(GIFT.mrp)}</s> · Yours free</p>
                 <button ref={opener} className="inline-flex items-center gap-[6px] min-h-[36px] p-[6px_0_0] border-0 bg-transparent text-[#8a4800] text-[11.5px] font-[750] cursor-pointer [&>svg]:transition-transform hover:[&>svg]:translate-x-[3px] focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#087a67] focus-visible:outline-offset-4 active:scale-[0.985] font-inherit" type="button"
                   aria-haspopup="dialog" onClick={() => onOpenOffer ? onOpenOffer() : setDetailsOpen(true)}>
                   Know more <ArrowRight size={17} aria-hidden />
                 </button>
               </div>
-              <GiftImage className="absolute right-[-10px] max-[359px]:right-[-20px] min-[560px]:right-[15px] md:right-[50px] min-[1100px]:right-[110px] bottom-[5px] md:bottom-[-5px] w-[48%] max-[359px]:w-[41%] min-[560px]:w-[35%] md:w-[280px] min-[1100px]:w-[310px] h-auto max-h-[140px] min-[560px]:max-h-[210px] md:max-h-[236px] object-contain z-10 drop-shadow-[0_12px_8px_rgba(149,104,23,0.11)]" />
-              <span className="absolute right-[8px] max-[359px]:right-[8px] min-[560px]:right-[30px] md:right-[24px] min-[1100px]:right-[55px] top-[10px] max-[359px]:top-[15px] md:top-[22px] min-[1100px]:top-[70px] border-2 border-[rgba(255,255,255,0.88)] rounded-full h-[44px] w-[44px] min-[560px]:w-[62px] min-[560px]:h-[62px] md:w-[70px] md:h-[70px] flex flex-col items-center justify-center bg-[linear-gradient(140deg,#288971,#0c4f43)] text-white text-[7.5px] min-[560px]:text-[10px] font-[750] leading-[1.1] rotate-8 shadow-[0_4px_10px_rgba(23,85,65,0.15)] z-20" aria-hidden="true"><Gift size={18} className="mb-0.5 w-[14px] h-[14px]" />FREE<br />GIFT</span>
+              <GiftImage className="absolute right-[-10px] max-[359px]:right-[-20px] min-[560px]:right-[15px] md:right-[50px] min-[1100px]:right-[110px] bottom-[5px] md:bottom-[0px] w-[48%] max-[359px]:w-[41%] min-[560px]:w-[35%] md:w-[280px] min-[1100px]:w-[310px] h-auto max-h-[110px] min-[560px]:max-h-[180px] md:max-h-[190px] object-contain z-10 drop-shadow-[0_12px_8px_rgba(149,104,23,0.11)]" />
+              <span className="absolute right-[8px] max-[359px]:right-[8px] min-[560px]:right-[30px] md:right-[24px] min-[1100px]:right-[55px] top-[10px] max-[359px]:top-[15px] md:top-[18px] min-[1100px]:top-[50px] border-2 border-[rgba(255,255,255,0.88)] rounded-full h-[38px] w-[38px] min-[560px]:w-[58px] min-[560px]:h-[58px] md:w-[64px] md:h-[64px] flex flex-col items-center justify-center bg-[linear-gradient(140deg,#288971,#0c4f43)] text-white text-[7px] min-[560px]:text-[9.5px] font-[750] leading-[1.1] rotate-8 shadow-[0_4px_10px_rgba(23,85,65,0.15)] z-20" aria-hidden="true"><Gift size={16} className="mb-0.5 w-[12px] h-[12px]" />FREE<br />GIFT</span>
             </motion.div>
           </Entrance>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-5 mt-3 md:mt-4">
+        <div className="grid grid-cols-2 gap-2.5 md:gap-4 mt-3 md:mt-4">
           <Entrance delay={0.1}>
-            <Link href="/order?method=prescription" className="relative flex items-center justify-center gap-3 h-[56px] md:h-[64px] bg-[#156253] text-white rounded-[20px] shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] hover:bg-[#0f4b3f] active:scale-[0.98] transition-all no-underline px-4 group">
-              <Camera size={22} strokeWidth={2.5} className="shrink-0" />
-              <span className="text-[14px] md:text-[16px] font-bold leading-none mt-[2px]">Upload Prescription</span>
+            <Link href="/order?method=prescription" className="relative flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 md:gap-3 h-[64px] sm:h-[56px] md:h-[68px] bg-[linear-gradient(180deg,#1b7b65_0%,#115143_100%)] text-white rounded-[18px] md:rounded-[22px] shadow-[0_8px_20px_-6px_rgba(17,81,67,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)] hover:shadow-[0_12px_24px_-8px_rgba(17,81,67,0.7),inset_0_1px_1px_rgba(255,255,255,0.35)] active:scale-[0.96] transition-all duration-300 no-underline px-2 group overflow-hidden border border-[#0d4236]">
+              {/* Shimmer animation & Glossy overlays */}
+              <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.15)_50%,transparent_75%)] bg-[length:200%_100%] animate-[shimmer_3s_infinite] opacity-70 group-hover:opacity-100" />
+              <div className="absolute top-0 inset-x-0 h-1/3 bg-gradient-to-b from-white/10 to-transparent" />
+              <Camera className="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] shrink-0 drop-shadow-md z-10" strokeWidth={2.5} />
+              <span className="text-[12px] min-[360px]:text-[13px] sm:text-[14px] md:text-[16.5px] font-extrabold leading-[1.15] sm:leading-none text-center sm:text-left mt-[2px] z-10 tracking-tight">
+                Upload<br className="sm:hidden" /> Prescription
+              </span>
             </Link>
           </Entrance>
           <Entrance delay={0.15}>
-            <Link href="/order?method=manual" className="relative flex items-center justify-center gap-3 h-[56px] md:h-[64px] bg-white text-[#156253] ring-1 ring-inset ring-[#156253]/20 hover:ring-[#156253]/40 rounded-[20px] shadow-sm hover:bg-[#f4fafa] active:scale-[0.98] transition-all no-underline px-4 group">
-              <FileText size={22} strokeWidth={2.5} className="shrink-0" />
-              <span className="text-[14px] md:text-[16px] font-bold leading-none mt-[2px]">Enter Medicines</span>
+            <Link href="/order?method=manual" className="relative flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 md:gap-3 h-[64px] sm:h-[56px] md:h-[68px] bg-[linear-gradient(180deg,#ffffff_0%,#f0f7f5_100%)] text-[#115143] rounded-[18px] md:rounded-[22px] shadow-[0_6px_16px_-6px_rgba(17,81,67,0.15),inset_0_1px_1px_#ffffff] hover:shadow-[0_8px_20px_-8px_rgba(17,81,67,0.25),inset_0_1px_1px_#ffffff] active:scale-[0.96] transition-all duration-300 no-underline px-2 group overflow-hidden border border-[#d2e3dd] hover:border-[#115143]/30">
+              {/* Shimmer animation & Glossy overlays */}
+              <div className="absolute top-0 inset-x-0 h-1/2 bg-gradient-to-b from-white to-transparent opacity-80" />
+              <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.8)_50%,transparent_75%)] bg-[length:200%_100%] animate-[shimmer_3s_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <FileText className="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] shrink-0 z-10 drop-shadow-sm" strokeWidth={2.5} />
+              <span className="text-[12px] min-[360px]:text-[13px] sm:text-[14px] md:text-[16.5px] font-extrabold leading-[1.15] sm:leading-none text-center sm:text-left mt-[2px] z-10 tracking-tight">
+                Enter<br className="sm:hidden" /> Medicines
+              </span>
             </Link>
           </Entrance>
         </div>
