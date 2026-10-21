@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useCartStore } from '@/store/cartStore';
-import { useToast } from '@/components/ui/Toast'; // <-- Added Toast
+import { useToast } from '@/components/ui/Toast'; 
 import type { Product } from '@/lib/types'; 
 
 export interface PublicSettings {
