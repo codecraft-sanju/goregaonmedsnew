@@ -689,14 +689,15 @@ export function OrderFlow() {
   const hasMedicineInput = filledRows.length > 0;
   const hasProductInput = selectedProducts.length > 0;
 
-  const validateItems = () => {
+const validateItems = () => {
     if (method === 'manual_text') {
       const errors: Record<string, string> = {};
       for (const row of filledRows) {
         if (!row.name.trim()) errors[`${row._id}-name`] = 'Required';
       }
       if (filledRows.length === 0 && !hasProductInput && medicines.length > 0) {
-        errors[`${medicines[0]._id}-name`] = 'Add at least one medicine or product';
+        // Add the exclamation mark (!) after medicines[0]
+        errors[`${medicines[0]!._id}-name`] = 'Add at least one medicine or product';
       }
       setRowErrors(errors);
       return Object.keys(errors).length === 0;
