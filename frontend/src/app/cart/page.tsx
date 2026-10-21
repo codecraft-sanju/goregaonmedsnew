@@ -59,6 +59,7 @@ export default function CartPage() {
   );
 
   // EMPTY CART VIEW
+// EMPTY CART VIEW
   if (!hasItems) {
     return (
       <div className="flex flex-col min-h-screen bg-[#fafcfa]">
@@ -68,7 +69,7 @@ export default function CartPage() {
             <ShoppingBag className="w-12 h-12 text-[#156253]" />
           </div>
           <h2 className="text-2xl font-extrabold text-ink mb-2 text-center">Your cart is empty</h2>
-          <p className="text-ink-muted mb-8 text-center max-w-sm leading-relaxed">Looks like you haven't added any medicines or products to your cart yet.</p>
+          <p className="text-ink-muted mb-8 text-center max-w-sm leading-relaxed">Looks like you haven&apos;t added any medicines or products to your cart yet.</p>
           <Link href="/" className="bg-[#156253] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] hover:bg-[#0f4b3f] active:scale-95 transition-all flex items-center gap-2">
             Start Shopping <ArrowRight size={18} />
           </Link>
