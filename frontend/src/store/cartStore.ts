@@ -1,8 +1,30 @@
 // src/store/cartStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, MedicineItem } from '@/lib/types';
+export interface MedicineItem {
+  _id?: string;
+  name: string;
+  quantity: string;
+  price?: number;
+  isAvailable?: boolean;
+}
 
+export interface Product {
+  _id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  inStock: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// =========================================================================
+// STORE INTERFACES
+// =========================================================================
 interface CartItem {
   product: Product;
   quantity: number;
@@ -39,6 +61,9 @@ interface CartStore {
 // Generate random ID for manual medicines
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
+// =========================================================================
+// ZUSTAND STORE SETUP
+// =========================================================================
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({

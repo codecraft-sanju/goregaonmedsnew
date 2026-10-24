@@ -1,18 +1,163 @@
 // src/components/profile/UserProfile.tsx
 'use client';
 
-import { useEffect, useState } from 'react'; 
+import React, { useEffect, useState, forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import Link from 'next/link';
 import { 
   User, MapPin, PackageSearch, HelpCircle, Shield, 
-  FileText, Phone, Trash2, ChevronRight, CheckCircle2, Plus, Edit2, Map
+  FileText, Phone, Trash2, ChevronRight, CheckCircle2, Plus, Edit2, Map, Loader2
 } from 'lucide-react';
-import { loadCheckout, clearCheckout, saveCheckout, type SavedCheckout } from '@/lib/checkoutStorage';
-import { SUPPORT_PHONE_TEL, SUPPORT_PHONE_DISPLAY } from '@/lib/constants';
-import { formatMobile, normalizeMobile } from '@/lib/format';
+
+
 import { DeliveryDetailsForm, type DeliveryDetails } from '@/components/order/OrderFlow';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/cn';
+
+export function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+export const formatMobile = (mobile?: string | null) => {
+  if (!mobile || typeof mobile !== 'string') return 'N/A';
+  return `+91 ${mobile.slice(0, 5)} ${mobile.slice(5)}`;
+};
+
+export function normalizeMobile(input: string): string | null {
+  let digits = input.replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  return /^[6-9]\d{9}$/.test(digits) ? digits : null;
+}
+
+
+
+export const SUPPORT_PHONE_DISPLAY = '+91 84338 18771';
+export const SUPPORT_PHONE_TEL = 'tel:+918433818771';
+
+export interface Address {
+  flat: string;
+  area: string;
+  landmark: string;
+}
+
+export interface SavedCheckout {
+  customerName: string;
+  mobileNumber: string;
+  address: Address;
+}
+
+const STORAGE_KEY = 'gmeds:checkout';
+const TTL_MS = 180 * 24 * 60 * 60 * 1000;
+
+interface StoredValue {
+  version: 1;
+  expiresAt: number;
+  data: SavedCheckout;
+}
+
+const isString = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max;
+
+function isSavedCheckout(value: unknown): value is SavedCheckout {
+  const v = value as SavedCheckout;
+  return (
+    !!v &&
+    isString(v.customerName, 80) &&
+    isString(v.mobileNumber, 20) &&
+    !!v.address &&
+    isString(v.address.flat, 120) &&
+    isString(v.address.area, 120) &&
+    isString(v.address.landmark, 120)
+  );
+}
+
+export function saveCheckout(data: SavedCheckout) {
+  try {
+    const value: StoredValue = { version: 1, expiresAt: Date.now() + TTL_MS, data };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Storage can be full or blocked (private mode); saving is a convenience only.
+  }
+}
+
+export function loadCheckout(): SavedCheckout | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredValue;
+    if (parsed?.version !== 1 || typeof parsed.expiresAt !== 'number' || parsed.expiresAt < Date.now() || !isSavedCheckout(parsed.data)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+export function clearCheckout() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+
+// =========================================================================
+// UI COMPONENTS (Inlined Button.tsx)
+// =========================================================================
+type Variant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
+type Size = 'sm' | 'md' | 'lg';
+
+const variants: Record<Variant, string> = {
+  primary: 'bg-brand-700 text-white hover:bg-brand-800 shadow-lift disabled:bg-brand-700/60',
+  secondary: 'bg-white text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-50 disabled:text-brand-800/50',
+  ghost: 'text-brand-800 hover:bg-brand-50 disabled:text-brand-800/50',
+  gift: 'bg-gift-500 text-white hover:bg-gift-600 shadow-[0_12px_30px_-12px_rgba(239,148,21,0.7)] disabled:bg-gift-500/60',
+  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/60',
+};
+
+const sizes: Record<Size, string> = {
+  sm: 'h-9 px-3.5 text-sm gap-1.5 rounded-xl',
+  md: 'h-11 px-5 text-[15px] gap-2 rounded-2xl',
+  lg: 'h-14 px-6 text-base gap-2.5 rounded-2xl',
+};
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant;
+  size?: Size;
+  loading?: boolean;
+  icon?: ReactNode;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = 'primary', size = 'md', loading = false, icon, className, children, disabled, type = 'button', ...props },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type={type}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={cn(
+        'inline-flex select-none items-center justify-center font-semibold transition-[background-color,transform,box-shadow] duration-150',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+        'active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
+        variants[variant],
+        sizes[size],
+        className,
+      )}
+      {...props}
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : icon}
+      {children}
+    </button>
+  );
+});
+
+
+// =========================================================================
+// MAIN COMPONENT (UserProfile)
+// =========================================================================
 
 // Simple validation function extracted for profile use
 function validateDetails(details: DeliveryDetails) {
@@ -251,3 +396,5 @@ export function UserProfile() {
     </div>
   );
 }
+
+export default UserProfile;

@@ -3,7 +3,7 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { 
+import React, { 
   useEffect, useRef, useState, useCallback, 
   forwardRef, useId, type InputHTMLAttributes, type ChangeEvent, type ReactNode 
 } from 'react';
@@ -11,23 +11,403 @@ import { AnimatePresence, motion, useReducedMotion, type HTMLMotionProps } from 
 import { 
   ArrowLeft, ArrowRight, Gift, MapPin, 
   ShieldCheck, Wallet, Loader2, Camera, Images, 
-  FolderOpen, RefreshCw, X, CheckCircle2, Plus, Minus, Trash2, Info, ShoppingBag, FileText
+  FolderOpen, RefreshCw, X, CheckCircle2, Plus, Minus, Trash2, Info, ShoppingBag, FileText,
+  AlertTriangle
 } from 'lucide-react';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 import { useToast } from '@/components/ui/Toast';
-import { usePublicSettings } from '@/hooks/usePublicSettings';
-import { ApiError, apiRequest } from '@/lib/api';
-import { clearCheckout, loadCheckout, saveCheckout } from '@/lib/checkoutStorage';
-import { GIFT, PAYMENT_LABEL } from '@/lib/constants';
-import { cn } from '@/lib/cn';
-import { formatMobile, formatRupees, normalizeMobile } from '@/lib/format';
-import type { CreateOrderPayload, CreateOrderResponse, Address, Product, MedicineItem } from '@/lib/types';
-import { createRequestId } from '@/lib/uuid';
 import { compressPrescription, ImageCompressionError } from '@/lib/imageCompression';
 import { uploadPrescription, UploadError } from '@/lib/cloudinaryUpload';
-import { useCartStore } from '@/store/cartStore';
 
-// --- UI Components ---
+// =========================================================================
+// 1. TYPES & INTERFACES
+// =========================================================================
+export type OrderType = 'manual_text' | 'prescription_image';
+export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
+
+export interface MedicineItem {
+  _id?: string;
+  name: string;
+  quantity: string;
+  price?: number;
+  isAvailable?: boolean;
+}
+
+export interface Product {
+  _id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  inStock: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OrderProduct {
+  _id?: string;
+  productId?: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Address {
+  flat: string;
+  area: string;
+  landmark: string;
+}
+
+export interface PublicSettings {
+  deliveryCharge: number;
+  firstOrderOfferEnabled: boolean;
+  firstOrderMinimumMedicineAmount: number;
+}
+
+export interface CreateOrderPayload {
+  clientRequestId: string;
+  customerName: string;
+  mobileNumber: string;
+  orderType: OrderType;
+  medicines: MedicineItem[];
+  products?: OrderProduct[]; 
+  prescriptionUrl?: string;
+  address: Address;
+  offerOptIn: boolean;
+}
+
+export interface CreateOrderResponse {
+  success: true;
+  orderId: string;
+  status: OrderStatus;
+  telegramNotificationSent: boolean;
+}
+
+export interface DeliveryDetails {
+  customerName: string;
+  mobileNumber: string;
+  address: Address;
+}
+
+export type UploadState =
+  | { status: 'idle' }
+  | { status: 'compressing'; fileName: string }
+  | { status: 'uploading'; fileName: string; progress: number; previewUrl: string }
+  | { status: 'done'; fileName: string; previewUrl: string; url: string; originalSize: number; uploadedSize: number }
+  | { status: 'error'; message: string; file?: File };
+
+type DetailErrors = Partial<Record<'customerName' | 'mobileNumber' | 'flat' | 'area' | 'landmark', string>>;
+
+// =========================================================================
+// 2. CONSTANTS
+// =========================================================================
+export const SUPPORT_PHONE_DISPLAY = '+91 84338 18771';
+export const SUPPORT_PHONE_TEL = 'tel:+918433818771';
+export const SERVICE_AREA = 'Goregaon East, Mumbai';
+export const PAYMENT_LABEL = 'Pay when it arrives · Cash or UPI / QR at delivery';
+
+export const GIFT = {
+  name: 'Dr. Morepen GlucoOne BG-03',
+  shortName: 'GlucoOne BG-03',
+  mrp: 650,
+  image: '/glucoone-bg03.png',
+} as const;
+
+export const DEFAULT_PUBLIC_SETTINGS = {
+  deliveryCharge: 0,
+  firstOrderOfferEnabled: true,
+  firstOrderMinimumMedicineAmount: 500,
+} as const;
+
+export const MAX_MEDICINES = 30;
+const STEPS = ['Items', 'Delivery', 'Review'] as const;
+type Step = 0 | 1 | 2;
+
+// =========================================================================
+// 3. UTILS & FORMATTERS
+// =========================================================================
+export function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+const rupees = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2, minimumFractionDigits: 0 });
+export const formatRupees = (amount: number) => rupees.format(amount);
+
+export const formatMobile = (mobile?: string | null) => {
+  if (!mobile || typeof mobile !== 'string') return 'N/A';
+  return `+91 ${mobile.slice(0, 5)} ${mobile.slice(5)}`;
+};
+
+export function normalizeMobile(input: string): string | null {
+  let digits = input.replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  return /^[6-9]\d{9}$/.test(digits) ? digits : null;
+}
+
+export function createRequestId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`);
+
+// =========================================================================
+// 4. API HANDLER
+// =========================================================================
+export interface FieldIssue {
+  path: string;
+  message: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code: string,
+    readonly fields: FieldIssue[] = [],
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+  get isNetworkError() { return this.status === 0; }
+}
+
+interface RequestOptions {
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+  body?: unknown;
+  signal?: AbortSignal;
+}
+
+const NETWORK_MESSAGE = 'Could not reach GoregaonMeds. Check your connection and try again.';
+
+export async function apiRequest<T>(path: string, { method = 'GET', body, signal }: RequestOptions = {}): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, {
+      method,
+      signal,
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: body === undefined ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') throw error;
+    throw new ApiError(NETWORK_MESSAGE, 0, 'NETWORK_ERROR');
+  }
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = data?.error;
+    throw new ApiError(
+      typeof error?.message === 'string' ? error.message : 'Something went wrong. Please try again.',
+      response.status,
+      typeof error?.code === 'string' ? error.code : 'UNKNOWN',
+      Array.isArray(error?.fields) ? error.fields : [],
+    );
+  }
+  return data as T;
+}
+
+function failureMessage(error: unknown) {
+  if (error instanceof ImageCompressionError || error instanceof UploadError || error instanceof ApiError) return error.message;
+  return 'Upload failed. Please try again.';
+}
+
+// =========================================================================
+// 5. STORAGE
+// =========================================================================
+const STORAGE_KEY = 'gmeds:checkout';
+const TTL_MS = 180 * 24 * 60 * 60 * 1000;
+
+export interface SavedCheckout {
+  customerName: string;
+  mobileNumber: string;
+  address: Address;
+}
+
+interface StoredValue {
+  version: 1;
+  expiresAt: number;
+  data: SavedCheckout;
+}
+
+const isString = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max;
+
+function isSavedCheckout(value: unknown): value is SavedCheckout {
+  const v = value as SavedCheckout;
+  return (
+    !!v &&
+    isString(v.customerName, 80) &&
+    isString(v.mobileNumber, 20) &&
+    !!v.address &&
+    isString(v.address.flat, 120) &&
+    isString(v.address.area, 120) &&
+    isString(v.address.landmark, 120)
+  );
+}
+
+export function saveCheckout(data: SavedCheckout) {
+  try {
+    const value: StoredValue = { version: 1, expiresAt: Date.now() + TTL_MS, data };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  } catch {}
+}
+
+export function loadCheckout(): SavedCheckout | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredValue;
+    if (parsed?.version !== 1 || typeof parsed.expiresAt !== 'number' || parsed.expiresAt < Date.now() || !isSavedCheckout(parsed.data)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+export function clearCheckout() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+// =========================================================================
+// 6. ZUSTAND CART STORE
+// =========================================================================
+interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
+export interface PrescriptionData {
+  url: string;
+  previewUrl?: string;
+  fileName: string;
+}
+
+interface CartStore {
+  items: CartItem[];
+  addItem: (product: Product) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+
+  medicines: MedicineItem[];
+  addMedicine: () => void;
+  removeMedicine: (id: string) => void;
+  updateMedicine: (id: string, field: 'name' | 'quantity', value: string) => void;
+
+  prescription: PrescriptionData | null;
+  setPrescription: (data: PrescriptionData | null) => void;
+
+  clearCart: () => void;
+  getTotalItems: () => number;
+}
+
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      medicines: [],
+      prescription: null,
+      
+      addItem: (product) => set((state) => {
+        const existingItem = state.items.find(item => item.product._id === product._id);
+        if (existingItem) {
+          return {
+            items: state.items.map(item =>
+              item.product._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+            )
+          };
+        }
+        return { items: [...state.items, { product, quantity: 1 }] };
+      }),
+      
+      removeItem: (productId) => set((state) => ({
+        items: state.items.filter(item => item.product._id !== productId)
+      })),
+      
+      updateQuantity: (productId, quantity) => set((state) => ({
+        items: state.items.map(item =>
+          item.product._id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
+        )
+      })),
+
+      addMedicine: () => set((state) => ({
+        medicines: [...state.medicines, { _id: generateId(), name: '', quantity: '1 Strip' }]
+      })),
+
+      removeMedicine: (id) => set((state) => ({
+        medicines: state.medicines.filter(med => med._id !== id)
+      })),
+
+      updateMedicine: (id, field, value) => set((state) => ({
+        medicines: state.medicines.map(med => 
+          med._id === id ? { ...med, [field]: value } : med
+        )
+      })),
+
+      setPrescription: (data) => set({ prescription: data }),
+
+      clearCart: () => set({ items: [], medicines: [], prescription: null }),
+      
+      getTotalItems: () => {
+        const state = get();
+        const productCount = state.items.reduce((total, item) => total + item.quantity, 0);
+        const validMedicinesCount = state.medicines.filter(m => m.name.trim() !== '').length;
+        const prescriptionCount = state.prescription ? 1 : 0;
+        return productCount + validMedicinesCount + prescriptionCount;
+      },
+    }),
+    { name: 'gmeds-cart' }
+  )
+);
+
+// =========================================================================
+// 7. HOOKS
+// =========================================================================
+let cachedSettings: Promise<PublicSettings> | null = null;
+function fetchSettings() {
+  cachedSettings ??= apiRequest<{ settings: PublicSettings }>('/settings/public')
+    .then((res) => res.settings)
+    .catch((error) => {
+      cachedSettings = null;
+      throw error;
+    });
+  return cachedSettings;
+}
+
+export function usePublicSettings() {
+  const [settings, setSettings] = useState<PublicSettings>(DEFAULT_PUBLIC_SETTINGS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetchSettings()
+      .then((value) => active && setSettings(value))
+      .catch(() => undefined)
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  return { settings, loading };
+}
+
+// =========================================================================
+// 8. UI COMPONENTS
+// =========================================================================
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'gift' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
@@ -148,29 +528,6 @@ function PharmacyNotice({ className }: { className?: string }) {
   );
 }
 
-// --- Types & Validation ---
-type OrderType = 'prescription_image' | 'manual_text';
-
-export interface DeliveryDetails {
-  customerName: string;
-  mobileNumber: string;
-  address: Address;
-}
-
-export type UploadState =
-  | { status: 'idle' }
-  | { status: 'compressing'; fileName: string }
-  | { status: 'uploading'; fileName: string; progress: number; previewUrl: string }
-  | { status: 'done'; fileName: string; previewUrl: string; url: string; originalSize: number; uploadedSize: number }
-  | { status: 'error'; message: string; file?: File };
-
-type DetailErrors = Partial<Record<'customerName' | 'mobileNumber' | 'flat' | 'area' | 'landmark', string>>;
-
-const STEPS = ['Items', 'Delivery', 'Review'] as const;
-type Step = 0 | 1 | 2;
-
-export const MAX_MEDICINES = 30;
-
 const emptyDetails: DeliveryDetails = { customerName: '', mobileNumber: '', address: { flat: '', area: '', landmark: '' } };
 
 function validateDetails(details: DeliveryDetails): DetailErrors {
@@ -189,13 +546,6 @@ const DETAIL_FIELDS: Record<string, keyof DetailErrors> = {
   'address.area': 'area',
   'address.landmark': 'landmark',
 };
-
-const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`);
-
-function failureMessage(error: unknown) {
-  if (error instanceof ImageCompressionError || error instanceof UploadError || error instanceof ApiError) return error.message;
-  return 'Upload failed. Please try again.';
-}
 
 // ==========================================
 // COMPONENT: PrescriptionUploader
@@ -636,11 +986,11 @@ export function OrderFlow() {
     if (saved) { setDetails(saved); setSaveDetails(true); }
   }, []);
 
-  // Fetch active products on load for Everyday Essentials
+  // Safe API call to prevent array mapping crashes
   useEffect(() => {
     apiRequest<{products: Product[]}>('/products')
-      .then(res => setAvailableProducts(res.products))
-      .catch(() => {});
+      .then(res => setAvailableProducts(res?.products || []))
+      .catch(() => setAvailableProducts([]));
   }, []);
 
   useEffect(() => {
@@ -689,14 +1039,13 @@ export function OrderFlow() {
   const hasMedicineInput = filledRows.length > 0;
   const hasProductInput = selectedProducts.length > 0;
 
-const validateItems = () => {
+  const validateItems = () => {
     if (method === 'manual_text') {
       const errors: Record<string, string> = {};
       for (const row of filledRows) {
         if (!row.name.trim()) errors[`${row._id}-name`] = 'Required';
       }
       if (filledRows.length === 0 && !hasProductInput && medicines.length > 0) {
-        // Add the exclamation mark (!) after medicines[0]
         errors[`${medicines[0]!._id}-name`] = 'Add at least one medicine or product';
       }
       setRowErrors(errors);
