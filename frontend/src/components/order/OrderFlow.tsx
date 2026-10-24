@@ -14,16 +14,12 @@ import {
   FolderOpen, RefreshCw, X, CheckCircle2, Plus, Minus, Trash2, Info, ShoppingBag, FileText,
   AlertTriangle
 } from 'lucide-react';
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 import { useToast } from '@/components/ui/Toast';
 import { compressPrescription, ImageCompressionError } from '@/lib/imageCompression';
 import { uploadPrescription, UploadError } from '@/lib/cloudinaryUpload';
+import { useCartStore, type UploadState as StoreUploadState } from '@/store/cartStore';
 
-// =========================================================================
-// 1. TYPES & INTERFACES
-// =========================================================================
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
@@ -281,99 +277,6 @@ export function loadCheckout(): SavedCheckout | null {
 export function clearCheckout() {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
 }
-
-// =========================================================================
-// 6. ZUSTAND CART STORE
-// =========================================================================
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
-export interface PrescriptionData {
-  url: string;
-  previewUrl?: string;
-  fileName: string;
-}
-
-interface CartStore {
-  items: CartItem[];
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-
-  medicines: MedicineItem[];
-  addMedicine: () => void;
-  removeMedicine: (id: string) => void;
-  updateMedicine: (id: string, field: 'name' | 'quantity', value: string) => void;
-
-  prescription: PrescriptionData | null;
-  setPrescription: (data: PrescriptionData | null) => void;
-
-  clearCart: () => void;
-  getTotalItems: () => number;
-}
-
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
-export const useCartStore = create<CartStore>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      medicines: [],
-      prescription: null,
-      
-      addItem: (product) => set((state) => {
-        const existingItem = state.items.find(item => item.product._id === product._id);
-        if (existingItem) {
-          return {
-            items: state.items.map(item =>
-              item.product._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-            )
-          };
-        }
-        return { items: [...state.items, { product, quantity: 1 }] };
-      }),
-      
-      removeItem: (productId) => set((state) => ({
-        items: state.items.filter(item => item.product._id !== productId)
-      })),
-      
-      updateQuantity: (productId, quantity) => set((state) => ({
-        items: state.items.map(item =>
-          item.product._id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
-        )
-      })),
-
-      addMedicine: () => set((state) => ({
-        medicines: [...state.medicines, { _id: generateId(), name: '', quantity: '1 Strip' }]
-      })),
-
-      removeMedicine: (id) => set((state) => ({
-        medicines: state.medicines.filter(med => med._id !== id)
-      })),
-
-      updateMedicine: (id, field, value) => set((state) => ({
-        medicines: state.medicines.map(med => 
-          med._id === id ? { ...med, [field]: value } : med
-        )
-      })),
-
-      setPrescription: (data) => set({ prescription: data }),
-
-      clearCart: () => set({ items: [], medicines: [], prescription: null }),
-      
-      getTotalItems: () => {
-        const state = get();
-        const productCount = state.items.reduce((total, item) => total + item.quantity, 0);
-        const validMedicinesCount = state.medicines.filter(m => m.name.trim() !== '').length;
-        const prescriptionCount = state.prescription ? 1 : 0;
-        return productCount + validMedicinesCount + prescriptionCount;
-      },
-    }),
-    { name: 'gmeds-cart' }
-  )
-);
 
 // =========================================================================
 // 7. HOOKS

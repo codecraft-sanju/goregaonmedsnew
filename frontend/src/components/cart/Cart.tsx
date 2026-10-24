@@ -5,10 +5,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, FileText, ArrowLeft, Pill } from 'lucide-react';
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { BottomNav } from '@/components/layout/BottomNav';
-
+import { useCartStore } from '@/store/cartStore';
 
 const rupees = new Intl.NumberFormat('en-IN', { 
   style: 'currency', 
@@ -18,7 +16,6 @@ const rupees = new Intl.NumberFormat('en-IN', {
 });
 
 export const formatRupees = (amount: number) => rupees.format(amount);
-
 
 export interface MedicineItem {
   _id?: string;
@@ -41,108 +38,11 @@ export interface Product {
   updatedAt?: string;
 }
 
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
 export interface PrescriptionData {
   url: string;
   previewUrl?: string;
   fileName: string;
 }
-
-interface CartStore {
-  // 1. OTC Products
-  items: CartItem[];
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-
-  // 2. Manual Medicines
-  medicines: MedicineItem[];
-  addMedicine: () => void;
-  removeMedicine: (id: string) => void;
-  updateMedicine: (id: string, field: 'name' | 'quantity', value: string) => void;
-
-  // 3. Prescription
-  prescription: PrescriptionData | null;
-  setPrescription: (data: PrescriptionData | null) => void;
-
-  // Global Actions
-  clearCart: () => void;
-  getTotalItems: () => number;
-}
-
-// =========================================================================
-// INLINED: ZUSTAND CART STORE
-// =========================================================================
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
-export const useCartStore = create<CartStore>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      medicines: [],
-      prescription: null,
-      
-      // -- PRODUCT ACTIONS --
-      addItem: (product) => set((state) => {
-        const existingItem = state.items.find(item => item.product._id === product._id);
-        if (existingItem) {
-          return {
-            items: state.items.map(item =>
-              item.product._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-            )
-          };
-        }
-        return { items: [...state.items, { product, quantity: 1 }] };
-      }),
-      
-      removeItem: (productId) => set((state) => ({
-        items: state.items.filter(item => item.product._id !== productId)
-      })),
-      
-      updateQuantity: (productId, quantity) => set((state) => ({
-        items: state.items.map(item =>
-          item.product._id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
-        )
-      })),
-
-      // -- MEDICINE ACTIONS --
-      addMedicine: () => set((state) => ({
-        medicines: [...state.medicines, { _id: generateId(), name: '', quantity: '1 Strip' }]
-      })),
-
-      removeMedicine: (id) => set((state) => ({
-        medicines: state.medicines.filter(med => med._id !== id)
-      })),
-
-      updateMedicine: (id, field, value) => set((state) => ({
-        medicines: state.medicines.map(med => 
-          med._id === id ? { ...med, [field]: value } : med
-        )
-      })),
-
-      // -- PRESCRIPTION ACTIONS --
-      setPrescription: (data) => set({ prescription: data }),
-
-      // -- GLOBAL ACTIONS --
-      clearCart: () => set({ items: [], medicines: [], prescription: null }),
-      
-      getTotalItems: () => {
-        const state = get();
-        const productCount = state.items.reduce((total, item) => total + item.quantity, 0);
-        const validMedicinesCount = state.medicines.filter(m => m.name.trim() !== '').length;
-        const prescriptionCount = state.prescription ? 1 : 0;
-        return productCount + validMedicinesCount + prescriptionCount;
-      },
-    }),
-    {
-      name: 'gmeds-cart', // Persists in LocalStorage
-    }
-  )
-);
 
 // =========================================================================
 // MAIN UI COMPONENT: Cart
@@ -206,7 +106,7 @@ export function Cart() {
             <ShoppingBag className="w-12 h-12 text-[#156253]" />
           </div>
           <h2 className="text-2xl font-extrabold text-ink mb-2 text-center">Your cart is empty</h2>
-          <p className="text-ink-muted mb-8 text-center max-w-sm leading-relaxed">Looks like you haven&apos;t added any medicines or products to your cart yet.</p>
+          <p className="text-ink-muted mb-8 text-center max-w-sm leading-relaxed">Looks like you haven't added any medicines or products to your cart yet.</p>
           <Link href="/" className="bg-[#156253] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-8px_rgba(21,98,83,0.6)] hover:bg-[#0f4b3f] active:scale-95 transition-all flex items-center gap-2">
             Start Shopping <ArrowRight size={18} />
           </Link>

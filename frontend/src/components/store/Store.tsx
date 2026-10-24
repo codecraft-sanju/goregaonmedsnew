@@ -16,14 +16,11 @@ import {
   PackageX,
   X
 } from 'lucide-react';
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
 
 import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Footer } from '@/components/layout/Footer';
-
+import { useCartStore } from '@/store/cartStore';
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -34,7 +31,6 @@ const currency = new Intl.NumberFormat('en-IN', {
   currency: 'INR', 
   maximumFractionDigits: 0,
 });
-
 
 export interface MedicineItem {
   _id?: string;
@@ -70,104 +66,6 @@ export interface PublicProductsResponse {
   pagination: Pagination;
 }
 
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
-export interface PrescriptionData {
-  url: string;
-  previewUrl?: string;
-  fileName: string;
-}
-
-interface CartStore {
-  // 1. OTC Products
-  items: CartItem[];
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-
-  // 2. Manual Medicines
-  medicines: MedicineItem[];
-  addMedicine: () => void;
-  removeMedicine: (id: string) => void;
-  updateMedicine: (id: string, field: 'name' | 'quantity', value: string) => void;
-
-  // 3. Prescription
-  prescription: PrescriptionData | null;
-  setPrescription: (data: PrescriptionData | null) => void;
-
-  // Global Actions
-  clearCart: () => void;
-  getTotalItems: () => number;
-}
-
-
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
-export const useCartStore = create<CartStore>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      medicines: [],
-      prescription: null,
-      
-      addItem: (product) => set((state) => {
-        const existingItem = state.items.find(item => item.product._id === product._id);
-        if (existingItem) {
-          return {
-            items: state.items.map(item =>
-              item.product._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-            )
-          };
-        }
-        return { items: [...state.items, { product, quantity: 1 }] };
-      }),
-      
-      removeItem: (productId) => set((state) => ({
-        items: state.items.filter(item => item.product._id !== productId)
-      })),
-      
-      updateQuantity: (productId, quantity) => set((state) => ({
-        items: state.items.map(item =>
-          item.product._id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
-        )
-      })),
-
-      addMedicine: () => set((state) => ({
-        medicines: [...state.medicines, { _id: generateId(), name: '', quantity: '1 Strip' }]
-      })),
-
-      removeMedicine: (id) => set((state) => ({
-        medicines: state.medicines.filter(med => med._id !== id)
-      })),
-
-      updateMedicine: (id, field, value) => set((state) => ({
-        medicines: state.medicines.map(med => 
-          med._id === id ? { ...med, [field]: value } : med
-        )
-      })),
-
-      setPrescription: (data) => set({ prescription: data }),
-
-      clearCart: () => set({ items: [], medicines: [], prescription: null }),
-      
-      getTotalItems: () => {
-        const state = get();
-        const productCount = state.items.reduce((total, item) => total + item.quantity, 0);
-        const validMedicinesCount = state.medicines.filter(m => m.name.trim() !== '').length;
-        const prescriptionCount = state.prescription ? 1 : 0;
-        return productCount + validMedicinesCount + prescriptionCount;
-      },
-    }),
-    {
-      name: 'gmeds-cart', // Persists in LocalStorage
-    }
-  )
-);
-
-
 export function Store() {
   // --- State ---
   const [categories, setCategories] = useState<string[]>(['All']);
@@ -182,7 +80,7 @@ export function Store() {
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  // Cart Store
+  // Cart Store (Coming from centralized store now)
   const { items: cartItems, addItem, updateQuantity, removeItem } = useCartStore();
 
   // --- Effects ---
@@ -324,7 +222,7 @@ export function Store() {
               </div>
               <h3 className="text-lg font-bold text-[#0F1F1C] mb-1">No products found</h3>
               <p className="text-sm font-medium text-[#52675F] max-w-sm">
-                We couldn&apos;t find anything matching &quot;{debouncedSearch}&quot; in this category. Try adjusting your search.
+                We couldn't find anything matching "{debouncedSearch}" in this category. Try adjusting your search.
               </p>
               {(debouncedSearch || activeCategory !== 'All') && (
                 <button 
