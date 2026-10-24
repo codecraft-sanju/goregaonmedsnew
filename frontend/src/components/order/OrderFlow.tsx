@@ -18,7 +18,8 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { compressPrescription, ImageCompressionError } from '@/lib/imageCompression';
 import { uploadPrescription, UploadError } from '@/lib/cloudinaryUpload';
-import { useCartStore, type UploadState as StoreUploadState } from '@/store/cartStore';
+import { useCartStore } from '@/store/cartStore';
+import { ProductCard } from '@/components/ui/ProductCard';
 
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
@@ -859,9 +860,6 @@ export function OrderFlow() {
     removeMedicine, 
     updateMedicine, 
     setPrescription,
-    addItem, 
-    removeItem, 
-    updateQuantity, 
     clearCart 
   } = useCartStore();
 
@@ -920,22 +918,6 @@ export function OrderFlow() {
     const newParams = new URLSearchParams(params.toString());
     newParams.set('method', newMethod === 'prescription_image' ? 'prescription' : 'manual');
     window.history.replaceState(null, '', `${pathname}?${newParams.toString()}`);
-  };
-
-  const handleProductToggle = (product: Product) => {
-    const existing = selectedProducts.find(p => p.product._id === product._id);
-    if (existing) {
-      removeItem(product._id);
-    } else {
-      addItem(product);
-    }
-  };
-
-  const handleProductQuantity = (productId: string, increment: boolean) => {
-    const item = selectedProducts.find(p => p.product._id === productId);
-    if (!item) return;
-    const newQty = increment ? item.quantity + 1 : Math.max(1, item.quantity - 1);
-    updateQuantity(productId, newQty);
   };
 
   const filledRows = medicines.filter((row) => row.name.trim());
@@ -1180,50 +1162,13 @@ export function OrderFlow() {
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {availableProducts.map(product => {
-                      const selected = selectedProducts.find(p => p.product._id === product._id);
-                      return (
-                        <div key={product._id} className={cn("flex flex-col bg-white rounded-2xl border p-3 transition-all duration-200 relative overflow-hidden group", selected ? "border-[#156253] ring-1 ring-[#156253] shadow-md" : "border-gray-200 hover:border-[#156253]/30 hover:shadow-sm")}>
-                          {selected && <div className="absolute top-0 right-0 w-8 h-8 bg-[#156253] rounded-bl-[20px] flex items-start justify-end p-1.5"><CheckCircle2 className="w-4 h-4 text-white" /></div>}
-                          
-                          <div className="h-24 w-full bg-[#f8fbfb] rounded-xl mb-3 flex items-center justify-center overflow-hidden">
-                            {product.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover mix-blend-multiply" />
-                            ) : (
-                              <ShoppingBag className="w-8 h-8 text-gray-300" />
-                            )}
-                          </div>
-                          
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div>
-                              <p className="text-[10px] font-bold text-[#156253] uppercase tracking-wider mb-1">{product.category}</p>
-                              <h3 className="text-sm font-bold text-ink line-clamp-2 leading-tight">{product.name}</h3>
-                            </div>
-                            
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="font-bold text-ink text-sm">{formatRupees(product.price)}</span>
-                              
-                              {!selected ? (
-                                <button type="button" onClick={() => handleProductToggle(product)} className="h-7 w-7 rounded-full bg-gray-50 text-[#156253] grid place-items-center hover:bg-[#eaf4f4] ring-1 ring-gray-200 transition-colors">
-                                  <Plus className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <div className="flex items-center gap-2 bg-[#f8fbfb] rounded-full px-1 py-0.5 ring-1 ring-gray-200">
-                                  <button type="button" onClick={() => { if (selected.quantity === 1) handleProductToggle(product); else handleProductQuantity(product._id, false); }} className="h-6 w-6 rounded-full bg-white text-ink grid place-items-center shadow-sm">
-                                    {selected.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-                                  </button>
-                                  <span className="text-xs font-bold w-3 text-center">{selected.quantity}</span>
-                                  <button type="button" onClick={() => handleProductQuantity(product._id, true)} className="h-6 w-6 rounded-full bg-[#156253] text-white grid place-items-center shadow-sm">
-                                    <Plus className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {availableProducts.map(product => (
+                      <ProductCard 
+                        key={product._id} 
+                        product={product} 
+                        showSelectionCheck 
+                      />
+                    ))}
                   </div>
                 </div>
               )}

@@ -1,4 +1,4 @@
-//src/lib/types.ts
+// src/lib/types.ts
 export type OrderType = 'manual_text' | 'prescription_image';
 export type OrderStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
@@ -23,6 +23,7 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
 }
+
 export interface OrderProduct {
   _id?: string;
   productId?: string;

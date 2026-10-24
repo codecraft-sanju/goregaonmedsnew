@@ -1,10 +1,11 @@
 // src/components/home/OrderMethods.tsx
 'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   Clock3,
@@ -13,22 +14,13 @@ import {
   X,
   ArrowUpRight,
   ShoppingBag,
-  Plus,
-  Minus,
-  Trash2,
   Camera,
   FileText
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useCartStore } from '@/store/cartStore';
 import { useToast } from '@/components/ui/Toast'; 
-import type { Product } from '@/lib/types'; 
-
-export interface PublicSettings {
-  deliveryCharge: number;
-  firstOrderOfferEnabled: boolean;
-  firstOrderMinimumMedicineAmount: number;
-}
+import { ProductCard } from '@/components/ui/ProductCard'; // <-- Naya import
+import type { Product, PublicSettings } from '@/lib/types'; 
 
 const SERVICE_AREA = 'Goregaon East, Mumbai';
 
@@ -140,8 +132,6 @@ function TrendingProducts() {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const { items: cartItems, addItem, updateQuantity, removeItem } = useCartStore();
 
   useEffect(() => {
     fetch('/api/categories')
@@ -236,80 +226,13 @@ function TrendingProducts() {
             <p className="text-sm font-medium text-[#52675F]">No products found in this category.</p>
           </div>
         ) : (
-          products.map((product) => {
-            const cartItem = cartItems.find(item => item.product._id === product._id);
-            return (
-              <div 
-                key={product._id}
-                className={cn(
-                  "shrink-0 w-[145px] md:w-[170px] snap-start bg-white border rounded-[20px] p-2.5 md:p-3 shadow-sm transition-all duration-300 relative group flex flex-col",
-                  cartItem ? "border-[#156253] ring-1 ring-[#156253]" : "border-gray-100 hover:shadow-[0_8px_24px_rgba(21,98,83,0.08)] hover:border-[#156253]/20"
-                )}
-              >
-                <div className="h-[120px] md:h-[130px] w-full bg-[#F8FBFB] rounded-[14px] mb-3 flex items-center justify-center overflow-hidden">
-                  {product.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img 
-                      src={product.imageUrl} 
-                      alt={product.name} 
-                      className="h-full w-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-105" 
-                    />
-                  ) : (
-                    <ShoppingBag className="w-8 h-8 text-[#156253]/15" />
-                  )}
-                </div>
-
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <p className="text-[9px] font-extrabold text-[#156253] uppercase tracking-widest mb-1.5 line-clamp-1">
-                      {product.category}
-                    </p>
-                    <h3 className="text-[13px] md:text-[14px] font-bold text-[#0F1F1C] line-clamp-2 leading-[1.3] min-h-[34px] md:min-h-[36px]">
-                      {product.name}
-                    </h3>
-                  </div>
-                  
-                  <div className="mt-3 md:mt-4 flex items-end justify-between">
-                    <span className="font-display text-[16px] md:text-[18px] font-extrabold text-[#0F1F1C]">
-                      {currency.format(product.price)}
-                    </span>
-                    
-                    {!cartItem ? (
-                      <button 
-                        type="button"
-                        onClick={() => addItem(product)}
-                        className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-[#F6FAF8] text-[#156253] grid place-items-center hover:bg-[#156253] hover:text-white transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#156253] active:scale-95 shadow-sm"
-                        aria-label={`Add ${product.name} to order`}
-                      >
-                        <Plus className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-1 bg-[#F6FAF8] rounded-full px-1 py-0.5 border border-[#156253]/10">
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            if (cartItem.quantity === 1) removeItem(product._id);
-                            else updateQuantity(product._id, cartItem.quantity - 1);
-                          }} 
-                          className="h-6 w-6 rounded-full bg-white text-[#156253] grid place-items-center shadow-sm active:scale-95"
-                        >
-                          {cartItem.quantity === 1 ? <Trash2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                        </button>
-                        <span className="text-xs font-bold w-4 text-center text-[#156253]">{cartItem.quantity}</span>
-                        <button 
-                          type="button" 
-                          onClick={() => updateQuantity(product._id, cartItem.quantity + 1)} 
-                          className="h-6 w-6 rounded-full bg-[#156253] text-white grid place-items-center shadow-sm active:scale-95"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          products.map((product) => (
+            <ProductCard 
+              key={product._id} 
+              product={product} 
+              className="shrink-0 w-[145px] md:w-[170px] snap-start" 
+            />
+          ))
         )}
       </div>
     </div>
