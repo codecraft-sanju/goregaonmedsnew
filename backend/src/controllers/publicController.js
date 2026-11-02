@@ -1,4 +1,4 @@
-//src/controllers/publicController.js
+// src/controllers/publicController.js
 import { Order } from '../models/Order.js'; 
 import { createOrder } from '../services/orderService.js';
 import { getSettings, toPublicSettings } from '../services/settingsService.js';
@@ -70,12 +70,20 @@ export function createPublicController({ env, notifier, logger, emailService, in
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
 
+      // ---> UPDATED EMAIL SENDING LOGIC <---
       if (emailService) {
-        await emailService.sendOtpEmail(email, otp);
+        try {
+          // Ab yeh background me nahi, balki yahi par wait karega
+          await emailService.sendOtpEmail(email, otp);
+        } catch (error) {
+          // Agar Gmail connect nahi hua, toh frontend ko 500 error jayega aur wo alert dikhayega
+          throw new Error('Failed to send OTP email. Mail server connection timed out. Please try again.');
+        }
       } else {
         logger.warn('Email service not configured. OTP not sent.');
       }
 
+      // Yeh line tabhi chalegi jab email successfully send ho jayega
       res.json({ success: true, message: 'OTP sent to your email' });
     },
 
@@ -242,7 +250,6 @@ export function createPublicController({ env, notifier, logger, emailService, in
     async trackOrder(req, res) {
       const orderId = req.params.id.trim().toUpperCase();
 
-      // YAHAN SE MONGOOSE IMPORT HATAYA HAI
       const order = await Order.findOne({ 
         orderId, 
         userId: req.customer.id 
@@ -285,7 +292,6 @@ export function createPublicController({ env, notifier, logger, emailService, in
       const { page, limit } = req.validatedQuery;
       const skip = (page - 1) * limit;
 
-      // YAHAN SE BHI MONGOOSE IMPORT HATAYA HAI
       const filter = { userId };
 
       const [userOrders, total] = await Promise.all([
@@ -328,7 +334,6 @@ export function createPublicController({ env, notifier, logger, emailService, in
     async downloadInvoice(req, res) {
       const orderId = req.params.id.trim().toUpperCase(); 
       
-      // YAHAN SE BHI MONGOOSE IMPORT HATAYA HAI
       const order = await Order.findOne({ 
         orderId, 
         userId: req.customer.id 

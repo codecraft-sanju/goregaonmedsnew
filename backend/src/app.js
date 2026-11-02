@@ -10,14 +10,15 @@ import { createAdminRouter } from './routes/adminRoutes.js';
 import { createRateLimiters } from './middleware/rateLimits.js';
 import { createErrorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createTelegramQueue } from './services/telegramService.js';
-import { createEmailQueue } from './services/emailService.js'; 
+// import { createEmailQueue } from './services/emailService.js'; 
+import { createEmailService } from './services/emailService.js';
 export function createApp({ env, notifier, invoiceService, logger = console }) {
   const app = express();
 
   const telegram = notifier ?? createTelegramQueue(env, logger);
   const limiters = createRateLimiters();
-  const emailService = createEmailQueue(env);
-
+  // const emailService = createEmailQueue(env);
+const emailService = createEmailService(env);
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(helmet());
   app.use(cors({ origin: env.frontendOrigin, credentials: true, methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'] }));
