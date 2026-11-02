@@ -1,10 +1,9 @@
-
 {
   "name": "goregaonmeds-backend",
   "version": "1.0.0",
   "description": "GOREGAONMEDS order API",
   "main": "src/server.js",
-"scripts": {
+  "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
     "worker": "node --env-file-if-exists=.env src/worker.js",
     "dev": "node --watch --env-file-if-exists=.env src/server.js",
@@ -23,6 +22,7 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.24.4",
+    "nodemailer": "^10.3.1",
     "pdfkit": "^0.20.2",
     "rate-limit-redis": "^6.0.2",
     "zod": "^3.25.76"

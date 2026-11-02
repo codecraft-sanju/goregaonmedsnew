@@ -5,3 +5,4 @@ out
 !.env.example
 *.tsbuildinfo
 .sites-runtime
+.env
