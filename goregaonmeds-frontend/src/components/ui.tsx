@@ -1,0 +1,12 @@
+'use client';
+import Link from 'next/link';
+import {AlertCircle,RefreshCw,ArrowRight,PackageOpen,LoaderCircle} from 'lucide-react';
+import {useEffect,useRef} from 'react';
+export function PageHeading({eyebrow,title,children}:{eyebrow?:string;title:string;children?:React.ReactNode}){return <div className="page-heading"><div className="eyebrow">{eyebrow??'YOUR NEIGHBOURHOOD PHARMACY'}</div><h1>{title}</h1>{children&&<p>{children}</p>}</div>}
+export function Empty({title,children,icon:Icon=PackageOpen}:{title:string;children?:React.ReactNode;icon?:typeof PackageOpen}){return <div className="empty"><div className="empty-icon"><Icon size={28}/></div><h3>{title}</h3><div>{children}</div></div>}
+export function ErrorState({error,retry}:{error:unknown;retry?:()=>void}){return <div className="error-state" role="alert"><AlertCircle size={22}/><div><strong>Let’s try that again</strong><p>{error instanceof Error?error.message:'Something went wrong. Please try again.'}</p></div>{retry&&<button className="btn secondary small" onClick={retry}><RefreshCw size={16}/>Retry</button>}</div>}
+export function Loading(){return <div className="loading" role="status"><LoaderCircle className="spin" size={22}/>Getting things ready…</div>}
+export function Skeleton(){return <div className="product-grid" aria-label="Loading products" aria-busy="true">{[1,2,3,4].map(i=><div className="skeleton" key={i}/>)}</div>}
+export function Modal({title,children,onClose}:{title:string;children:React.ReactNode;onClose:()=>void}){const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const d=ref.current,old=document.activeElement as HTMLElement|null;d?.showModal();return()=>{d?.close();old?.focus();}},[]);return <dialog ref={ref} className="modal" aria-label={title} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}><div className="modal-head"><h2>{title}</h2><button className="icon-button" aria-label="Close dialog" onClick={onClose}>×</button></div>{children}</dialog>}
+export function Pager({page,total,onChange}:{page:number;total:number;onChange:(p:number)=>void}){return <div className="pager"><button className="btn secondary small" disabled={page<=1} onClick={()=>onChange(page-1)}>Previous</button><span>Page {page} of {Math.max(1,total)}</span><button className="btn secondary small" disabled={page>=total} onClick={()=>onChange(page+1)}>Next</button></div>}
+export function Status({status}:{status:string}){return <span className={`status ${status.toLowerCase()}`}><i/>{status}</span>}

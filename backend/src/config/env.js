@@ -1,10 +1,11 @@
-//src/config/env.js
+// src/config/env.js
 import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(5000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   ADMIN_USERNAME: z.string().min(1, 'ADMIN_USERNAME is required'),
   ADMIN_PASSWORD_HASH: z
@@ -17,11 +18,19 @@ const envSchema = z.object({
     .string()
     .regex(/^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*$/)
     .default('goregaonmeds/prescriptions'),
-  // Telegram is optional at boot: orders must still be accepted when it is missing or down.
   TELEGRAM_BOT_TOKEN: z.string().default(''),
   TELEGRAM_ADMIN_CHAT_ID: z.string().default(''),
   FRONTEND_URL: z.string().url('FRONTEND_URL must be a full URL, e.g. https://goregaonmeds.in'),
   TRUST_PROXY: z.coerce.number().int().min(0).default(1),
+
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().default('GoregaonMeds <no-reply@goregaonmeds.in>'),
+  APP_TIMEZONE: z.string().default('Asia/Kolkata'),
+  APP_TIMEZONE_OFFSET: z.string().default('+05:30'),
+  APP_LOCALE: z.string().default('en-IN'),
 });
 
 export function loadEnv(source = process.env) {

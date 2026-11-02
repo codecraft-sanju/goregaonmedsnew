@@ -1,4 +1,4 @@
-//src/app.js
+// src/app.js
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -9,13 +9,14 @@ import { createPublicRouter } from './routes/publicRoutes.js';
 import { createAdminRouter } from './routes/adminRoutes.js';
 import { createRateLimiters } from './middleware/rateLimits.js';
 import { createErrorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { createTelegramNotifier } from './services/telegramService.js';
-
-export function createApp({ env, notifier, logger = console }) {
+import { createTelegramQueue } from './services/telegramService.js';
+import { createEmailQueue } from './services/emailService.js'; 
+export function createApp({ env, notifier, invoiceService, logger = console }) {
   const app = express();
-  const telegram =
-    notifier ?? createTelegramNotifier({ botToken: env.TELEGRAM_BOT_TOKEN, chatId: env.TELEGRAM_ADMIN_CHAT_ID, logger });
+
+  const telegram = notifier ?? createTelegramQueue(env, logger);
   const limiters = createRateLimiters();
+  const emailService = createEmailQueue(env);
 
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(helmet());
@@ -24,9 +25,13 @@ export function createApp({ env, notifier, logger = console }) {
   app.use(cookieParser());
 
   app.get('/api/health', (_req, res) => res.json({ success: true, status: 'ok' }));
-  app.use('/api', createPublicRouter({ controller: createPublicController({ env, notifier: telegram, logger }), limiters }));
   
-  //Passed notifier (telegram) to admin controller here
+  app.use('/api', createPublicRouter({ 
+    env,
+    controller: createPublicController({ env, notifier: telegram, logger, emailService, invoiceService }), 
+    limiters 
+  }));
+  
   app.use('/api/admin', createAdminRouter({ env, controller: createAdminController({ env, notifier: telegram }), limiters }));
 
   app.use(notFoundHandler);

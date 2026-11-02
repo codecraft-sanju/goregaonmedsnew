@@ -1,0 +1,4 @@
+'use client';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import {useState,useEffect} from 'react';
+export default function Providers({children}:{children:React.ReactNode}){const[client]=useState(()=>new QueryClient({defaultOptions:{queries:{retry:false,staleTime:20000},mutations:{retry:false}}}));const[offline,setOffline]=useState(false);useEffect(()=>{const update=()=>setOffline(!navigator.onLine);update();window.addEventListener('online',update);window.addEventListener('offline',update);if(process.env.NODE_ENV==='production'&&'serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};},[]);return <QueryClientProvider client={client}>{offline&&<div className="offline" role="status">You’re offline. Reconnect to view current stock or place an order.</div>}{children}</QueryClientProvider>}

@@ -1,13 +1,19 @@
-//src/services/settingsService.js 
+// src/services/settingsService.js 
 import { Settings, SETTINGS_SINGLETON_ID } from '../models/Settings.js';
 
-/** Always reads from MongoDB: delivery charge and offer settings are authoritative server-side. */
 export async function getSettings() {
-  return Settings.findOneAndUpdate(
-    { singletonId: SETTINGS_SINGLETON_ID },
-    { $setOnInsert: { singletonId: SETTINGS_SINGLETON_ID } },
-    { upsert: true, new: true, setDefaultsOnInsert: true, lean: true },
-  );
+  
+  let settings = await Settings.findOne({ singletonId: SETTINGS_SINGLETON_ID }).lean();
+  
+  if (!settings) {
+  
+    settings = await Settings.findOneAndUpdate(
+      { singletonId: SETTINGS_SINGLETON_ID },
+      { $setOnInsert: { singletonId: SETTINGS_SINGLETON_ID } },
+      { upsert: true, new: true, setDefaultsOnInsert: true, lean: true },
+    );
+  }
+  return settings;
 }
 
 export async function updateSettings(changes) {
@@ -28,5 +34,5 @@ export function toPublicSettings(settings) {
 }
 
 export function toAdminSettings(settings) {
-  return { ...toPublicSettings(settings), updatedAt: settings.updatedAt };
+return { ...toPublicSettings(settings), lowStockThreshold: settings.lowStockThreshold, updatedAt: settings.updatedAt };
 }

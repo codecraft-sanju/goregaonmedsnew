@@ -1,12 +1,17 @@
 //src/services/orderService.js
+import mongoose from 'mongoose';
 import { Order } from '../models/Order.js';
 import { User } from '../models/User.js';
 import { generateOrderId } from '../utils/orderId.js';
-import { duplicateKeyField } from '../utils/mongoErrors.js';
-import { conflict } from '../utils/AppError.js';
+import { duplicateKeyField } from '../utils/mongoErrors.js'; 
+import { conflict, badRequest, unauthorized } from '../utils/AppError.js';
 import { getSettings } from './settingsService.js';
-
-const MAX_ORDER_ID_ATTEMPTS = 5;
+import { Product } from '../models/Product.js';
+import { SystemLog } from '../models/SystemLog.js';
+import { isTrustedPrescriptionUrl, verifyCloudinaryFileExists } from './cloudinaryService.js';
+import { loadEnv } from '../config/env.js';
+import { rememberCheckoutDetails } from './checkoutPreferencesService.js';
+import { createNotification } from './notificationService.js'; 
 
 function toCreateResponse(order) {
   return {
@@ -17,97 +22,207 @@ function toCreateResponse(order) {
   };
 }
 
-async function findReplay(clientRequestId, mobileNumber) {
+async function findReplay(clientRequestId, userId, mobileNumber) {
   const existing = await Order.findOne({ clientRequestId }).lean();
   if (!existing) return null;
-  if (existing.mobileNumber !== mobileNumber) {
-    throw conflict('This order request was already used. Please refresh and try again.', 'DUPLICATE_REQUEST');
+ 
+  if (String(existing.userId) !== String(userId) || existing.mobileNumber !== mobileNumber) {
+    throw conflict('This order request ID was already used.', 'DUPLICATE_REQUEST');
   }
   return existing;
 }
 
-/**
- * Atomically counts the order against the customer and reports whether it is their first.
- * Returns the customer's order count before this order.
- */
-async function registerCustomerOrder(mobileNumber, fullName) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const previous = await User.findOneAndUpdate(
-        { mobileNumber },
-        { $inc: { totalOrders: 1 },$set: { fullName } },
-        { upsert: true, new: false, lean: true },
-      );
-      return previous?.totalOrders ?? 0;
-    } catch (error) {
-      if (duplicateKeyField(error) !== 'mobileNumber' || attempt > 0) throw error;
-    }
-  }
-  throw new Error('unreachable');
-}
+export async function createOrder(input, { userId, notifier, logger = console }) {
 
-async function insertOrder(fields) {
-  for (let attempt = 1; attempt <= MAX_ORDER_ID_ATTEMPTS; attempt += 1) {
-    try {
-      return await Order.create({ ...fields, orderId: generateOrderId() });
-    } catch (error) {
-      if (duplicateKeyField(error) !== 'orderId' || attempt === MAX_ORDER_ID_ATTEMPTS) throw error;
-    }
+  if (!mongoose.isValidObjectId(userId)) {
+    throw unauthorized('Please log in before checkout.');
   }
-  throw new Error('unreachable');
-}
 
-/**
- * Creates an order. MongoDB is written first; Telegram is attempted second and its failure
- * never fails the order (the response reports telegramNotificationSent: false instead).
- */
-export async function createOrder(input, { notifier, logger = console }) {
-  const replay = await findReplay(input.clientRequestId, input.mobileNumber);
+  const replay = await findReplay(input.clientRequestId, userId, input.mobileNumber);
   if (replay) return toCreateResponse(replay);
 
+  const env = loadEnv();
+  
+  if (input.orderType === 'prescription_image' && input.prescriptionUrl) {
+    const cloudinaryConfig = { 
+      cloudName: env.CLOUDINARY_CLOUD_NAME, 
+      apiKey: env.CLOUDINARY_API_KEY, 
+      apiSecret: env.CLOUDINARY_API_SECRET, 
+      folder: env.CLOUDINARY_UPLOAD_FOLDER 
+    };
+    
+    if (!isTrustedPrescriptionUrl(input.prescriptionUrl, cloudinaryConfig, input.clientRequestId)) {
+      throw badRequest('Prescription upload format is invalid.');
+    }
+    
+    const fileExists = await verifyCloudinaryFileExists(input.prescriptionUrl, cloudinaryConfig);
+    if (!fileExists) {
+      throw badRequest('Prescription file missing on server. Please upload it again.');
+    }
+  }
+
   const settings = await getSettings();
-  const previousOrders = await registerCustomerOrder(input.mobileNumber, input.customerName);
+  let secureProducts = [];
+  let productMap = new Map();
+  
+  if (input.products && input.products.length > 0) {
+    const productIds = input.products.map(p => p.productId);
+    const dbProducts = await Product.find({ _id: { $in: productIds } }).lean();
+    productMap = new Map(dbProducts.map(p => [String(p._id), p]));
+
+    for (const item of input.products) {
+      const realProduct = productMap.get(item.productId);
+      
+      if (!realProduct || !realProduct.isActive || !realProduct.inStock) {
+        throw badRequest(`Sorry, a product is currently unavailable or out of stock.`);
+      }
+      
+      secureProducts.push({
+        productId: realProduct._id,
+        name: realProduct.name,     
+        price: realProduct.price,     
+        quantity: item.quantity,
+        kind: realProduct.kind 
+      });
+    }
+  }
 
   let order;
+  
   try {
-    order = await insertOrder({
-      clientRequestId: input.clientRequestId,
-      mobileNumber: input.mobileNumber,
-      customerName: input.customerName,
-      orderType: input.orderType,
-      medicines: input.medicines,
-      products: input.products, // NEW: Include products in DB creation
-      prescriptionUrl: input.orderType === 'prescription_image' ? input.prescriptionUrl : null,
-      address: input.address,
-      offerOptIn: input.offerOptIn,
-      firstOrderAtCreation: previousOrders === 0,
-      customerOrderNumber: previousOrders + 1,
-      telegramNotificationSent: false,
+    const newOrderId = await generateOrderId();
+    
+    await mongoose.connection.transaction(async (session) => {
+      const inventoryReservations = [];
+      if (secureProducts.length > 0) {
+        const bulkOps = [];
+        
+        for (const item of input.products) {
+          const realProduct = productMap.get(item.productId);
+          
+          if (realProduct.trackStock) {
+            const remainingStock = realProduct.stockQuantity - item.quantity;
+            if (remainingStock < 0) {
+              throw badRequest(`Sorry, '${realProduct.name}' has only ${realProduct.stockQuantity} units left in stock.`);
+            }
+            
+            bulkOps.push({
+              updateOne: {
+                filter: { _id: realProduct._id, stockQuantity: { $gte: item.quantity } },
+                update: { $inc: { stockQuantity: -item.quantity } }
+              }
+            });
+            inventoryReservations.push({
+              productId: realProduct._id,
+              quantityDeducted: item.quantity
+            });
+            const threshold = settings.lowStockThreshold ?? 1;
+            if (remainingStock <= threshold) {
+              await SystemLog.create([{
+                type: 'inventory_alert',
+                message: `Low Stock Alert: '${realProduct.name}' has only ${remainingStock} units left. Please update stock.`,
+                context: { productId: realProduct._id, remainingStock }
+              }], { session });
+            }
+          }
+        }
+
+        if (bulkOps.length > 0) {
+          const bulkResult = await Product.bulkWrite(bulkOps, { session });
+          
+          if (bulkResult.modifiedCount !== bulkOps.length) {
+            const productIdsToCheck = input.products.map(p => p.productId);
+            const currentDbProducts = await Product.find({ _id: { $in: productIdsToCheck } }).session(session).lean();
+            
+            const currentProductMap = new Map(currentDbProducts.map(p => [String(p._id), p]));
+            
+            let failedItemName = "an item in your cart";
+            
+            for (const requestedItem of input.products) {
+                const dbProd = currentProductMap.get(requestedItem.productId);
+                if (dbProd && dbProd.trackStock && dbProd.stockQuantity < requestedItem.quantity) {
+                    failedItemName = `'${dbProd.name}'`;
+                    break;
+                }
+            }
+            
+            throw badRequest(`Someone just bought ${failedItemName}. Please review your cart and try again.`);
+          }
+        }
+      }     
+      const purchasedProductIds = input.products.map(p => new mongoose.Types.ObjectId(p.productId));
+
+      const userBefore = await User.findOneAndUpdate(
+        { _id: userId },
+        { 
+          $inc: { totalOrders: 1 }, 
+          $set: { fullName: input.customerName },
+          $pull: { cart: { productId: { $in: purchasedProductIds } } }
+        },
+        { session, new: false } 
+      );
+
+      if (!userBefore) {
+        throw unauthorized('Your account is no longer available. Please log in again.');
+      }
+
+      const previousOrders = userBefore.totalOrders || 0;
+      await rememberCheckoutDetails(
+        userId,
+        {
+          address: input.address,
+          mobileNumber: input.mobileNumber
+        },
+        session
+      );
+
+      const newOrder = new Order({
+        clientRequestId: input.clientRequestId,
+        userId: userBefore._id,
+        mobileNumber: input.mobileNumber, 
+        customerName: input.customerName,
+        orderType: input.orderType,
+        medicines: input.medicines,
+        products: secureProducts, 
+        inventoryReservations: inventoryReservations,
+        prescriptionUrl: input.orderType === 'prescription_image' ? input.prescriptionUrl : null,
+        address: input.address,
+        offerOptIn: true, 
+        firstOrderAtCreation: previousOrders === 0, 
+        customerOrderNumber: previousOrders + 1,
+        telegramNotificationSent: false, 
+        orderId: newOrderId, 
+      });
+
+      await newOrder.save({ session });
+      order = newOrder.toObject();
+      await createNotification({
+        userId,
+        type: 'order',
+        title: 'Order Placed Successfully',
+        message: `Your order #${order.orderId} has been received and is being processed.`,
+        orderId: order.orderId,
+        session
+      });
     });
+
+    try {
+      if (notifier && notifier.isConfigured) {
+        await notifier.notifyNewOrder(order, settings);
+        logger.info(`[orderService] Queued Telegram notification for ${order.orderId}`);
+      }
+    } catch (err) {
+      logger.error(`[CRITICAL] Order ${order.orderId} saved to DB, but Telegram Queue failed: ${err.message}`);
+    }
+
   } catch (error) {
-    await User.updateOne({ mobileNumber: input.mobileNumber, totalOrders: { $gt: 0 } }, {$inc: { totalOrders: -1 } });
     if (duplicateKeyField(error) === 'clientRequestId') {
-      const raced = await findReplay(input.clientRequestId, input.mobileNumber);
+      const raced = await findReplay(input.clientRequestId, userId, input.mobileNumber);
       if (raced) return toCreateResponse(raced);
     }
     throw error;
   }
-
-  let sent = false;
-  try {
-    sent = (await notifier.notifyNewOrder(order.toObject(), settings)) === true;
-  } catch (error) {
-    logger.error(`[orders] notifier failed for ${order.orderId}: ${error.message}`);
-  }
-  if (sent) {
-    order.telegramNotificationSent = true;
-    try {
-      await Order.updateOne({ _id: order._id }, { $set: { telegramNotificationSent: true } });
-    } catch (error) {
-      logger.error(`[orders] could not record Telegram delivery for ${order.orderId}: ${error.message}`);
-    }
-  }
-
+  
   return toCreateResponse(order);
 }
 
@@ -117,65 +232,24 @@ const STATUS_LABELS = {
   Cancelled: 'Cancelled',
 };
 
-export async function trackOrder({ orderId, mobileLast4 }) {
-  const order = await Order.findOne({ orderId }).lean();
-  if (!order || order.mobileNumber.slice(-4) !== mobileLast4) return null;
-  return {
-    orderId: order.orderId,
-    status: order.status,
-    statusLabel: STATUS_LABELS[order.status],
-    orderType: order.orderType,
-    itemCount: order.medicines.length + (order.products ? order.products.length : 0), // NEW: Total items count
-    placedAt: order.createdAt,
-    deliveredAt: order.deliveredAt,
-    paymentMethod: order.paymentMethod,
-    
-    medicines: order.medicines,
-    products: order.products, // NEW
-    medicineSubtotal: order.medicineSubtotal,
-    nonMedicineSubtotal: order.nonMedicineSubtotal,
-    deliveryCharge: order.deliveryCharge,
-    discount: order.discount,
-    finalAmount: order.billedAt ? order.finalAmount : null,
-  };
-}
-
-export async function fetchOrderHistory(orderIds) {
-  if (!orderIds || orderIds.length === 0) return [];
-
-  const orders = await Order.find({ orderId: { $in: orderIds } })
-    .sort({ createdAt: -1 })
-    .lean();
+export async function fetchOrderHistory(userId) {
+  const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
 
   return orders.map((order) => ({
     orderId: order.orderId,
     status: order.status,
     statusLabel: STATUS_LABELS[order.status] || order.status,
     orderType: order.orderType,
-    itemCount: order.medicines.length + (order.products ? order.products.length : 0), // NEW: Total items count
+    itemCount: order.medicines.length + (order.products ? order.products.length : 0),
     placedAt: order.createdAt,
     deliveredAt: order.deliveredAt,
     finalAmount: order.billedAt ? order.finalAmount : null,
-    
     medicines: order.medicines,
-    products: order.products, // NEW
+    products: order.products,
     medicineSubtotal: order.medicineSubtotal,
     nonMedicineSubtotal: order.nonMedicineSubtotal,
     deliveryCharge: order.deliveryCharge,
     discount: order.discount,
     cancelReason: order.cancelReason,
   }));
-}
-
-export async function recoverOrderIds({ mobileNumber, orderId }) {
-  const isValid = await Order.exists({ mobileNumber, orderId });
-  
-  if (!isValid) return null;
-
-  const userOrders = await Order.find({ mobileNumber })
-    .sort({ createdAt: -1 })
-    .select('orderId -_id')
-    .lean();
-
-  return userOrders.map((o) => o.orderId);
 }

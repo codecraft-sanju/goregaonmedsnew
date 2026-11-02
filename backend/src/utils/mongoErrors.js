@@ -1,4 +1,4 @@
-//src/utils/mongoError.js
+//src/utils/mongoErrors.js
 export function duplicateKeyField(error) {
   if (error?.code !== 11000) return null;
   const pattern = error.keyPattern ?? error.keyValue ?? {};

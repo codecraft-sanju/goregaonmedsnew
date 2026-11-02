@@ -7,17 +7,17 @@ export const PAYMENT_METHOD = 'Pay at Delivery (Cash/UPI)';
 
 const medicineSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true, maxlength: 120 },
-  quantity: { type: String, required: true, trim: true, maxlength: 60 },
+  quantity: { type: Number, required: true, min: 1 }, 
   isAvailable: { type: Boolean, default: true },
   price: { type: Number, default: 0, min: 0 },
 });
 
-// NEW: Schema for extra products (cosmetics) added to the order
 const orderProductSchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   name: { type: String, required: true, trim: true },
   price: { type: Number, required: true, min: 0 },
-  quantity: { type: Number, required: true, min: 1 }
+  quantity: { type: Number, required: true, min: 1 },
+  kind: { type: String, enum: ['medicine', 'non_medicine'], required: true }
 });
 
 const money = { type: Number, default: 0, min: 0 };
@@ -26,28 +26,39 @@ const orderSchema = new mongoose.Schema(
   {
     orderId: { type: String, required: true, unique: true, index: true },
     clientRequestId: { type: String, required: true, unique: true },
-    mobileNumber: { type: String, required: true, index: true },
+    
+    mobileNumber: { type: String, required: true, index: true }, // Snapshot for this specific order
     customerName: { type: String, required: true, trim: true, maxlength: 80 },
     orderType: { type: String, enum: ORDER_TYPES, required: true },
     
-    medicines: { type: [medicineSchema], default: [] },
-    products: { type: [orderProductSchema], default: [] }, // NEW: Added cross-sell products
+    // Owner Identity (Isise history show hogi)
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     
+    medicines: { type: [medicineSchema], default: [] },
+    products: { type: [orderProductSchema], default: [] }, 
+    inventoryReservations: {
+      type: [{
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+        quantityDeducted: { type: Number, required: true, min: 1 }
+      }],
+      default: []
+    },
     prescriptionUrl: { type: String, default: null },
+    invoiceUrl: { type: String, default: null }, 
+
     address: {
       flat: { type: String, required: true, trim: true, maxlength: 120 },
       area: { type: String, required: true, trim: true, maxlength: 120 },
       landmark: { type: String, trim: true, maxlength: 120, default: '' },
     },
     paymentMethod: { type: String, default: PAYMENT_METHOD },
-
     medicineSubtotal: money,
-    nonMedicineSubtotal: money, // Yeh products ka total count karne ke kaam ayega
+    nonMedicineSubtotal: money, 
     deliveryCharge: money,
     discount: money,
     finalAmount: money,
     billedAt: { type: Date, default: null },
-
+    billingVersion: { type: Number, default: 0 },
     offerOptIn: { type: Boolean, default: false },
     firstOrderAtCreation: { type: Boolean, required: true },
     customerOrderNumber: { type: Number, required: true, min: 1 },
@@ -62,6 +73,8 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Indexes
 orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ userId: 1, createdAt: -1, _id: -1 });
 
 export const Order = mongoose.models.Order ?? mongoose.model('Order', orderSchema);
