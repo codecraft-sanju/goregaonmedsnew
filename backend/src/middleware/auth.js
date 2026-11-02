@@ -1,4 +1,4 @@
-//src/middleware/auth.js
+// src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { forbidden, unauthorized } from '../utils/AppError.js';
@@ -10,8 +10,8 @@ export const SESSION_TTL_SECONDS = 12 * 60 * 60;
 export function adminCookieOptions(env) {
   return {
     httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'strict',
+    secure: env.isProduction || env.COOKIE_SAME_SITE === 'none',
+    sameSite: env.COOKIE_SAME_SITE,
     path: '/',
   };
 }
@@ -58,24 +58,6 @@ export function signCustomerToken(env, userId, email, version) {
   });
 }
 
-// export const requireCustomer = (env) => async (req, _res, next) => { 
-//   const token = req.cookies?.[CUSTOMER_COOKIE];
-//   if (!token) return next(unauthorized('Please log in to view your orders.'));
-//   try {
-//     const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] });
-//     if (payload.role !== 'customer') return next(unauthorized());
-//     const user = await User.findById(payload.sub).select('sessionVersion').lean();
-//     if (!user || user.sessionVersion !== payload.version) {
-//         return next(unauthorized('Session expired or logged out. Please log in again.'));
-//     }
-
-//     req.customer = { id: payload.sub, email: payload.email }; 
-//     return next();
-//   } catch {
-//     return next(unauthorized('Session expired. Please log in again.'));
-//   }
-// };
-
 export const requireCustomer = (env) => async (req, res, next) => { 
   const token = req.cookies?.[CUSTOMER_COOKIE];
   if (!token) return next(unauthorized('Please log in to view your orders.'));
@@ -98,18 +80,20 @@ export const requireCustomer = (env) => async (req, res, next) => {
     return next(error); 
   }
 };
+
 export const GUEST_COOKIE = 'gm_guest';
-export const GUEST_SESSION_TTL = 7 * 24 * 60 * 60; // 7 Days (Matches Redis TTL)
+export const GUEST_SESSION_TTL = 7 * 24 * 60 * 60; // 7 Days
 
 export function guestCookieOptions(env) {
   return {
     httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'strict',
+    secure: env.isProduction || env.COOKIE_SAME_SITE === 'none',
+    sameSite: env.COOKIE_SAME_SITE,
     path: '/',
     maxAge: GUEST_SESSION_TTL * 1000,
   };
 }
+
 export const guestSession = (env) => (req, res, next) => {
   if (req.customer?.id) {
     return next();
@@ -125,36 +109,6 @@ export const guestSession = (env) => (req, res, next) => {
   next();
 };
 
-// export const optionalCustomerAuth = (env) => async (req, res, next) => {
-//   const token = req.cookies?.[CUSTOMER_COOKIE];
-  
-//   if (!token) {
-//     return next(); 
-//   }
-
-//   try {
-//     const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] });
-    
-//     if (payload.role !== 'customer') {
-//       return next(); 
-//     }
-//     const user = await User.findById(payload.sub).select('sessionVersion').lean();
-    
-//     if (!user || user.sessionVersion !== payload.version) {
-     
-//       res.clearCookie(CUSTOMER_COOKIE); 
-//       return next();
-//     }
-
-//     // Valid Session
-//     req.customer = { id: payload.sub, email: payload.email }; 
-//     return next();
-    
-//   } catch (e) {
-   
-//     return next();
-//   }
-// };
 export const optionalCustomerAuth = (env) => async (req, res, next) => {
   const token = req.cookies?.[CUSTOMER_COOKIE];
   if (!token) return next(); 

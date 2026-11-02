@@ -22,6 +22,7 @@ const envSchema = z.object({
   TELEGRAM_ADMIN_CHAT_ID: z.string().default(''),
   FRONTEND_URL: z.string().url('FRONTEND_URL must be a full URL, e.g. https://goregaonmeds.in'),
   TRUST_PROXY: z.coerce.number().int().min(0).default(1),
+  COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).default('lax'),
 
   SMTP_HOST: z.string().default('smtp.gmail.com'),
   SMTP_PORT: z.coerce.number().default(587),
