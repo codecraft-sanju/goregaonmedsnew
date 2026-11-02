@@ -70,14 +70,13 @@ export function createPublicController({ env, notifier, logger, emailService, in
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
 
-      // ---> UPDATED EMAIL SENDING LOGIC <---
+     
       if (emailService) {
         try {
-          // Ab yeh background me nahi, balki yahi par wait karega
           await emailService.sendOtpEmail(email, otp);
         } catch (error) {
-          // Agar Gmail connect nahi hua, toh frontend ko 500 error jayega aur wo alert dikhayega
-          throw new Error('Failed to send OTP email. Mail server connection timed out. Please try again.');
+          // 'new Error' ki jagah 'badRequest' use karein taaki frontend par yahi message dikhe
+          throw badRequest('Failed to send OTP. Mail server connection timed out. Please check your App Password or Port.');
         }
       } else {
         logger.warn('Email service not configured. OTP not sent.');
