@@ -30,8 +30,8 @@ function generateOTP() {
 function customerCookieOptions(env) {
   return {
     httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'strict',
+    secure: env.isProduction || env.COOKIE_SAME_SITE === 'none',
+    sameSite: env.COOKIE_SAME_SITE || 'lax', 
     path: '/',
     maxAge: CUSTOMER_SESSION_TTL * 1000,
   };
