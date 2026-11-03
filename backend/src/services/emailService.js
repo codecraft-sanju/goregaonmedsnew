@@ -24,7 +24,7 @@ export function createEmailService(env) {
     secure: env.SMTP_PORT === 465,
     auth: isConfigured ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
     
-    connectionTimeout: 10000, // 10 seconds
+    connectionTimeout: 30000, // 10 seconds
     greetingTimeout: 10000,
     socketTimeout: 10000,
     debug: true, // --- DEBUGGING LOG 2: Enable nodemailer raw debug logs ---
