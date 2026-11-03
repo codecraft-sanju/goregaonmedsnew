@@ -49,40 +49,53 @@ export function createPublicController({ env, notifier, logger, emailService, in
 
   return {
     async requestOtp(req, res) {
+      console.log(`\n--- START OTP REQUEST ---`);
+      
       const { email } = req.body;
+      console.log(`[publicController] requestOtp called for email: ${email}`);
+      
       if (!email) throw badRequest('Email is required');
       
       const formattedEmail = email.toLowerCase().trim();
 
+      console.log(`[publicController] Checking existing user in DB for: ${formattedEmail}`);
       const existingUser = await User.findOne({ email: formattedEmail });
+      
       if (existingUser && existingUser.lockUntil && existingUser.lockUntil > new Date()) {
+        console.warn(`[publicController] Account locked for: ${formattedEmail}`);
         throw conflict('Account temporarily locked due to too many failed attempts. Try again in 15 minutes.');
       }
 
       const otp = generateOTP();
       const otpExpires = new Date(Date.now() + 5 * 60 * 1000); 
       
+      console.log(`[publicController] Hashing OTP for: ${formattedEmail}`);
       const hashedOtp = await bcrypt.hash(otp, 10);
 
+      console.log(`[publicController] Updating DB with new OTP...`);
       await User.findOneAndUpdate(
         { email: formattedEmail },
         { $set: { otp: hashedOtp, otpExpires, otpAttempts: 0, lockUntil: null } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
+      console.log(`[publicController] DB updated successfully!`);
 
-     
       if (emailService) {
         try {
-          await emailService.sendOtpEmail(email, otp);
+          console.log(`[publicController] Invoking emailService.sendOtpEmail...`);
+          await emailService.sendOtpEmail(formattedEmail, otp);
+          console.log(`[publicController] emailService returned success!`);
         } catch (error) {
-          // 'new Error' ki jagah 'badRequest' use karein taaki frontend par yahi message dikhe
-          throw badRequest('Failed to send OTP. Mail server connection timed out. Please check your App Password or Port.');
+          console.error(`❌ [publicController] ERROR CAUGHT from emailService:`, error);
+          // Changed to send exact error message to frontend for easier debugging temporarily
+          throw badRequest(`Failed to send OTP. Error: ${error.message}`);
         }
       } else {
         logger.warn('Email service not configured. OTP not sent.');
+        console.warn('[publicController] emailService object is missing or not passed correctly!');
       }
 
-      // Yeh line tabhi chalegi jab email successfully send ho jayega
+      console.log(`--- END OTP REQUEST (SUCCESS) ---\n`);
       res.json({ success: true, message: 'OTP sent to your email' });
     },
 

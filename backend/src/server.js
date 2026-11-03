@@ -72,7 +72,7 @@ import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { createApp } from './app.js';
 import { redisClient, redisQueueClient } from './config/redis.js'; 
 import { createInvoiceQueue } from './services/invoiceService.js'; 
-// import { createEmailWorker } from './services/emailService.js'; 
+
 import './models/User.js';
 import './models/Order.js';
 import './models/Settings.js';
@@ -85,8 +85,6 @@ async function start() {
   await connectDatabase(env.MONGODB_URI);
   
   const invoiceQueue = createInvoiceQueue(env);
-  // const emailWorker = createEmailWorker(env); 
-
   const app = createApp({ env, invoiceService: invoiceQueue });
   
   const server = app.listen(env.PORT, () => {
@@ -101,7 +99,7 @@ async function start() {
     server.close(async () => {
       try {
         await invoiceQueue.close(); 
-        // await emailWorker.close(); 
+     
         await disconnectDatabase();
         await redisClient.quit();
         if (redisQueueClient) await redisQueueClient.quit(); 

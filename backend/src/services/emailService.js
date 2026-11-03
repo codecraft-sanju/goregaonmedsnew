@@ -8,16 +8,40 @@ export function createEmailService(env) {
     console.warn('CRITICAL WARNING: SMTP must be configured in production to send OTPs');
   }
 
+  // --- DEBUGGING LOG 1: Check what environment variables are actually loaded ---
+  console.log('[emailService] Initializing SMTP with config:', {
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_PORT === 465,
+    hasUser: !!env.SMTP_USER,
+    hasPassword: !!env.SMTP_PASSWORD,
+    from: env.SMTP_FROM
+  });
+
   const transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT, 
     secure: env.SMTP_PORT === 465,
     auth: isConfigured ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
-   
+    
     connectionTimeout: 10000, // 10 seconds
     greetingTimeout: 10000,
     socketTimeout: 10000,
+    debug: true, // --- DEBUGGING LOG 2: Enable nodemailer raw debug logs ---
+    logger: true // Enable internal logger
   });
+
+  // --- DEBUGGING LOG 3: Startup Connection Test ---
+  if (isConfigured) {
+    console.log('[emailService] Verifying SMTP Connection...');
+    transporter.verify(function (error, success) {
+      if (error) {
+        console.error('❌ [emailService] SMTP Verification Failed:', error);
+      } else {
+        console.log('✅ [emailService] SMTP Server is ready and authenticated successfully!');
+      }
+    });
+  }
 
   return {
     async sendOtpEmail(email, otp) {
@@ -26,9 +50,11 @@ export function createEmailService(env) {
         return true; 
       }
 
+      console.log(`[emailService] Preparing to send email to: ${email}`);
+
       try {
-        await transporter.sendMail({
-          from: env.SMTP_FROM,
+        const info = await transporter.sendMail({
+          from: env.SMTP_FROM || env.SMTP_USER, // fallback to user if FROM is missing
           to: email,
           subject: 'GoregaonMeds - Your Login OTP',
           html: `
@@ -40,9 +66,15 @@ export function createEmailService(env) {
             </div>
           `
         });
+        
+        console.log(`✅ [emailService] Email sent successfully to ${email}. MessageId: ${info.messageId}`);
         return true;
       } catch (error) {
-        console.error(`[emailService] Failed to send OTP to ${email}:`, error.message);
+        // --- DEBUGGING LOG 4: Detailed Catch Log ---
+        console.error(`❌ [emailService] Failed to send OTP to ${email}`);
+        console.error(`[emailService] Error Code:`, error.code);
+        console.error(`[emailService] Error Command:`, error.command);
+        console.error(`[emailService] Full Error Details:`, error);
         throw error; // Rethrow to let the controller handle it
       }
     },
