@@ -3115,7 +3115,7 @@ footer {
   .section-head .text-link svg {
     width: 14px;
   }
-  .category-grid {
+  /* .category-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 14px;
   }
@@ -3124,6 +3124,14 @@ footer {
   }
   .category-card:last-child .category-art {
     height: 100px;
+  } */
+   .category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 14px;
+  }
+  /* 5th category (Health devices) ko mobile me hide karne ke liye */
+  .category-card:nth-child(5) {
+    display: none;
   }
   .category-art {
     height: 125px;
@@ -3823,4 +3831,17 @@ footer {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+.category-art::before,
+.category-spark {
+  display: none;
+}
+
+.category-image {
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.category-card:hover .category-image {
+  transform: scale(1.06);
 }

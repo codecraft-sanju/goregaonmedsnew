@@ -1,6 +1,7 @@
-//src/components/home.tsx
+// src/components/home.tsx
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -19,6 +20,16 @@ import {
   HeartPulse,
 } from 'lucide-react';
 import { Trending } from '@/features/catalog';
+
+// Category images
+const categoryImages = {
+  Medicines: "/images/categories/medicines.webp",
+  "Everyday wellness": "/images/categories/everyday-wellness.webp",
+  "Skin & personal care": "/images/categories/skin-personal-care.webp",
+  "Vitamins & supplements": "/images/categories/vitamins-supplements.webp",
+  "Health devices": "/images/categories/health-devices.webp",
+};
+
 export default function Home() {
   return (
     <div className="container home">
@@ -127,14 +138,7 @@ export default function Home() {
               <i key={i} />
             ))}
           </div>
-          {/* <div className="float-label label-bottom"> */}
-            {/* <span>
-              <Heart size={19} />
-            </span> */}
-            {/* <div>
-              A healthier everyday.<small>Made a little simpler.</small>
-            </div> */}
-          {/* </div> */}
+          
           <div className="hero-art-caption">
             THOUGHTFUL CARE, DELIVERED LOCALLY
           </div>
@@ -245,8 +249,13 @@ export default function Home() {
           ].map((c) => (
             <Link className="category-card" href={c.href} key={c.name}>
               <div className={`category-art ${c.color}`}>
-                <c.icon size={43} strokeWidth={1.25} />
-                <span className="category-spark">✧</span>
+                <Image
+                  src={categoryImages[c.name as keyof typeof categoryImages]}
+                  alt={c.name}
+                  fill
+                  sizes="(max-width: 600px) 50vw, (max-width: 1100px) 33vw, 220px"
+                  className="category-image"
+                />
               </div>
               <h3>{c.name}</h3>
               <p>{c.sub}</p>
