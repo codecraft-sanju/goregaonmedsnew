@@ -677,6 +677,9 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
   );
 }
 
+// ============================================================================
+// ADMIN PRODUCTS LIST WITH INSTANT OPTIMISTIC UI FOR TRENDING TOGGLE
+// ============================================================================
 function AdminProducts() {
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
@@ -700,10 +703,38 @@ function AdminProducts() {
   const trendingIds = settingsQuery.data?.settings.trendingProducts ?? [];
   const trendingLimit = settingsQuery.data?.settings.trendingLimit ?? 4;
 
+  // Optimistic UI Mutation (Instagram Like/Unlike style instant response)
   const toggleTrending = useMutation({
     mutationFn: (nextTrending: string[]) =>
-      send('/admin/settings', { trendingProducts: nextTrending }, 'PATCH'),
-    onSuccess: () => {
+      send<{ settings: Settings }>(
+        '/admin/settings',
+        { trendingProducts: nextTrending },
+        'PATCH',
+      ),
+    onMutate: async (nextTrending) => {
+      await qc.cancelQueries({ queryKey: ['admin', 'settings'] });
+      const previous = qc.getQueryData<{ settings: Settings }>([
+        'admin',
+        'settings',
+      ]);
+
+      qc.setQueryData<{ settings: Settings }>(['admin', 'settings'], (old) =>
+        old
+          ? {
+              ...old,
+              settings: { ...old.settings, trendingProducts: nextTrending },
+            }
+          : old,
+      );
+
+      return { previous };
+    },
+    onError: (_err, _nextTrending, context) => {
+      if (context?.previous) {
+        qc.setQueryData(['admin', 'settings'], context.previous);
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'settings'] });
       qc.invalidateQueries({ queryKey: ['public', 'trending'] });
     },
@@ -715,21 +746,28 @@ function AdminProducts() {
     onSuccess: (_data, deletedId) => {
       qc.invalidateQueries({ queryKey: ['admin', 'products'] });
       qc.invalidateQueries({ queryKey: ['public'] });
-      if (trendingIds.includes(deletedId)) {
-        toggleTrending.mutate(trendingIds.filter((id) => id !== deletedId));
+      const currentIds =
+        qc.getQueryData<{ settings: Settings }>(['admin', 'settings'])?.settings
+          .trendingProducts ?? trendingIds;
+      if (currentIds.includes(deletedId)) {
+        toggleTrending.mutate(currentIds.filter((id) => id !== deletedId));
       }
     },
   });
 
   const handleToggleTrending = (id: string) => {
-    const isTrending = trendingIds.includes(id);
-    if (!isTrending && trendingIds.length >= 20) {
+    const currentIds =
+      qc.getQueryData<{ settings: Settings }>(['admin', 'settings'])?.settings
+        .trendingProducts ?? trendingIds;
+
+    const isTrending = currentIds.includes(id);
+    if (!isTrending && currentIds.length >= 20) {
       window.alert('You can select up to 20 trending products.');
       return;
     }
     const next = isTrending
-      ? trendingIds.filter((item) => item !== id)
-      : [...trendingIds, id];
+      ? currentIds.filter((item) => item !== id)
+      : [...currentIds, id];
     toggleTrending.mutate(next);
   };
 
@@ -791,7 +829,13 @@ function AdminProducts() {
                   const isTrending = trendingIds.includes(id);
                   return (
                     <tr key={id}>
-                      <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <td
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                        }}
+                      >
                         <div
                           style={{
                             width: 44,
@@ -838,9 +882,7 @@ function AdminProducts() {
                         <button
                           type="button"
                           className={`btn small ${isTrending ? '' : 'secondary'}`}
-                          disabled={
-                            toggleTrending.isPending || settingsQuery.isPending
-                          }
+                          disabled={settingsQuery.isPending}
                           onClick={() => handleToggleTrending(id)}
                         >
                           {isTrending ? '★ Trending' : '+ Add to trending'}
@@ -1003,7 +1045,14 @@ function ImageCropModal({
           marginBottom: 12,
         }}
       >
-        <strong style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13 }}>
+        <strong
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            fontSize: 13,
+          }}
+        >
           <Crop size={16} color="var(--teal)" />
           Crop Product Photo (4:3 · 600×450px)
         </strong>
