@@ -3115,16 +3115,7 @@ footer {
   .section-head .text-link svg {
     width: 14px;
   }
-  /* .category-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 14px;
-  }
-  .category-card:last-child {
-    grid-column: span 2;
-  }
-  .category-card:last-child .category-art {
-    height: 100px;
-  } */
+ 
    .category-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 14px;

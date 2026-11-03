@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { ADMIN_COOKIE, SESSION_TTL_SECONDS, adminCookieOptions, signAdminToken } from '../middleware/auth.js';
 import { getOrder, listCustomers, listOrders, markDelivered, saveBilling, cancelOrder } from '../services/adminOrderService.js';
 import { getSettings, toAdminSettings, updateSettings } from '../services/settingsService.js';
+import { createProductUploadSignature } from '../services/cloudinaryService.js';
 import { unauthorized } from '../utils/AppError.js';
 import { Order } from '../models/Order.js';
 import { Product } from '../models/Product.js'; 
@@ -19,6 +20,12 @@ function safeEqual(a, b) {
 }
 
 export function createAdminController({ env, notifier }) {
+  const cloudinaryConfig = {
+    cloudName: env.CLOUDINARY_CLOUD_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
+  };
+
   return {
     async login(req, res) {
       const { username, password } = req.body;
@@ -78,67 +85,15 @@ export function createAdminController({ env, notifier }) {
     async updateSettings(req, res) {
       res.json({ success: true, settings: toAdminSettings(await updateSettings(req.body)) });
     },
-  // async getAnalyticsOverview(req, res, next) {
-  //     try {
-  //       const { startDate, endDate, allTime } = req.query;
 
-  //       let matchQuery = {};
+    // Product image upload signature for admin catalog
+    productUploadSignature(_req, res) {
+      res.set('Cache-Control', 'no-store');
+      const signatureData = createProductUploadSignature(cloudinaryConfig);
+      res.json({ success: true, upload: signatureData });
+    },
 
-  //       if (allTime !== 'true') {
-  //         if (!startDate || !endDate) {
-  //           return res.status(400).json({ success: false, error: 'startDate and endDate are required unless allTime is true.' });
-  //         }
-  //         const start = getLocalStartOfDay(startDate);
-  //         const end = getLocalEndOfDay(endDate);
-
-  //         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-  //            return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD.' });
-  //         }
-
-  //         matchQuery.createdAt = { $gte: start, $lte: end };
-  //       }
-  //       const stats = await Order.aggregate([
-  //         { $match: matchQuery },
-  //         {
-  //           $group: {
-  //             _id: null,
-  //             totalOrders: { $sum: 1 },
-  //             pendingOrders: {
-  //               $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] }
-  //             },
-  //             deliveredOrdersCount: {
-  //               $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] }
-  //             },
-  //             totalSales: {
-  //               $sum: {
-  //                 $cond: [{ $eq: ['$status', 'Delivered'] }, '$finalAmount', 0]
-  //               }
-  //             }
-  //           }
-  //         }
-  //       ]);
-
-  //       const result = stats.length > 0 ? stats[0] : {
-  //         totalOrders: 0,
-  //         pendingOrders: 0,
-  //         deliveredOrdersCount: 0,
-  //         totalSales: 0
-  //       };
-
-  //       res.json({
-  //         success: true,
-  //         totalSales: result.totalSales,
-  //         totalOrders: result.totalOrders,
-  //         breakdown: {
-  //           pending: result.pendingOrders,
-  //           delivered: result.deliveredOrdersCount,
-  //         },
-  //       });
-  //     } catch (error) {
-  //       next(error);
-  //     }
-  //   },
-  async getAnalyticsOverview(req, res, next) {
+    async getAnalyticsOverview(req, res, next) {
       try {
         const { startDate, endDate, allTime } = req.query;
 
@@ -155,8 +110,8 @@ export function createAdminController({ env, notifier }) {
           if (isNaN(start.getTime()) || isNaN(end.getTime())) {
              return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD.' });
           }
-          matchQueryPlaced.createdAt = { $gte: start, $lte: end };
-          matchQueryDelivered.deliveredAt = { $gte: start, $lte: end };
+          matchQueryPlaced.createdAt = { $gte: start,$lte: end };
+          matchQueryDelivered.deliveredAt = { $gte: start,$lte: end };
         }
         const [placedStats, salesStats] = await Promise.all([
           Order.aggregate([
@@ -165,7 +120,7 @@ export function createAdminController({ env, notifier }) {
               $group: {
                 _id: null,
                 totalOrders: { $sum: 1 },
-                pendingOrders: { $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] } }
+                pendingOrders: { $sum: {$cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] } }
               }
             }
           ]),
@@ -198,39 +153,32 @@ export function createAdminController({ env, notifier }) {
       }
     },
 
-async listProducts(req, res, next) {
+    async listProducts(req, res, next) {
       try {
-        // 1. Pagination Params with Safety Caps (Industry Standard)
         const page = Math.max(1, parseInt(req.query.page) || 1);
-        // Max limit 100 set ki hai taaki server overload na ho
         const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50)); 
         const skip = (page - 1) * limit;
 
-        // 2. Basic Search Filter (Admin search form ke liye optional)
         const { q } = req.query;
         const filter = {};
         if (q) {
-          // Admin search ke liye simple regex name ya category par
           filter.$or = [
-            { name: { $regex: q, $options: 'i' } },
-            { category: { $regex: q, $options: 'i' } }
+            { name: { $regex: q,$options: 'i' } },
+            { category: { $regex: q,$options: 'i' } }
           ];
         }
 
-        // 3. Concurrent Execution & .lean() for 5x faster performance
         const [products, total] = await Promise.all([
           Product.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .lean(), // .lean() plain JSON return karta hai mongoose instance ki jagah
+            .lean(),
           Product.countDocuments(filter)
         ]);
 
-        // 4. Calculate Meta
         const totalPages = Math.ceil(total / limit);
 
-        // 5. Standardized Response
         res.json({ 
           success: true, 
           products,
@@ -260,9 +208,9 @@ async listProducts(req, res, next) {
     async updateProduct(req, res, next) {
       try {
        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { 
-  new: true, 
-  runValidators: true 
-});
+          new: true, 
+          runValidators: true 
+        });
         if (!product) {
           return res.status(404).json({ success: false, error: 'Product not found' });
         }
@@ -293,7 +241,8 @@ async listProducts(req, res, next) {
 
     async deleteSystemLog(req, res, next) {
       try {
-        await SystemLog.findByIdAndDelete(req.params.id);
+        const SystemLogModel = SystemLog;
+        await SystemLogModel.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Log deleted successfully' });
       } catch (error) { next(error); }
     },
@@ -302,7 +251,7 @@ async listProducts(req, res, next) {
       try {
         await SystemLog.deleteMany({});
         res.json({ success: true, message: 'All logs cleared successfully' });
-      } catch (error) { next(error); }
+      } catch (error) { next(logErr => next(logErr)); }
     }
   };
 }

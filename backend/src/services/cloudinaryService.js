@@ -10,7 +10,6 @@ export function createUploadSignature({ cloudName, apiKey, apiSecret, folder }, 
   
   const secureFolder = `${folder}/${uploadId}`;
 
-  // FIX: Cloudinary REST API signature sirf valid upload params accept karta hai
   const params = { 
     folder: secureFolder, 
     timestamp,
@@ -37,6 +36,36 @@ export function createUploadSignature({ cloudName, apiKey, apiSecret, folder }, 
   };
 }
 
+// Naya function public product catalog images ke liye (type: upload)
+export function createProductUploadSignature({ cloudName, apiKey, apiSecret }, now = Date.now()) {
+  const timestamp = Math.floor(now / 1000);
+  const folder = 'goregaonmeds/products';
+  const type = 'upload'; // Public upload for catalog items
+
+  const params = { 
+    folder, 
+    timestamp,
+    type 
+  };
+
+  const toSign = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+    
+  const signature = createHash('sha1').update(`${toSign}${apiSecret}`).digest('hex');
+  
+  return {
+    cloudName,
+    apiKey,
+    folder,
+    timestamp,
+    type,
+    signature,
+    uploadUrl: `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,
+  };
+}
+
 export function isTrustedPrescriptionUrl(value, { cloudName, folder }) {
   let url;
   try { url = new URL(value); } catch { return false; }
@@ -50,7 +79,6 @@ export function isTrustedPrescriptionUrl(value, { cloudName, folder }) {
   );
 }
 
-// Added function to actually verify if the file exists on Cloudinary servers
 export async function verifyCloudinaryFileExists(url, { cloudName, apiKey, apiSecret }) {
   try {
     cloudinaryClient.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
@@ -80,7 +108,6 @@ export function generateSignedDeliveryUrl(url, { cloudName, apiKey, apiSecret })
 
   const publicIdWithExt = urlParts.slice(versionIndex + 1).join('/');
   
-  // URL valid for 1 hour (3600 seconds)
   return cloudinaryClient.utils.private_download_url(publicIdWithExt, '', {
     type: 'authenticated',
     resource_type: 'raw',

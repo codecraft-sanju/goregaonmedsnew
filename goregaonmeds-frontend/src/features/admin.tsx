@@ -1,8 +1,8 @@
-//src/features/admin.tsx
+// src/features/admin.tsx
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   HeartPulse,
@@ -23,6 +23,14 @@ import {
   CheckCheck,
   Trash2,
   Save,
+  Camera,
+  Image as ImageIcon,
+  Crop,
+  ZoomIn,
+  ZoomOut,
+  X,
+  Pill,
+  Check,
 } from 'lucide-react';
 import {
   api,
@@ -669,134 +677,6 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
   );
 }
 
-// function AdminProducts() {
-//   const [page, setPage] = useState(1),
-//     [search, setSearch] = useState(''),
-//     [query, setQuery] = useState(''),
-//     [edit, setEdit] = useState<Product | true | null>(null);
-//   const qc = useQueryClient();
-
-//   const q = useQuery({
-//     queryKey: ['admin', 'products', page, query],
-//     queryFn: () =>
-//       api<{ products: Product[]; pagination?: Pagination }>(
-//         `/admin/products?page=${page}&limit=20&q=${encodeURIComponent(query)}`,
-//       ),
-//   });
-
-//   const del = useMutation({
-//     mutationFn: (id: string) =>
-//       send(`/admin/products/${id}`, undefined, 'DELETE'),
-//     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'products'] }),
-//   });
-
-//   return (
-//     <>
-//       <PageHeading title="A well-kept shelf." eyebrow="CATALOG & INVENTORY" />
-//       <div className="section-head">
-//         <form
-//           className="search-field"
-//           onSubmit={(e) => {
-//             e.preventDefault();
-//             setQuery(search);
-//             setPage(1);
-//           }}
-//         >
-//           <Search size={18} />
-//           <input
-//             placeholder="Search products"
-//             aria-label="Search products"
-//             value={search}
-//             maxLength={80}
-//             onChange={(e) => setSearch(e.target.value)}
-//           />
-//           <button className="text-link">Search</button>
-//         </form>
-//         <button className="btn" onClick={() => setEdit(true)}>
-//           <Plus size={17} />
-//           Add product
-//         </button>
-//       </div>
-//       {del.error && <ErrorState error={del.error} />}{' '}
-//       {q.isPending ? (
-//         <TableSkeleton rows={5} />
-//       ) : q.error ? (
-//         <ErrorState error={q.error} retry={() => q.refetch()} />
-//       ) : q.data?.products.length ? (
-//         <>
-//           <div className="table-wrap panel">
-//             <table>
-//               <thead>
-//                 <tr>
-//                   <th>Product</th>
-//                   <th>Category</th>
-//                   <th>Price</th>
-//                   <th>Stock</th>
-//                   <th>Actions</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {q.data.products.map((p) => (
-//                   <tr key={productId(p)}>
-//                     <td>
-//                       <strong>{p.name}</strong>
-//                       <small>{p.isActive ? 'Active' : 'Hidden'}</small>
-//                     </td>
-//                     <td>{p.category}</td>
-//                     <td>{money(p.price)}</td>
-//                     <td>
-//                       {p.trackStock
-//                         ? `${p.stockQuantity} units`
-//                         : p.inStock
-//                           ? 'Available'
-//                           : 'Unavailable'}
-//                     </td>
-//                     <td>
-//                       <button className="text-link" onClick={() => setEdit(p)}>
-//                         Edit
-//                       </button>
-//                       <button
-//                         className="icon-button"
-//                         aria-label={`Delete ${p.name}`}
-//                         disabled={del.isPending}
-//                         onClick={() => {
-//                           if (window.confirm(`Permanently delete ${p.name}?`))
-//                             del.mutate(productId(p));
-//                         }}
-//                       >
-//                         <Trash2 size={16} />
-//                       </button>
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//           <Pager
-//             page={page}
-//             total={q.data.pagination?.totalPages ?? page}
-//             onChange={setPage}
-//           />
-//         </>
-//       ) : (
-//         <Empty title="Your catalog starts here.">
-//           <p>Add a product to put it on your shelf.</p>
-//         </Empty>
-//       )}
-//       {edit && (
-//         <Modal
-//           title={edit === true ? 'Add a product' : 'Edit product'}
-//           onClose={() => setEdit(null)}
-//         >
-//           <ProductForm
-//             product={edit === true ? undefined : edit}
-//             done={() => setEdit(null)}
-//           />
-//         </Modal>
-//       )}
-//     </>
-//   );
-// }
 function AdminProducts() {
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
@@ -881,8 +761,9 @@ function AdminProducts() {
         </button>
       </div>
       <p className="fine-print">
-        Trending selected: <strong>{trendingIds.length}</strong> / 20 · Showing up to{' '}
-        <strong>{trendingLimit}</strong> on homepage (change limit in Settings).
+        Trending selected: <strong>{trendingIds.length}</strong> / 20 · Showing
+        up to <strong>{trendingLimit}</strong> on homepage (change limit in
+        Settings).
       </p>
       {del.error && <ErrorState error={del.error} />}{' '}
       {toggleTrending.error && <ErrorState error={toggleTrending.error} />}{' '}
@@ -910,9 +791,39 @@ function AdminProducts() {
                   const isTrending = trendingIds.includes(id);
                   return (
                     <tr key={id}>
-                      <td>
-                        <strong>{p.name}</strong>
-                        <small>{p.isActive ? 'Active' : 'Hidden'}</small>
+                      <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div
+                          style={{
+                            width: 44,
+                            height: 36,
+                            borderRadius: 6,
+                            background: '#f5f7f1',
+                            display: 'grid',
+                            placeItems: 'center',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            border: '1px solid var(--border)',
+                          }}
+                        >
+                          {p.imageUrl ? (
+                            <img
+                              src={p.imageUrl}
+                              alt={p.name}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                                mixBlendMode: 'multiply',
+                              }}
+                            />
+                          ) : (
+                            <Pill size={18} color="#a2b49b" />
+                          )}
+                        </div>
+                        <div>
+                          <strong>{p.name}</strong>
+                          <small>{p.isActive ? 'Active' : 'Hidden'}</small>
+                        </div>
                       </td>
                       <td>{p.category}</td>
                       <td>{money(p.price)}</td>
@@ -927,14 +838,19 @@ function AdminProducts() {
                         <button
                           type="button"
                           className={`btn small ${isTrending ? '' : 'secondary'}`}
-                          disabled={toggleTrending.isPending || settingsQuery.isPending}
+                          disabled={
+                            toggleTrending.isPending || settingsQuery.isPending
+                          }
                           onClick={() => handleToggleTrending(id)}
                         >
                           {isTrending ? '★ Trending' : '+ Add to trending'}
                         </button>
                       </td>
                       <td>
-                        <button className="text-link" onClick={() => setEdit(p)}>
+                        <button
+                          className="text-link"
+                          onClick={() => setEdit(p)}
+                        >
                           Edit
                         </button>
                         <button
@@ -981,6 +897,249 @@ function AdminProducts() {
   );
 }
 
+// ============================================================================
+// LIVE 4:3 (600x450px) CLIENT-SIDE IMAGE CROPPER MODAL
+// ============================================================================
+const CROP_VIEW_W = 320;
+const CROP_VIEW_H = 240; // Exact 4:3 ratio
+const OUTPUT_W = 600;
+const OUTPUT_H = 450;
+
+function ImageCropModal({
+  src,
+  onCancel,
+  onConfirm,
+  uploading,
+}: {
+  src: string;
+  onCancel: () => void;
+  onConfirm: (blob: Blob) => void;
+  uploading: boolean;
+}) {
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [naturalSize, setNaturalSize] = useState({ w: 1, h: 1 });
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+
+  // Fit inside 4:3 frame nicely
+  const baseScale = Math.max(
+    CROP_VIEW_W / naturalSize.w,
+    CROP_VIEW_H / naturalSize.h,
+  );
+  const currentScale = baseScale * zoom;
+  const dispW = naturalSize.w * currentScale;
+  const dispH = naturalSize.h * currentScale;
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragging(true);
+    dragStartRef.current = {
+      x: e.clientX - offset.x,
+      y: e.clientY - offset.y,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setOffset({
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y,
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  const handleCropAndUpload = () => {
+    if (!imgRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = OUTPUT_W;
+    canvas.height = OUTPUT_H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clean white background (matches mix-blend-mode: multiply on ProductCard)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, OUTPUT_W, OUTPUT_H);
+
+    const ratio = OUTPUT_W / CROP_VIEW_W;
+    const drawX = ((CROP_VIEW_W - dispW) / 2 + offset.x) * ratio;
+    const drawY = ((CROP_VIEW_H - dispH) / 2 + offset.y) * ratio;
+    const drawW = dispW * ratio;
+    const drawH = dispH * ratio;
+
+    ctx.drawImage(imgRef.current, drawX, drawY, drawW, drawH);
+
+    canvas.toBlob(
+      (blob) => {
+        if (blob) onConfirm(blob);
+      },
+      'image/webp',
+      0.9,
+    );
+  };
+
+  return (
+    <div
+      style={{
+        border: '1px solid var(--border)',
+        borderRadius: 16,
+        background: '#f5f7f1',
+        padding: 18,
+        margin: '16px 0',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 12,
+        }}
+      >
+        <strong style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13 }}>
+          <Crop size={16} color="var(--teal)" />
+          Crop Product Photo (4:3 · 600×450px)
+        </strong>
+        <button
+          type="button"
+          className="icon-button"
+          onClick={onCancel}
+          disabled={uploading}
+          style={{ minWidth: 32, minHeight: 32 }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <p className="fine-print" style={{ marginTop: 0, marginBottom: 12 }}>
+        Drag photo to position it inside the 4:3 frame. Zoom in or out to fit
+        your product neatly.
+      </p>
+
+      {/* Interactive 4:3 Crop Viewport */}
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{
+          width: CROP_VIEW_W,
+          height: CROP_VIEW_H,
+          maxWidth: '100%',
+          margin: '0 auto',
+          position: 'relative',
+          overflow: 'hidden',
+          background: '#ffffff',
+          borderRadius: 12,
+          border: '2px dashed var(--teal)',
+          cursor: dragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <img
+          ref={imgRef}
+          src={src}
+          alt="Crop source"
+          draggable={false}
+          onLoad={(e) => {
+            setNaturalSize({
+              w: e.currentTarget.naturalWidth || 1,
+              h: e.currentTarget.naturalHeight || 1,
+            });
+            setOffset({ x: 0, y: 0 });
+            setZoom(1);
+          }}
+          style={{
+            position: 'absolute',
+            left: (CROP_VIEW_W - dispW) / 2 + offset.x,
+            top: (CROP_VIEW_H - dispH) / 2 + offset.y,
+            width: dispW,
+            height: dispH,
+            maxWidth: 'none',
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Subtle 4:3 Rule-of-Thirds Grid Overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            backgroundImage:
+              'linear-gradient(to right, rgba(8,127,116,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(8,127,116,0.12) 1px, transparent 1px)',
+            backgroundSize: '33.33% 33.33%',
+          }}
+        />
+      </div>
+
+      {/* Zoom Controls */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          maxWidth: CROP_VIEW_W,
+          margin: '14px auto',
+        }}
+      >
+        <ZoomOut size={16} color="var(--muted)" />
+        <input
+          type="range"
+          min="0.4"
+          max="3"
+          step="0.05"
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          style={{ minHeight: 'auto', padding: 0, accentColor: 'var(--teal)' }}
+        />
+        <ZoomIn size={16} color="var(--muted)" />
+        <button
+          type="button"
+          className="text-link"
+          style={{ minHeight: 'auto', padding: '0 4px', fontSize: 11 }}
+          onClick={() => {
+            setZoom(1);
+            setOffset({ x: 0, y: 0 });
+          }}
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Action Buttons */}
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <button
+          type="button"
+          className="btn secondary small"
+          onClick={onCancel}
+          disabled={uploading}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn small"
+          onClick={handleCropAndUpload}
+          disabled={uploading}
+        >
+          <Check size={15} />
+          {uploading ? 'Uploading to Cloudinary…' : 'Crop & Upload'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PRODUCT FORM WITH GALLERY / CAMERA UPLOAD & LIVE PRODUCT CARD PREVIEW
+// ============================================================================
 function ProductForm({
   product: p,
   done,
@@ -989,6 +1148,96 @@ function ProductForm({
   done: () => void;
 }) {
   const qc = useQueryClient();
+
+  // Controlled states for live ProductCard preview
+  const [name, setName] = useState(p?.name ?? '');
+  const [category, setCategory] = useState(p?.category ?? '');
+  const [price, setPrice] = useState(p?.price ?? 0);
+  const [imageUrl, setImageUrl] = useState(p?.imageUrl ?? '');
+  const [inStock, setInStock] = useState(p?.inStock ?? true);
+  const [trackStock, setTrackStock] = useState(p?.trackStock ?? false);
+  const [stockQuantity, setStockQuantity] = useState(p?.stockQuantity ?? 0);
+
+  // Image Cropper & Upload states
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select a valid image file (JPG, PNG, WEBP).');
+      return;
+    }
+    setUploadError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setRawImageSrc(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input so same file can be re-selected
+  };
+
+  const handleUploadCroppedBlob = async (blob: Blob) => {
+    try {
+      setUploadingImage(true);
+      setUploadError(null);
+
+      // 1. Get Public Upload signature from Backend (/admin/uploads/product-signature)
+      const sigRes = await api<{
+        upload: {
+          cloudName: string;
+          apiKey: string;
+          folder: string;
+          timestamp: number;
+          type: string;
+          signature: string;
+          uploadUrl: string;
+        };
+      }>('/admin/uploads/product-signature');
+
+      const { apiKey, folder, timestamp, type, signature, uploadUrl } =
+        sigRes.upload;
+
+      // 2. Upload cropped 600x450 WebP image to Cloudinary Public folder (goregaonmeds/products)
+      const formData = new FormData();
+      formData.append('file', blob, `product-${Date.now()}.webp`);
+      formData.append('api_key', apiKey);
+      formData.append('folder', folder);
+      formData.append('timestamp', String(timestamp));
+      formData.append('type', type);
+      formData.append('signature', signature);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+      if (!uploadResponse.ok || !uploadData.secure_url) {
+        throw new Error(
+          uploadData?.error?.message || 'Cloudinary image upload failed.',
+        );
+      }
+
+      // 3. Automatically populate imageUrl & close cropper
+      setImageUrl(uploadData.secure_url);
+      setRawImageSrc(null);
+    } catch (err) {
+      setUploadError(
+        err instanceof Error ? err.message : 'Failed to upload product image.',
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const m = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
       send(
@@ -1002,57 +1251,81 @@ function ProductForm({
       done();
     },
   });
+
+  const previewAvailable =
+    inStock && (!trackStock || Number(stockQuantity) > 0);
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
         m.mutate({
-          name: f.get('name'),
-          category: f.get('category'),
+          name: name.trim(),
+          category: category.trim(),
           description: f.get('description'),
-          price: Number(f.get('price')),
-          imageUrl: f.get('imageUrl'),
+          price: Number(price),
+          imageUrl: imageUrl.trim(),
           kind: f.get('kind'),
-          stockQuantity: Number(f.get('stockQuantity')),
+          stockQuantity: Number(stockQuantity),
           isActive: f.has('isActive'),
-          inStock: f.has('inStock'),
-          trackStock: f.has('trackStock'),
+          inStock,
+          trackStock,
         });
       }}
     >
-      <fieldset disabled={m.isPending}>
+      <fieldset disabled={m.isPending || uploadingImage}>
         <div className="form-grid">
-          {['name', 'category', 'price', 'stockQuantity'].map((k) => (
-            <label key={k}>
-              {
-                (
-                  {
-                    name: 'Product name',
-                    category: 'Category',
-                    price: 'Price (₹)',
-                    stockQuantity: 'Stock quantity',
-                  } as Record<string, string>
-                )[k]
-              }
-              <input
-                name={k}
-                required
-                type={
-                  ['price', 'stockQuantity'].includes(k) ? 'number' : 'text'
-                }
-                min={['price', 'stockQuantity'].includes(k) ? 0 : undefined}
-                minLength={['name', 'category'].includes(k) ? 2 : undefined}
-                step={k === 'price' ? '0.01' : '1'}
-                maxLength={k === 'category' ? 60 : 120}
-                defaultValue={String(
-                  p?.[k as keyof Product] ??
-                    (['price', 'stockQuantity'].includes(k) ? 0 : ''),
-                )}
-              />
-            </label>
-          ))}
+          <label>
+            Product name
+            <input
+              name="name"
+              required
+              type="text"
+              minLength={2}
+              maxLength={120}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label>
+            Category
+            <input
+              name="category"
+              required
+              type="text"
+              minLength={2}
+              maxLength={60}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            />
+          </label>
+          <label>
+            Price (₹)
+            <input
+              name="price"
+              required
+              type="number"
+              min={0}
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Stock quantity
+            <input
+              name="stockQuantity"
+              required
+              type="number"
+              min={0}
+              step="1"
+              value={stockQuantity}
+              onChange={(e) => setStockQuantity(Number(e.target.value))}
+            />
+          </label>
         </div>
+
         <label>
           Description
           <textarea
@@ -1061,14 +1334,151 @@ function ProductForm({
             defaultValue={p?.description}
           />
         </label>
-        <label>
-          Public product image URL
-          <input name="imageUrl" type="url" defaultValue={p?.imageUrl} />
-        </label>
-        <p className="fine-print">
-          Use an existing public product image. Prescription-upload signatures
-          must not be reused for catalog images.
-        </p>
+
+        {/* Product Image Upload Section (Gallery + Camera + Cropper + Preview) */}
+        <div
+          style={{
+            border: '1px solid var(--border)',
+            borderRadius: 14,
+            padding: 16,
+            background: '#fafbf8',
+            margin: '16px 0',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 10,
+            }}
+          >
+            <div>
+              <strong style={{ fontSize: 13, display: 'block' }}>
+                Product Catalog Image (4:3 · 600×450px)
+              </strong>
+              <span className="fine-print" style={{ margin: 0 }}>
+                Select from Gallery or take a live photo via Mobile Camera.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {/* Hidden File Inputs */}
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                className="btn secondary small"
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <ImageIcon size={15} />
+                Gallery
+              </button>
+              <button
+                type="button"
+                className="btn secondary small"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera size={15} />
+                Camera
+              </button>
+            </div>
+          </div>
+
+          {/* Live 4:3 Cropper Modal when a file is chosen */}
+          {rawImageSrc && (
+            <ImageCropModal
+              src={rawImageSrc}
+              uploading={uploadingImage}
+              onCancel={() => setRawImageSrc(null)}
+              onConfirm={handleUploadCroppedBlob}
+            />
+          )}
+
+          {uploadError && (
+            <p className="field-error" role="alert">
+              {uploadError}
+            </p>
+          )}
+
+          <label style={{ marginTop: 12, marginBottom: 8 }}>
+            Public product image URL
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                name="imageUrl"
+                type="url"
+                placeholder="https://res.cloudinary.com/..."
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+              {imageUrl && (
+                <button
+                  type="button"
+                  className="btn secondary small"
+                  onClick={() => setImageUrl('')}
+                  title="Clear image"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </label>
+
+          {/* Live Storefront ProductCard Preview */}
+          <div style={{ marginTop: 14 }}>
+            <span
+              className="eyebrow"
+              style={{ fontSize: 9, marginBottom: 8, display: 'block' }}
+            >
+              LIVE STOREFRONT CARD PREVIEW
+            </span>
+            <div style={{ maxWidth: 230 }}>
+              <article className="product-card" style={{ margin: 0 }}>
+                <div className="product-image">
+                  {imageUrl ? (
+                    <img src={imageUrl} alt={name || 'Product preview'} />
+                  ) : (
+                    <Pill size={44} />
+                  )}
+                </div>
+                <span className="product-category">
+                  {category || 'CATEGORY'}
+                </span>
+                <div className="product-title">
+                  {name || 'Product Name'}
+                </div>
+                <small>
+                  {previewAvailable
+                    ? 'Available to order'
+                    : 'Currently unavailable'}
+                </small>
+                <div className="product-bottom">
+                  <strong>{money(Number(price) || 0)}</strong>
+                  <span className="add-btn" style={{ pointerEvents: 'none' }}>
+                    <Plus size={16} />
+                    Add
+                  </span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
         <label>
           Product classification
           <select name="kind" defaultValue={p?.kind ?? 'non_medicine'}>
@@ -1076,24 +1486,36 @@ function ProductForm({
             <option value="medicine">Medicine</option>
           </select>
         </label>
-        {(['isActive', 'inStock', 'trackStock'] as const).map((k) => (
-          <label className="checkbox" key={k}>
-            <input
-              type="checkbox"
-              name={k}
-              defaultChecked={p?.[k] ?? k !== 'trackStock'}
-            />
-            {
-              {
-                isActive: 'Visible in catalog',
-                inStock: 'Available to order',
-                trackStock: 'Track stock quantity',
-              }[k]
-            }
-          </label>
-        ))}
+
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            name="isActive"
+            defaultChecked={p?.isActive ?? true}
+          />
+          Visible in catalog
+        </label>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            name="inStock"
+            checked={inStock}
+            onChange={(e) => setInStock(e.target.checked)}
+          />
+          Available to order
+        </label>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            name="trackStock"
+            checked={trackStock}
+            onChange={(e) => setTrackStock(e.target.checked)}
+          />
+          Track stock quantity
+        </label>
+
         {m.error && <ErrorState error={m.error} />}
-        <button className="btn full">
+        <button className="btn full" disabled={uploadingImage || m.isPending}>
           {m.isPending ? 'Saving…' : 'Save product'}
         </button>
       </fieldset>
@@ -1211,7 +1633,6 @@ function AdminSettings() {
   );
 }
 
-
 function SettingsForm({ settings: s }: { settings: Settings }) {
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
@@ -1320,6 +1741,7 @@ function SettingsForm({ settings: s }: { settings: Settings }) {
     </form>
   );
 }
+
 function Logs() {
   const qc = useQueryClient();
   const q = useQuery({
