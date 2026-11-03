@@ -2,11 +2,9 @@
 import { Settings, SETTINGS_SINGLETON_ID } from '../models/Settings.js';
 
 export async function getSettings() {
-  
   let settings = await Settings.findOne({ singletonId: SETTINGS_SINGLETON_ID }).lean();
   
   if (!settings) {
-  
     settings = await Settings.findOneAndUpdate(
       { singletonId: SETTINGS_SINGLETON_ID },
       { $setOnInsert: { singletonId: SETTINGS_SINGLETON_ID } },
@@ -30,9 +28,15 @@ export function toPublicSettings(settings) {
     deliveryCharge: settings.deliveryCharge,
     firstOrderOfferEnabled: settings.firstOrderOfferEnabled,
     firstOrderMinimumMedicineAmount: settings.firstOrderMinimumMedicineAmount,
+    trendingLimit: settings.trendingLimit ?? 4,
   };
 }
 
 export function toAdminSettings(settings) {
-return { ...toPublicSettings(settings), lowStockThreshold: settings.lowStockThreshold, updatedAt: settings.updatedAt };
+  return {
+    ...toPublicSettings(settings),
+    lowStockThreshold: settings.lowStockThreshold,
+    trendingProducts: (settings.trendingProducts || []).map((id) => String(id)),
+    updatedAt: settings.updatedAt,
+  };
 }

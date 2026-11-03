@@ -669,6 +669,134 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
   );
 }
 
+// function AdminProducts() {
+//   const [page, setPage] = useState(1),
+//     [search, setSearch] = useState(''),
+//     [query, setQuery] = useState(''),
+//     [edit, setEdit] = useState<Product | true | null>(null);
+//   const qc = useQueryClient();
+
+//   const q = useQuery({
+//     queryKey: ['admin', 'products', page, query],
+//     queryFn: () =>
+//       api<{ products: Product[]; pagination?: Pagination }>(
+//         `/admin/products?page=${page}&limit=20&q=${encodeURIComponent(query)}`,
+//       ),
+//   });
+
+//   const del = useMutation({
+//     mutationFn: (id: string) =>
+//       send(`/admin/products/${id}`, undefined, 'DELETE'),
+//     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'products'] }),
+//   });
+
+//   return (
+//     <>
+//       <PageHeading title="A well-kept shelf." eyebrow="CATALOG & INVENTORY" />
+//       <div className="section-head">
+//         <form
+//           className="search-field"
+//           onSubmit={(e) => {
+//             e.preventDefault();
+//             setQuery(search);
+//             setPage(1);
+//           }}
+//         >
+//           <Search size={18} />
+//           <input
+//             placeholder="Search products"
+//             aria-label="Search products"
+//             value={search}
+//             maxLength={80}
+//             onChange={(e) => setSearch(e.target.value)}
+//           />
+//           <button className="text-link">Search</button>
+//         </form>
+//         <button className="btn" onClick={() => setEdit(true)}>
+//           <Plus size={17} />
+//           Add product
+//         </button>
+//       </div>
+//       {del.error && <ErrorState error={del.error} />}{' '}
+//       {q.isPending ? (
+//         <TableSkeleton rows={5} />
+//       ) : q.error ? (
+//         <ErrorState error={q.error} retry={() => q.refetch()} />
+//       ) : q.data?.products.length ? (
+//         <>
+//           <div className="table-wrap panel">
+//             <table>
+//               <thead>
+//                 <tr>
+//                   <th>Product</th>
+//                   <th>Category</th>
+//                   <th>Price</th>
+//                   <th>Stock</th>
+//                   <th>Actions</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {q.data.products.map((p) => (
+//                   <tr key={productId(p)}>
+//                     <td>
+//                       <strong>{p.name}</strong>
+//                       <small>{p.isActive ? 'Active' : 'Hidden'}</small>
+//                     </td>
+//                     <td>{p.category}</td>
+//                     <td>{money(p.price)}</td>
+//                     <td>
+//                       {p.trackStock
+//                         ? `${p.stockQuantity} units`
+//                         : p.inStock
+//                           ? 'Available'
+//                           : 'Unavailable'}
+//                     </td>
+//                     <td>
+//                       <button className="text-link" onClick={() => setEdit(p)}>
+//                         Edit
+//                       </button>
+//                       <button
+//                         className="icon-button"
+//                         aria-label={`Delete ${p.name}`}
+//                         disabled={del.isPending}
+//                         onClick={() => {
+//                           if (window.confirm(`Permanently delete ${p.name}?`))
+//                             del.mutate(productId(p));
+//                         }}
+//                       >
+//                         <Trash2 size={16} />
+//                       </button>
+//                     </td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//           <Pager
+//             page={page}
+//             total={q.data.pagination?.totalPages ?? page}
+//             onChange={setPage}
+//           />
+//         </>
+//       ) : (
+//         <Empty title="Your catalog starts here.">
+//           <p>Add a product to put it on your shelf.</p>
+//         </Empty>
+//       )}
+//       {edit && (
+//         <Modal
+//           title={edit === true ? 'Add a product' : 'Edit product'}
+//           onClose={() => setEdit(null)}
+//         >
+//           <ProductForm
+//             product={edit === true ? undefined : edit}
+//             done={() => setEdit(null)}
+//           />
+//         </Modal>
+//       )}
+//     </>
+//   );
+// }
 function AdminProducts() {
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
@@ -684,11 +812,46 @@ function AdminProducts() {
       ),
   });
 
+  const settingsQuery = useQuery({
+    queryKey: ['admin', 'settings'],
+    queryFn: () => api<{ settings: Settings }>('/admin/settings'),
+  });
+
+  const trendingIds = settingsQuery.data?.settings.trendingProducts ?? [];
+  const trendingLimit = settingsQuery.data?.settings.trendingLimit ?? 4;
+
+  const toggleTrending = useMutation({
+    mutationFn: (nextTrending: string[]) =>
+      send('/admin/settings', { trendingProducts: nextTrending }, 'PATCH'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'settings'] });
+      qc.invalidateQueries({ queryKey: ['public', 'trending'] });
+    },
+  });
+
   const del = useMutation({
     mutationFn: (id: string) =>
       send(`/admin/products/${id}`, undefined, 'DELETE'),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'products'] }),
+    onSuccess: (_data, deletedId) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'products'] });
+      qc.invalidateQueries({ queryKey: ['public'] });
+      if (trendingIds.includes(deletedId)) {
+        toggleTrending.mutate(trendingIds.filter((id) => id !== deletedId));
+      }
+    },
   });
+
+  const handleToggleTrending = (id: string) => {
+    const isTrending = trendingIds.includes(id);
+    if (!isTrending && trendingIds.length >= 20) {
+      window.alert('You can select up to 20 trending products.');
+      return;
+    }
+    const next = isTrending
+      ? trendingIds.filter((item) => item !== id)
+      : [...trendingIds, id];
+    toggleTrending.mutate(next);
+  };
 
   return (
     <>
@@ -717,7 +880,12 @@ function AdminProducts() {
           Add product
         </button>
       </div>
+      <p className="fine-print">
+        Trending selected: <strong>{trendingIds.length}</strong> / 20 · Showing up to{' '}
+        <strong>{trendingLimit}</strong> on homepage (change limit in Settings).
+      </p>
       {del.error && <ErrorState error={del.error} />}{' '}
+      {toggleTrending.error && <ErrorState error={toggleTrending.error} />}{' '}
       {q.isPending ? (
         <TableSkeleton rows={5} />
       ) : q.error ? (
@@ -732,43 +900,58 @@ function AdminProducts() {
                   <th>Category</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Homepage</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {q.data.products.map((p) => (
-                  <tr key={productId(p)}>
-                    <td>
-                      <strong>{p.name}</strong>
-                      <small>{p.isActive ? 'Active' : 'Hidden'}</small>
-                    </td>
-                    <td>{p.category}</td>
-                    <td>{money(p.price)}</td>
-                    <td>
-                      {p.trackStock
-                        ? `${p.stockQuantity} units`
-                        : p.inStock
-                          ? 'Available'
-                          : 'Unavailable'}
-                    </td>
-                    <td>
-                      <button className="text-link" onClick={() => setEdit(p)}>
-                        Edit
-                      </button>
-                      <button
-                        className="icon-button"
-                        aria-label={`Delete ${p.name}`}
-                        disabled={del.isPending}
-                        onClick={() => {
-                          if (window.confirm(`Permanently delete ${p.name}?`))
-                            del.mutate(productId(p));
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {q.data.products.map((p) => {
+                  const id = productId(p);
+                  const isTrending = trendingIds.includes(id);
+                  return (
+                    <tr key={id}>
+                      <td>
+                        <strong>{p.name}</strong>
+                        <small>{p.isActive ? 'Active' : 'Hidden'}</small>
+                      </td>
+                      <td>{p.category}</td>
+                      <td>{money(p.price)}</td>
+                      <td>
+                        {p.trackStock
+                          ? `${p.stockQuantity} units`
+                          : p.inStock
+                            ? 'Available'
+                            : 'Unavailable'}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className={`btn small ${isTrending ? '' : 'secondary'}`}
+                          disabled={toggleTrending.isPending || settingsQuery.isPending}
+                          onClick={() => handleToggleTrending(id)}
+                        >
+                          {isTrending ? '★ Trending' : '+ Add to trending'}
+                        </button>
+                      </td>
+                      <td>
+                        <button className="text-link" onClick={() => setEdit(p)}>
+                          Edit
+                        </button>
+                        <button
+                          className="icon-button"
+                          aria-label={`Delete ${p.name}`}
+                          disabled={del.isPending}
+                          onClick={() => {
+                            if (window.confirm(`Permanently delete ${p.name}?`))
+                              del.mutate(id);
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1028,6 +1211,97 @@ function AdminSettings() {
   );
 }
 
+// function SettingsForm({ settings: s }: { settings: Settings }) {
+//   const qc = useQueryClient();
+//   const [saved, setSaved] = useState(false);
+//   const m = useMutation({
+//     mutationFn: (body: unknown) => send('/admin/settings', body, 'PATCH'),
+//     onSuccess: () => {
+//       setSaved(true);
+//       qc.invalidateQueries({ queryKey: ['admin', 'settings'] });
+//       qc.invalidateQueries({ queryKey: ['public', 'settings'] });
+//     },
+//   });
+//   return (
+//     <form
+//       className="panel settings-form"
+//       onChange={() => setSaved(false)}
+//       onSubmit={(e) => {
+//         e.preventDefault();
+//         const f = new FormData(e.currentTarget);
+//         m.mutate({
+//           deliveryCharge: Number(f.get('deliveryCharge')),
+//           firstOrderMinimumMedicineAmount: Number(
+//             f.get('firstOrderMinimumMedicineAmount'),
+//           ),
+//           lowStockThreshold: Number(f.get('lowStockThreshold')),
+//           firstOrderOfferEnabled: f.has('firstOrderOfferEnabled'),
+//         });
+//       }}
+//     >
+//       <fieldset disabled={m.isPending}>
+//         <h2>Delivery & offers</h2>
+//         <label>
+//           Delivery charge (₹)
+//           <input
+//             type="number"
+//             name="deliveryCharge"
+//             min="0"
+//             max="2000"
+//             step="0.01"
+//             required
+//             defaultValue={s.deliveryCharge}
+//           />
+//         </label>
+//         <label className="checkbox">
+//           <input
+//             type="checkbox"
+//             name="firstOrderOfferEnabled"
+//             defaultChecked={s.firstOrderOfferEnabled}
+//           />
+//           Enable first-order gift offer
+//         </label>
+//         <label>
+//           Minimum medicine subtotal for gift (₹)
+//           <input
+//             type="number"
+//             name="firstOrderMinimumMedicineAmount"
+//             min="0"
+//             max="1000000"
+//             step="0.01"
+//             required
+//             defaultValue={s.firstOrderMinimumMedicineAmount}
+//           />
+//         </label>
+//         <p className="fine-print">
+//           Only medicine subtotal counts. Non-medicine products and delivery are
+//           excluded.
+//         </p>
+//         <label>
+//           Low-stock alert threshold
+//           <input
+//             type="number"
+//             name="lowStockThreshold"
+//             min="0"
+//             step="1"
+//             required
+//             defaultValue={s.lowStockThreshold ?? 0}
+//           />
+//         </label>
+//         {m.error && <ErrorState error={m.error} />}{' '}
+//         {saved && (
+//           <p role="status" className="success-text">
+//             Settings saved.
+//           </p>
+//         )}
+//         <button className="btn">
+//           <Save size={17} />
+//           {m.isPending ? 'Saving…' : 'Save settings'}
+//         </button>
+//       </fieldset>
+//     </form>
+//   );
+// }
 function SettingsForm({ settings: s }: { settings: Settings }) {
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
@@ -1037,6 +1311,7 @@ function SettingsForm({ settings: s }: { settings: Settings }) {
       setSaved(true);
       qc.invalidateQueries({ queryKey: ['admin', 'settings'] });
       qc.invalidateQueries({ queryKey: ['public', 'settings'] });
+      qc.invalidateQueries({ queryKey: ['public', 'trending'] });
     },
   });
   return (
@@ -1052,6 +1327,7 @@ function SettingsForm({ settings: s }: { settings: Settings }) {
             f.get('firstOrderMinimumMedicineAmount'),
           ),
           lowStockThreshold: Number(f.get('lowStockThreshold')),
+          trendingLimit: Number(f.get('trendingLimit')),
           firstOrderOfferEnabled: f.has('firstOrderOfferEnabled'),
         });
       }}
@@ -1105,6 +1381,21 @@ function SettingsForm({ settings: s }: { settings: Settings }) {
             defaultValue={s.lowStockThreshold ?? 0}
           />
         </label>
+        <label>
+          Homepage trending products limit (1–20)
+          <input
+            type="number"
+            name="trendingLimit"
+            min="1"
+            max="20"
+            step="1"
+            required
+            defaultValue={s.trendingLimit ?? 4}
+          />
+        </label>
+        <p className="fine-print">
+          Controls how many selected trending products appear on the homepage.
+        </p>
         {m.error && <ErrorState error={m.error} />}{' '}
         {saved && (
           <p role="status" className="success-text">
@@ -1119,7 +1410,6 @@ function SettingsForm({ settings: s }: { settings: Settings }) {
     </form>
   );
 }
-
 function Logs() {
   const qc = useQueryClient();
   const q = useQuery({

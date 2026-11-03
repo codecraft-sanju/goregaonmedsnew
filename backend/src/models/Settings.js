@@ -11,6 +11,7 @@ const settingsSchema = new mongoose.Schema(
     firstOrderMinimumMedicineAmount: { type: Number, default: 500, min: 0 },
     lowStockThreshold: { type: Number, default: 5, min: 0 },
     trendingProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    trendingLimit: { type: Number, default: 4, min: 1, max: 20 },
   },
   { timestamps: { createdAt: false, updatedAt: true } },
 );

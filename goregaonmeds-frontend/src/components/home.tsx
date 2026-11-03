@@ -127,14 +127,14 @@ export default function Home() {
               <i key={i} />
             ))}
           </div>
-          <div className="float-label label-bottom">
-            <span>
+          {/* <div className="float-label label-bottom"> */}
+            {/* <span>
               <Heart size={19} />
-            </span>
-            <div>
+            </span> */}
+            {/* <div>
               A healthier everyday.<small>Made a little simpler.</small>
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
           <div className="hero-art-caption">
             THOUGHTFUL CARE, DELIVERED LOCALLY
           </div>

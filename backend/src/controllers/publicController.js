@@ -448,11 +448,16 @@ export function createPublicController({ env, notifier, logger, emailService, in
       res.set('Cache-Control', 'public, max-age=300'); 
       res.json({ success: true, categories });
     },
-
-    async getTrendingProducts(req, res) {
+async getTrendingProducts(req, res) {
       const { category } = req.query;
       const settings = await getSettings();
-      const trendingIds = settings.trendingProducts || [];
+      const trendingIds = (settings.trendingProducts || []).map((id) => String(id));
+      const limit = settings.trendingLimit ?? 4;
+
+      if (trendingIds.length === 0) {
+        res.set('Cache-Control', 'no-store');
+        return res.json({ success: true, products: [] });
+      }
 
       const matchQuery = { 
         _id: { $in: trendingIds },
@@ -464,7 +469,14 @@ export function createPublicController({ env, notifier, logger, emailService, in
       if (category && category !== 'All') {
         matchQuery.category = category;
       }
-      const products = await Product.find(matchQuery).limit(10);
+
+      const docs = await Product.find(matchQuery).lean();
+      const byId = new Map(docs.map((p) => [String(p._id), p]));
+      const products = trendingIds
+        .map((id) => byId.get(id))
+        .filter(Boolean)
+        .slice(0, limit);
+
       res.set('Cache-Control', 'no-store'); 
       res.json({ success: true, products });
     },

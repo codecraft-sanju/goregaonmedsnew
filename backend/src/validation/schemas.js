@@ -137,6 +137,7 @@ export const settingsUpdateSchema = z
     firstOrderMinimumMedicineAmount: amount('Minimum medicine amount'),
     lowStockThreshold: z.coerce.number().int().min(0, 'Threshold cannot be negative'), 
     trendingProducts: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID')).max(20).optional(), 
+    trendingLimit: z.coerce.number().int().min(1, 'Minimum 1 product').max(20, 'Maximum 20 products').optional(),
   })
   .partial()
   .strict()
