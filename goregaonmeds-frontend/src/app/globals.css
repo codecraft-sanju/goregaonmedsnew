@@ -320,13 +320,21 @@ tr:last-child td {
   line-height: 1;
 }
 .brand-mark {
-  width: 40px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  background: var(--teal);
-  color: white;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.brand-logo-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 .brand-accent {
   color: var(--teal);
@@ -1199,9 +1207,9 @@ footer {
   font-size: 21px;
 }
 .footer-top .brand-mark {
-  width: 34px;
-  height: 36px;
-  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
 }
 .footer-top .brand small {
   display: none;
