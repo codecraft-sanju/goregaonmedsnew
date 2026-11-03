@@ -1,11 +1,11 @@
 //src/components/shell.tsx
 'use client';
+
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import Image from 'next/image';
 import {
-  
   MapPin,
   Search,
   ShoppingBag,
@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/lib/hooks';
 import { Modal } from './ui';
+import SiteIntro from './site-intro';
+
 const links = [
   ['/', 'Home', House],
   ['/products/', 'Shop', Grid2X2],
@@ -27,6 +29,7 @@ const links = [
   ['/orders/', 'Orders', Package],
   ['/profile/', 'Account', UserRound],
 ] as const;
+
 export function Brand() {
   return (
     <Link href="/" className="brand">
@@ -40,7 +43,6 @@ export function Brand() {
           className="brand-logo-image"
         />
       </span>
-
       <span>
         goregaon<span className="brand-accent">meds</span>
         <small>YOUR NEIGHBOURHOOD. YOUR CARE.</small>
@@ -48,6 +50,7 @@ export function Brand() {
     </Link>
   );
 }
+
 function StoreShell({ children }: { children: React.ReactNode }) {
   const path = usePathname(),
     router = useRouter();
@@ -55,8 +58,12 @@ function StoreShell({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useState(false);
   const cart = useCart(),
     count = cart.data?.cart.items.reduce((n, i) => n + i.quantity, 0) ?? 0;
+
   return (
     <>
+      {/* Crucial: overlay is a sibling. The actual pages mount immediately. */}
+      <SiteIntro />
+
       <a href="#main" className="skip-link">
         Skip to content
       </a>
@@ -222,6 +229,7 @@ function StoreShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   return path.startsWith('/admin') ? (
