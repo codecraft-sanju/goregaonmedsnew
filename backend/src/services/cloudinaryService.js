@@ -10,10 +10,9 @@ export function createUploadSignature({ cloudName, apiKey, apiSecret, folder }, 
   
   const secureFolder = `${folder}/${uploadId}`;
 
+  // FIX: Cloudinary REST API signature sirf valid upload params accept karta hai
   const params = { 
-    client_allowed_formats,
     folder: secureFolder, 
-    max_file_size,
     timestamp,
     type 
   };
@@ -26,23 +25,18 @@ export function createUploadSignature({ cloudName, apiKey, apiSecret, folder }, 
   const signature = createHash('sha1').update(`${toSign}${apiSecret}`).digest('hex');
   
   return {
-    cloudName, apiKey, folder: secureFolder, timestamp, client_allowed_formats, max_file_size, type, signature,
+    cloudName,
+    apiKey,
+    folder: secureFolder,
+    timestamp,
+    client_allowed_formats,
+    max_file_size,
+    type,
+    signature,
     uploadUrl: `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,
   };
 }
 
-// export function isTrustedPrescriptionUrl(value, { cloudName, folder }, expectedUploadId) {
-//   let url;
-//   try { url = new URL(value); } catch { return false; }
-//   return (
-//     url.protocol === 'https:' &&
-//     url.hostname === 'res.cloudinary.com' &&
-//     !url.username && !url.password && !url.port &&
-//     (url.pathname.startsWith(`/${cloudName}/image/upload/`) || url.pathname.startsWith(`/${cloudName}/image/authenticated/`)) &&
-//     url.pathname.includes(`/${folder}/${expectedUploadId}/`) &&
-//     !url.pathname.includes('..')
-//   );
-// }
 export function isTrustedPrescriptionUrl(value, { cloudName, folder }) {
   let url;
   try { url = new URL(value); } catch { return false; }
@@ -56,7 +50,7 @@ export function isTrustedPrescriptionUrl(value, { cloudName, folder }) {
   );
 }
 
-//  Added function to actually verify if the file exists on Cloudinary servers
+// Added function to actually verify if the file exists on Cloudinary servers
 export async function verifyCloudinaryFileExists(url, { cloudName, apiKey, apiSecret }) {
   try {
     cloudinaryClient.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
@@ -71,27 +65,11 @@ export async function verifyCloudinaryFileExists(url, { cloudName, apiKey, apiSe
     const result = await cloudinaryClient.api.resource(publicId, { type: 'authenticated' });
     return Boolean(result && result.asset_id);
   } catch (error) {
+    console.error('[cloudinaryService] File verification failed:', error.message);
     return false;
   }
 }
 
-
-// export function generateSignedDeliveryUrl(url, { cloudName, apiKey, apiSecret }) {
-//   if (!url) return null;
-//   cloudinaryClient.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
-  
-//   const urlParts = url.split('/');
-//   const versionIndex = urlParts.findIndex(part => part.startsWith('v') && !isNaN(part.substring(1)));
-//   if (versionIndex === -1) return url;
-
-//   const publicIdWithExt = urlParts.slice(versionIndex + 1).join('/');
-  
-//   // URL valid for 1 hour (3600 seconds)
-//   return cloudinaryClient.utils.private_download_url(publicIdWithExt, 'jpg', {
-//     type: 'authenticated',
-//     expires_at: Math.floor(Date.now() / 1000) + 3600 
-//   });
-// }
 export function generateSignedDeliveryUrl(url, { cloudName, apiKey, apiSecret }) {
   if (!url) return null;
   cloudinaryClient.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });

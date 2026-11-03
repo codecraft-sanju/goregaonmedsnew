@@ -8,7 +8,6 @@ export function createEmailService(env) {
     console.warn('CRITICAL WARNING: SMTP must be configured in production to send OTPs');
   }
 
-  // --- DEBUGGING LOG 1: Check what environment variables are actually loaded ---
   console.log('[emailService] Initializing SMTP with config:', {
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
@@ -23,20 +22,19 @@ export function createEmailService(env) {
     port: env.SMTP_PORT, 
     secure: env.SMTP_PORT === 465,
     auth: isConfigured ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
-    
-    connectionTimeout: 30000, // 10 seconds
+    connectionTimeout: 30000,
     greetingTimeout: 10000,
     socketTimeout: 10000,
-    debug: true, // --- DEBUGGING LOG 2: Enable nodemailer raw debug logs ---
-    logger: true // Enable internal logger
+   
+    debug: false, 
+    logger: false 
   });
 
-  // --- DEBUGGING LOG 3: Startup Connection Test ---
   if (isConfigured) {
     console.log('[emailService] Verifying SMTP Connection...');
-    transporter.verify(function (error, success) {
+    transporter.verify(function (error) {
       if (error) {
-        console.error('❌ [emailService] SMTP Verification Failed:', error);
+        console.error('❌ [emailService] SMTP Verification Failed:', error.message);
       } else {
         console.log('✅ [emailService] SMTP Server is ready and authenticated successfully!');
       }
@@ -54,7 +52,7 @@ export function createEmailService(env) {
 
       try {
         const info = await transporter.sendMail({
-          from: env.SMTP_FROM || env.SMTP_USER, // fallback to user if FROM is missing
+          from: env.SMTP_FROM || env.SMTP_USER,
           to: email,
           subject: 'GoregaonMeds - Your Login OTP',
           html: `
@@ -70,17 +68,13 @@ export function createEmailService(env) {
         console.log(`✅ [emailService] Email sent successfully to ${email}. MessageId: ${info.messageId}`);
         return true;
       } catch (error) {
-        // --- DEBUGGING LOG 4: Detailed Catch Log ---
-        console.error(`❌ [emailService] Failed to send OTP to ${email}`);
-        console.error(`[emailService] Error Code:`, error.code);
-        console.error(`[emailService] Error Command:`, error.command);
-        console.error(`[emailService] Full Error Details:`, error);
-        throw error; // Rethrow to let the controller handle it
+        console.error(`❌ [emailService] Failed to send OTP to ${email}:`, error.message);
+        throw error;
       }
     },
     
     async close() {
-       transporter.close();
+      transporter.close();
     }
   };
 }

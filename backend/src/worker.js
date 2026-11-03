@@ -1,9 +1,13 @@
 // src/worker.js
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+
 import { loadEnv } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { createInvoiceWorker } from './services/invoiceService.js';
 // import { createEmailWorker } from './services/emailService.js';
 import { createTelegramWorker, createTelegramQueue } from './services/telegramService.js';
+
 async function startWorkers() {
   const env = loadEnv();
 
