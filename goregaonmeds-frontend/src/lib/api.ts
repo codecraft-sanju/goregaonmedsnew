@@ -1,3 +1,4 @@
+//src/lib/api.ts
 import {z} from 'zod';
 export const configured=Boolean(process.env.NEXT_PUBLIC_API_BASE_URL);
 export class ApiError extends Error{constructor(public status:number,public code:string,message:string,public retryAfter:string|null=null){super(message);this.name='ApiError';}}

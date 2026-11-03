@@ -46,9 +46,12 @@ import {
   Pager,
   Status,
   Modal,
+  MetricsSkeleton,
+  TableSkeleton,
 } from '@/components/ui';
 import { Brand } from '@/components/shell';
 import Login from './auth';
+
 const nav = [
   ['/admin/', 'Overview', LayoutDashboard],
   ['/admin/orders/', 'Orders', Package],
@@ -57,10 +60,12 @@ const nav = [
   ['/admin/settings/', 'Settings', SettingsIcon],
   ['/admin/logs/', 'System logs', Activity],
 ] as const;
+
 export default function Admin({ view = 'overview' }: { view?: string }) {
   const auth = useSession(true),
     path = usePathname(),
     qc = useQueryClient();
+
   const logout = useMutation({
     mutationFn: () => send('/admin/logout'),
     onSuccess: () => {
@@ -68,7 +73,9 @@ export default function Admin({ view = 'overview' }: { view?: string }) {
       window.location.assign('/admin/login/');
     },
   });
+
   if (view === 'login') return <Login admin />;
+
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
@@ -169,6 +176,7 @@ export default function Admin({ view = 'overview' }: { view?: string }) {
     </div>
   );
 }
+
 function Overview() {
   const [start, setStart] = useState(''),
     [end, setEnd] = useState('');
@@ -185,6 +193,7 @@ function Overview() {
       ),
     enabled: valid,
   });
+
   const cards = [
     {
       icon: IndianRupee,
@@ -203,6 +212,7 @@ function Overview() {
       value: q.data?.breakdown.delivered,
     },
   ];
+
   return (
     <>
       <PageHeading
@@ -241,7 +251,7 @@ function Overview() {
       {!valid ? (
         <p className="field-error">Choose a valid start and end date.</p>
       ) : q.isPending ? (
-        <Loading />
+        <MetricsSkeleton />
       ) : q.error ? (
         <ErrorState error={q.error} retry={() => q.refetch()} />
       ) : (
@@ -285,10 +295,12 @@ function Overview() {
     </>
   );
 }
+
 function AdminOrders() {
   const [status, setStatus] = useState('Pending'),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState<string | null>(null);
+
   const q = useQuery({
     queryKey: ['admin', 'orders', status, page],
     queryFn: ({ signal }) =>
@@ -298,6 +310,7 @@ function AdminOrders() {
       ),
     refetchInterval: status === 'Pending' ? 30000 : false,
   });
+
   return (
     <>
       <PageHeading
@@ -325,7 +338,7 @@ function AdminOrders() {
         </button>
       </div>
       {q.isPending ? (
-        <Loading />
+        <TableSkeleton rows={5} />
       ) : q.error ? (
         <ErrorState error={q.error} retry={() => q.refetch()} />
       ) : q.data?.orders.length ? (
@@ -392,6 +405,7 @@ function AdminOrders() {
     </>
   );
 }
+
 function OrderEditor({ id }: { id: string }) {
   const q = useQuery({
     queryKey: ['admin', 'order', id],
@@ -411,6 +425,7 @@ function OrderEditor({ id }: { id: string }) {
     />
   ) : null;
 }
+
 function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
   const [medicines, setMedicines] = useState(
       o.medicines.map((i) => ({ ...i })),
@@ -420,6 +435,7 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
     [reason, setReason] = useState(''),
     [conflict, setConflict] = useState(false);
   const qc = useQueryClient();
+
   const m = useMutation({
     mutationFn: async (action: string) => {
       if (action === 'billing')
@@ -470,7 +486,9 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
       if (e instanceof ApiError && e.status === 409) setConflict(true);
     },
   });
+
   const locked = m.isPending || o.status !== 'Pending' || conflict;
+
   function rows(lines: Line[], set: (v: Line[]) => void, isMedicine: boolean) {
     return lines.map((i, index) => (
       <div className="bill-row" key={i._id ?? index}>
@@ -537,6 +555,7 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
       </div>
     ));
   }
+
   return (
     <>
       <div className="section-head">
@@ -649,12 +668,14 @@ function Bill({ order: o, reload }: { order: Order; reload: () => void }) {
     </>
   );
 }
+
 function AdminProducts() {
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
     [query, setQuery] = useState(''),
     [edit, setEdit] = useState<Product | true | null>(null);
   const qc = useQueryClient();
+
   const q = useQuery({
     queryKey: ['admin', 'products', page, query],
     queryFn: () =>
@@ -662,11 +683,13 @@ function AdminProducts() {
         `/admin/products?page=${page}&limit=20&q=${encodeURIComponent(query)}`,
       ),
   });
+
   const del = useMutation({
     mutationFn: (id: string) =>
       send(`/admin/products/${id}`, undefined, 'DELETE'),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'products'] }),
   });
+
   return (
     <>
       <PageHeading title="A well-kept shelf." eyebrow="CATALOG & INVENTORY" />
@@ -696,7 +719,7 @@ function AdminProducts() {
       </div>
       {del.error && <ErrorState error={del.error} />}{' '}
       {q.isPending ? (
-        <Loading />
+        <TableSkeleton rows={5} />
       ) : q.error ? (
         <ErrorState error={q.error} retry={() => q.refetch()} />
       ) : q.data?.products.length ? (
@@ -774,6 +797,7 @@ function AdminProducts() {
     </>
   );
 }
+
 function ProductForm({
   product: p,
   done,
@@ -893,10 +917,12 @@ function ProductForm({
     </form>
   );
 }
+
 function Customers() {
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
     [qtext, setQtext] = useState('');
+
   const q = useQuery({
     queryKey: ['admin', 'customers', page, qtext],
     queryFn: () =>
@@ -913,6 +939,7 @@ function Customers() {
         `/admin/customers?page=${page}&limit=20&q=${encodeURIComponent(qtext)}`,
       ),
   });
+
   return (
     <>
       <PageHeading
@@ -938,7 +965,7 @@ function Customers() {
         <button className="text-link">Search</button>
       </form>
       {q.isPending ? (
-        <Loading />
+        <TableSkeleton rows={5} />
       ) : q.error ? (
         <ErrorState error={q.error} retry={() => q.refetch()} />
       ) : q.data?.customers.length ? (
@@ -977,6 +1004,7 @@ function Customers() {
     </>
   );
 }
+
 function AdminSettings() {
   const q = useQuery({
     queryKey: ['admin', 'settings'],
@@ -999,6 +1027,7 @@ function AdminSettings() {
     </>
   );
 }
+
 function SettingsForm({ settings: s }: { settings: Settings }) {
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
@@ -1090,6 +1119,7 @@ function SettingsForm({ settings: s }: { settings: Settings }) {
     </form>
   );
 }
+
 function Logs() {
   const qc = useQueryClient();
   const q = useQuery({
@@ -1104,11 +1134,13 @@ function Logs() {
         }[];
       }>('/admin/logs'),
   });
+
   const m = useMutation({
     mutationFn: (id: string) =>
       send(`/admin/logs${id === 'all' ? '' : `/${id}`}`, undefined, 'DELETE'),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'logs'] }),
   });
+
   return (
     <>
       <PageHeading
@@ -1130,7 +1162,7 @@ function Logs() {
       </div>
       {m.error && <ErrorState error={m.error} />}{' '}
       {q.isPending ? (
-        <Loading />
+        <TableSkeleton rows={5} />
       ) : q.error ? (
         <ErrorState error={q.error} retry={() => q.refetch()} />
       ) : q.data?.logs.length ? (

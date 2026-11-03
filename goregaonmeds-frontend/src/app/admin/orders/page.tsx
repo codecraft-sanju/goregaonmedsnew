@@ -1,3 +1,4 @@
+//goregaonmeds-frontend/src/app/admin/orders/page.tsx
 import Admin from '@/features/admin';
 import {Suspense} from 'react';
 import {Loading} from '@/components/ui';

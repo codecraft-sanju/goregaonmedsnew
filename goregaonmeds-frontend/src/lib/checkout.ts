@@ -1,3 +1,4 @@
+//src/lib/checkout.ts
 import {z} from 'zod';
 import {api} from './api';
 export const checkoutSchema=z.object({customerName:z.string().trim().min(2,'Enter your full name').max(80),mobileNumber:z.string().regex(/^[6-9]\d{9}$/,'Enter a valid 10-digit Indian mobile number'),flat:z.string().trim().min(1,'Enter your flat or building').max(120),area:z.string().trim().min(2,'Enter your area').max(120),landmark:z.string().max(120),terms:z.literal(true,{errorMap:()=>({message:'Please review and agree to the Terms before continuing.'})})});
