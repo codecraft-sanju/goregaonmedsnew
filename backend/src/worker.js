@@ -2,7 +2,7 @@
 import { loadEnv } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { createInvoiceWorker } from './services/invoiceService.js';
-import { createEmailWorker } from './services/emailService.js';
+// import { createEmailWorker } from './services/emailService.js';
 import { createTelegramWorker, createTelegramQueue } from './services/telegramService.js';
 async function startWorkers() {
   const env = loadEnv();
@@ -12,7 +12,7 @@ async function startWorkers() {
   console.log('[Workers] Starting background workers...');
 
   const invoiceWorker = createInvoiceWorker(env);
-  const emailWorker = createEmailWorker(env);
+  // const emailWorker = createEmailWorker(env);
   const telegramWorker = createTelegramWorker(env);
   const telegramQueue = createTelegramQueue(env);
   
@@ -23,7 +23,7 @@ async function startWorkers() {
     
     try {
       await invoiceWorker.close();
-      await emailWorker.close();
+      // await emailWorker.close();
       await telegramWorker.close();
       await telegramQueue.close();
       await disconnectDatabase();

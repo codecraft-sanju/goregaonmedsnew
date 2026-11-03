@@ -87,7 +87,7 @@ async function start() {
   const invoiceQueue = createInvoiceQueue(env);
   const app = createApp({ env, invoiceService: invoiceQueue });
   
-  const server = app.listen(env.PORT, () => {
+  const server = app.listen(env.PORT, '0.0.0.0', () => {
     console.log(`[server] GOREGAONMEDS API listening on port ${env.PORT}`);
     if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_ADMIN_CHAT_ID) {
       console.warn('[server] Telegram is not configured: orders will be saved with telegramNotificationSent=false');
