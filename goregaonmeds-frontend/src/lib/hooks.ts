@@ -27,7 +27,7 @@ export const useSettings = () =>
     retry: false,
   });
 
-// Module-level state for 500ms per-product debounce & clean rollback tracking
+// Module-level state for 500ms per-item debounce & clean rollback tracking
 type DebouncedEntry = {
   timer: ReturnType<typeof setTimeout>;
   reject: (err: unknown) => void;
@@ -43,7 +43,10 @@ function notifySync() {
 }
 
 export type CartUpdatePayload = {
-  productId: string;
+  type?: 'catalog' | 'manual' | 'prescription';
+  productId?: string;
+  name?: string;
+  url?: string;
   quantity: number;
   product?: Partial<Line> & { kind?: 'medicine' | 'non_medicine' };
 };
@@ -53,43 +56,83 @@ function computeOptimisticCart(
   payload: CartUpdatePayload,
   deliverySetting?: number,
 ): { cart: Cart } {
-  const prevCart = current?.cart ?? { items: [], estimate: null };
-  const items = [...prevCart.items];
-  const idx = items.findIndex((i) => i.productId === payload.productId);
+  const itemType = payload.type ?? 'catalog';
+  const prevCart = current?.cart ?? {
+    items: [],
+    manualMedicines: [],
+    prescriptions: [],
+    estimate: null,
+  };
+
+  const items = [...(prevCart.items ?? [])];
+  const manualMedicines = [...(prevCart.manualMedicines ?? [])];
+  const prescriptions = [...(prevCart.prescriptions ?? [])];
 
   const oldMedicineSub = prevCart.estimate?.medicineSubtotal ?? 0;
   const oldNonMedicineSub = prevCart.estimate?.nonMedicineSubtotal ?? 0;
   let deltaAmount = 0;
   let isMedicine = false;
 
-  if (idx > -1) {
-    const existing = items[idx];
-    const diff = payload.quantity - existing.quantity;
-    deltaAmount = diff * existing.price;
-    if (oldMedicineSub > 0 && oldNonMedicineSub === 0) isMedicine = true;
-    else if (payload.product?.kind === 'medicine') isMedicine = true;
+  if (itemType === 'catalog' && payload.productId) {
+    const idx = items.findIndex((i) => i.productId === payload.productId);
 
-    if (payload.quantity <= 0) {
-      items.splice(idx, 1);
-    } else {
-      items[idx] = { ...existing, quantity: payload.quantity };
+    if (idx > -1) {
+      const existing = items[idx];
+      const diff = payload.quantity - existing.quantity;
+      deltaAmount = diff * existing.price;
+      if (oldMedicineSub > 0 && oldNonMedicineSub === 0) isMedicine = true;
+      else if (payload.product?.kind === 'medicine') isMedicine = true;
+
+      if (payload.quantity <= 0) {
+        items.splice(idx, 1);
+      } else {
+        items[idx] = { ...existing, quantity: payload.quantity };
+      }
+    } else if (payload.quantity > 0 && payload.product) {
+      const price = payload.product.price ?? 0;
+      deltaAmount = payload.quantity * price;
+      isMedicine = payload.product.kind === 'medicine';
+      items.push({
+        productId: payload.productId,
+        name: payload.product.name ?? 'Item',
+        price,
+        quantity: payload.quantity,
+        imageUrl: payload.product.imageUrl,
+        isAvailable: payload.product.isAvailable ?? true,
+      });
     }
-  } else if (payload.quantity > 0 && payload.product) {
-    const price = payload.product.price ?? 0;
-    deltaAmount = payload.quantity * price;
-    isMedicine = payload.product.kind === 'medicine';
-    items.push({
-      productId: payload.productId,
-      name: payload.product.name ?? 'Item',
-      price,
-      quantity: payload.quantity,
-      imageUrl: payload.product.imageUrl,
-      isAvailable: payload.product.isAvailable ?? true,
-    });
+  } else if (itemType === 'manual' && payload.name) {
+    const cleanName = payload.name.trim();
+    const idx = manualMedicines.findIndex((m) => m.name === cleanName);
+    if (idx > -1) {
+      if (payload.quantity <= 0) {
+        manualMedicines.splice(idx, 1);
+      } else {
+        manualMedicines[idx] = { name: cleanName, quantity: payload.quantity };
+      }
+    } else if (payload.quantity > 0) {
+      manualMedicines.push({ name: cleanName, quantity: payload.quantity });
+    }
+  } else if (itemType === 'prescription' && payload.url) {
+    const idx = prescriptions.findIndex((p) => p.url === payload.url);
+    if (idx > -1) {
+      if (payload.quantity <= 0) {
+        prescriptions.splice(idx, 1);
+      }
+    } else if (payload.quantity > 0) {
+      prescriptions.push({ url: payload.url });
+    }
   }
 
   if (items.length === 0) {
-    return { cart: { items: [], estimate: null } };
+    return {
+      cart: {
+        items: [],
+        manualMedicines,
+        prescriptions,
+        estimate: null,
+      },
+    };
   }
 
   const totalItemsPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -110,6 +153,8 @@ function computeOptimisticCart(
   return {
     cart: {
       items,
+      manualMedicines,
+      prescriptions,
       estimate: {
         medicineSubtotal: medSub,
         nonMedicineSubtotal: nonMedSub,
@@ -135,21 +180,32 @@ export function useCartUpdate() {
   }, []);
 
   const mutation = useMutation({
-    mutationFn: ({ productId, quantity }: CartUpdatePayload) =>
+    mutationFn: (payload: CartUpdatePayload) =>
       new Promise<{ cart: Cart }>((resolve, reject) => {
-        const prev = pendingTimers.get(productId);
+        const itemType = payload.type ?? 'catalog';
+        const keyId =
+          itemType === 'catalog'
+            ? `p:${payload.productId}`
+            : itemType === 'manual'
+              ? `m:${payload.name}`
+              : `u:${payload.url}`;
+
+        const prev = pendingTimers.get(keyId);
         if (prev) {
           clearTimeout(prev.timer);
           prev.reject(new DOMException('Superseded', 'AbortError'));
         }
         const timer = setTimeout(async () => {
-          pendingTimers.delete(productId);
+          pendingTimers.delete(keyId);
           activeRequests++;
           notifySync();
           try {
             const res = await send<{ cart: Cart }>('/cart/update', {
-              productId,
-              quantity,
+              type: itemType,
+              productId: payload.productId,
+              name: payload.name,
+              url: payload.url,
+              quantity: payload.quantity,
             });
             resolve(res);
           } catch (err) {
@@ -160,15 +216,13 @@ export function useCartUpdate() {
           }
         }, 500);
 
-        pendingTimers.set(productId, { timer, reject });
+        pendingTimers.set(keyId, { timer, reject });
         notifySync();
       }),
 
     onMutate: async (payload) => {
-      // Cancel any outgoing refetches so they don't overwrite our optimistic state
       await qc.cancelQueries({ queryKey: ['customer', 'cart'] });
 
-      // Save clean snapshot before the first rapid click in a burst
       if (pendingTimers.size <= 1 && activeRequests === 0 && !rollbackSnapshot) {
         rollbackSnapshot = qc.getQueryData<{ cart: Cart }>(['customer', 'cart']);
       }
@@ -179,7 +233,6 @@ export function useCartUpdate() {
       ]);
       const current = qc.getQueryData<{ cart: Cart }>(['customer', 'cart']);
 
-      // Optimistically update local cache immediately
       qc.setQueryData<{ cart: Cart }>(
         ['customer', 'cart'],
         computeOptimisticCart(
@@ -191,10 +244,8 @@ export function useCartUpdate() {
     },
 
     onError: (err) => {
-      // Ignore superseded debounce promises
       if (err instanceof DOMException && err.name === 'AbortError') return;
 
-      // Real API error: Rollback to the last known good snapshot
       if (rollbackSnapshot !== undefined) {
         qc.setQueryData(['customer', 'cart'], rollbackSnapshot);
       }
@@ -205,7 +256,6 @@ export function useCartUpdate() {
     },
 
     onSuccess: (data) => {
-      // Only apply server response when no newer clicks are waiting in debounce queue
       if (pendingTimers.size === 0 && activeRequests === 0) {
         rollbackSnapshot = undefined;
         qc.setQueryData(['customer', 'cart'], data);
@@ -213,7 +263,6 @@ export function useCartUpdate() {
     },
   });
 
-  // Filter out internal AbortErrors from showing up in the UI
   const realError =
     mutation.error instanceof DOMException &&
     mutation.error.name === 'AbortError'

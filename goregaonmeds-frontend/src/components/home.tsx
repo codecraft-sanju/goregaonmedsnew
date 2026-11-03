@@ -65,7 +65,7 @@ export default function Home() {
               Explore the shop
               <ArrowRight size={18} />
             </Link>
-            <Link className="hero-secondary" href="/order/?mode=prescription">
+           <Link className="hero-secondary" href="/cart/">
               <Upload size={18} />
               Upload prescription
             </Link>
@@ -164,7 +164,7 @@ export default function Home() {
       </div>
       <section className="order-paths">
         <Link
-          href="/order/?mode=prescription"
+      href="/cart/"
           className="path-card prescription-card"
         >
           <div className="path-icon">
@@ -184,7 +184,7 @@ export default function Home() {
             <i />
           </div>
         </Link>
-        <Link href="/order/" className="path-card list-card">
+       <Link href="/cart/" className="path-card list-card">
           <div className="path-icon">
             <ClipboardList size={25} />
           </div>

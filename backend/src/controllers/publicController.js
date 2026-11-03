@@ -228,10 +228,11 @@ export function createPublicController({ env, notifier, logger, emailService, in
       res.json({ success: true, cart });
     },
 
-    async updateCart(req, res) {
-      const { productId, quantity } = req.body;
+   async updateCart(req, res) {
+      const { type, productId, name, url, quantity } = req.body;
       try {
-        const cart = await cartService.updateCart(req.customer?.id, req.guestId, productId, quantity);
+      
+        const cart = await cartService.updateCart(req.customer?.id, req.guestId, { type, productId, name, url, quantity });
         res.json({ success: true, cart });
       } catch (err) {
         throw badRequest(err.message);
@@ -243,11 +244,37 @@ export function createPublicController({ env, notifier, logger, emailService, in
       res.json({ success: true, message: 'Cart cleared successfully' });
     },
     
-    async createOrder(req, res) {
-      const input = req.body;
+  async createOrder(req, res) {
+      // Frontend se sirf address aur basic details aayengi, items hum khud backend cart se uthayenge
+      const input = req.body; 
 
-      if (input.orderType === 'prescription_image' && !isTrustedPrescriptionUrl(input.prescriptionUrl, cloudinary, input.clientRequestId)) {
-        throw badRequest('Prescription upload could not be verified. Please upload it again.');
+      // 1. Get the actual cart from Database
+      const cart = await cartService.getCart(req.customer.id);
+      
+      if (cart.items.length === 0 && cart.manualMedicines.length === 0 && cart.prescriptions.length === 0) {
+        throw badRequest('Your cart is empty.');
+      }
+
+      // 2. Inject Cart Data directly into Order Input
+      input.products = cart.items.map(item => ({ productId: String(item.productId), quantity: item.quantity }));
+      input.medicines = cart.manualMedicines;
+      input.prescriptionUrl = cart.prescriptions.length > 0 ? cart.prescriptions[0].url : null;
+
+      // 3. Decide Order Type dynamically
+      const hasCatalog = input.products.length > 0;
+      const hasManual = input.medicines.length > 0;
+      const hasPrescription = !!input.prescriptionUrl;
+      
+      if ((hasCatalog || hasManual) && hasPrescription) input.orderType = 'mixed';
+      else if (hasPrescription) input.orderType = 'prescription_image';
+      else if (hasManual) input.orderType = 'manual_text';
+      else input.orderType = 'catalog_only';
+
+      // 4. Verify prescription if exists
+      if ((input.orderType === 'prescription_image' || input.orderType === 'mixed') && input.prescriptionUrl) {
+        if (!isTrustedPrescriptionUrl(input.prescriptionUrl, cloudinary, input.clientRequestId)) {
+          throw badRequest('Prescription upload could not be verified. Please upload it again.');
+        }
       }
 
       const result = await createOrder(input, { 

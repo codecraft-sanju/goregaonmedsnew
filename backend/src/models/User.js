@@ -64,12 +64,31 @@ const userSchema = new mongoose.Schema(
       default: []
     },
 
-    // Cart
+  // Existing Cart (For Catalog Products)
     cart: {
       type: [
         {
           productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
           quantity: { type: Number, required: true, min: 1, max: 100 }
+        }
+      ],
+      default: []
+    },
+    // For manual text typed by user
+    manualMedicines: {
+      type: [
+        {
+          name: { type: String, required: true, trim: true, maxlength: 120 },
+          quantity: { type: Number, required: true, min: 1, max: 100 }
+        }
+      ],
+      default: []
+    },
+    //  For uploaded prescriptions
+    prescriptions: {
+      type: [
+        {
+          url: { type: String, required: true }
         }
       ],
       default: []

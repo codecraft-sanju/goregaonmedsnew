@@ -44,7 +44,9 @@ function ProductCard({ p }: { p: Product }) {
 
   const changeQty = (nextQty: number) => {
     update.mutate({
+       type: 'catalog',
       productId: id,
+     
       quantity: nextQty,
       product: {
         name: p.name,
@@ -138,65 +140,7 @@ function ProductCard({ p }: { p: Product }) {
   );
 }
 
-// export function Trending() {
-//   const q = useQuery({
-//     queryKey: ['public', 'trending'],
-//     queryFn: async ({ signal }) =>
-//       z
-//         .object({ products: z.array(productSchema) })
-//         .parse(await api('/products/trending', { signal })),
-//   });
-//   return (
-//     <section className="section">
-//       <div className="section-head">
-//         <div>
-//           <div className="eyebrow">LITTLE THINGS, EVERYDAY WELLBEING</div>
-//           <h2>Your daily care, covered.</h2>
-//         </div>
-//         <Link className="text-link" href="/products/">
-//           Explore the shop
-//           <ArrowRight size={17} />
-//         </Link>
-//       </div>
-//       {q.isPending ? (
-//         <Skeleton count={4} />
-//       ) : q.error ? (
-//         <div className="catalog-unavailable">
-//           <div className="empty-icon">
-//             <Pill size={27} />
-//           </div>
-//           <div>
-//             <h3>The shelves will be ready soon.</h3>
-//             <p>
-//               Our online catalog is being connected. You can explore how
-//               ordering works in the meantime.
-//             </p>
-//           </div>
-//           <button
-//             className="btn secondary small"
-//             onClick={() => q.refetch()}
-//           >
-//             <RefreshCw size={16} />
-//             Check again
-//           </button>
-//         </div>
-//       ) : q.data?.products.length ? (
-//         <div className="product-grid">
-//           {q.data.products.slice(0, 4).map((p) => (
-//             <ProductCard key={productId(p)} p={p} />
-//           ))}
-//         </div>
-//       ) : (
-//         <Empty title="Fresh essentials are on their way">
-//           <p>Our pharmacy hasn’t selected featured products yet.</p>
-//           <Link href="/products/" className="text-link">
-//             Browse all products →
-//           </Link>
-//         </Empty>
-//       )}
-//     </section>
-//   );
-// }
+
 export function Trending() {
   const q = useQuery({
     queryKey: ['public', 'trending'],
@@ -361,7 +305,7 @@ export default function Catalog() {
             <Pill size={23} />
             <h4>Can’t find a medicine?</h4>
             <p>Send us your list or prescription for pharmacy review.</p>
-            <Link href="/order/">Start an order →</Link>
+           <Link href="/cart/">Go to care bag →</Link>
           </div>
         </aside>
         <section>

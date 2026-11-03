@@ -109,6 +109,15 @@ export const productSchema = z.object({
 export type Product = z.infer<typeof productSchema>;
 export const productId = (p: Product) => p.id ?? p._id ?? '';
 export type Pagination = { page: number; total: number; totalPages: number };
+// export type Line = {
+//   _id?: string;
+//   productId?: string;
+//   name: string;
+//   quantity: number;
+//   price: number;
+//   isAvailable?: boolean;
+//   imageUrl?: string;
+// };
 export type Line = {
   _id?: string;
   productId?: string;
@@ -120,6 +129,8 @@ export type Line = {
 };
 export type Cart = {
   items: (Line & { productId: string })[];
+  manualMedicines: { name: string; quantity: number }[]; 
+  prescriptions: { url: string }[]; 
   estimate: null | {
     medicineSubtotal: number;
     nonMedicineSubtotal: number;

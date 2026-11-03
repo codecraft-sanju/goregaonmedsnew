@@ -2,7 +2,8 @@
 import mongoose from 'mongoose';
 
 export const ORDER_STATUSES = Object.freeze(['Pending', 'Delivered', 'Cancelled']);
-export const ORDER_TYPES = Object.freeze(['manual_text', 'prescription_image']);
+
+export const ORDER_TYPES = Object.freeze(['manual_text', 'prescription_image', 'catalog_only', 'mixed']);
 export const PAYMENT_METHOD = 'Pay at Delivery (Cash/UPI)';
 
 const medicineSchema = new mongoose.Schema({

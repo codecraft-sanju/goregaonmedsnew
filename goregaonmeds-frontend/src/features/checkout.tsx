@@ -1,27 +1,20 @@
-//src/features/checkout.tsx
+// src/features/checkout.tsx
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Upload,
-  ClipboardList,
-  Plus,
-  Trash2,
   MapPin,
   Wallet,
   ShieldCheck,
+  ShoppingBag,
+  ArrowRight,
 } from 'lucide-react';
 import { api, send, ApiError } from '@/lib/api';
 import { useSession, useCart, useSettings } from '@/lib/hooks';
-import {
-  checkoutSchema,
-  CheckoutFields,
-  uploadPrescription,
-} from '@/lib/checkout';
+import { checkoutSchema, CheckoutFields } from '@/lib/checkout';
 import {
   PageHeading,
   CheckoutSkeleton,
@@ -35,26 +28,18 @@ type Options = {
 };
 
 export default function Checkout() {
-  const sp = useSearchParams(),
-    qc = useQueryClient(),
+  const qc = useQueryClient(),
     auth = useSession(),
     cart = useCart(),
     settings = useSettings();
-  const [mode, setMode] = useState(
-      sp.get('mode') === 'prescription' ? 'prescription_image' : 'manual_text',
-    ),
-    [lines, setLines] = useState([{ name: '', quantity: 1 }]),
-    [file, setFile] = useState<File | null>(null),
-    [stage, setStage] = useState(''),
+
+  const [stage, setStage] = useState(''),
     [error, setError] = useState<Error | null>(null),
     [result, setResult] = useState(''),
     [uncertain, setUncertain] = useState(false);
-  const id = useRef(''),
-    frozen = useRef<Record<string, unknown> | null>(null),
-    upload = useRef<{ file: File; url: string } | null>(null),
-    controller = useRef<AbortController | null>(null);
 
-  useEffect(() => () => controller.current?.abort(), []);
+  const id = useRef(''),
+    frozen = useRef<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!uncertain) return;
@@ -88,7 +73,7 @@ export default function Checkout() {
 
   async function submit(values: CheckoutFields) {
     setError(null);
-    setStage('Checking your order…');
+    setStage('Checking your bag…');
     try {
       if (!id.current) id.current = crypto.randomUUID();
       let payload = frozen.current;
@@ -96,48 +81,40 @@ export default function Checkout() {
         const fresh = await cart.refetch();
         if (fresh.error || !fresh.data)
           throw fresh.error ?? new Error('Unable to verify your cart.');
-        if (fresh.data.cart.items.some((i) => !i.isAvailable))
+
+        const c = fresh.data.cart;
+        const catalogItems = c.items ?? [];
+        const manualMeds = c.manualMedicines ?? [];
+        const prescriptions = c.prescriptions ?? [];
+
+        if (
+          catalogItems.length === 0 &&
+          manualMeds.length === 0 &&
+          prescriptions.length === 0
+        ) {
+          throw new Error('Your care bag is empty. Please add items before checkout.');
+        }
+
+        if (catalogItems.some((i) => !i.isAvailable)) {
           throw new Error(
             'Remove unavailable items from your bag before ordering.',
           );
-        const medicines = lines
-          .filter((l) => l.name.trim())
-          .map((l) => ({ name: l.name.trim(), quantity: l.quantity }));
-        if (
-          medicines.some(
-            (l) =>
-              l.name.length > 120 ||
-              !Number.isInteger(l.quantity) ||
-              l.quantity < 1 ||
-              l.quantity > 100,
-          )
-        )
-          throw new Error(
-            'Medicine names must be up to 120 characters and quantities from 1 to 100.',
-          );
-        if (fresh.data.cart.items.length > 20)
-          throw new Error('An order can contain up to 20 catalog products.');
-        if (
-          mode === 'manual_text' &&
-          !medicines.length &&
-          !fresh.data.cart.items.length
-        )
-          throw new Error('Add a medicine or a product to your order.');
-        let prescriptionUrl: string | undefined;
-        if (mode === 'prescription_image') {
-          if (!file) throw new Error('Choose a prescription image.');
-          setStage('Uploading your prescription…');
-          controller.current = new AbortController();
-          prescriptionUrl =
-            upload.current?.file === file
-              ? upload.current.url
-              : await uploadPrescription(
-                  file,
-                  id.current,
-                  controller.current.signal,
-                );
-          upload.current = { file, url: prescriptionUrl };
         }
+
+        if (catalogItems.length > 20) {
+          throw new Error('An order can contain up to 20 catalog products.');
+        }
+
+        // Fallback orderType calculation so Zod schema validation passes even if backend checks req.body first
+        const hasCatalog = catalogItems.length > 0;
+        const hasManual = manualMeds.length > 0;
+        const hasPrescription = prescriptions.length > 0;
+
+        let orderType = 'catalog_only';
+        if ((hasCatalog || hasManual) && hasPrescription) orderType = 'mixed';
+        else if (hasPrescription) orderType = 'prescription_image';
+        else if (hasManual) orderType = 'manual_text';
+
         payload = {
           clientRequestId: id.current,
           customerName: values.customerName,
@@ -147,13 +124,15 @@ export default function Checkout() {
             area: values.area,
             landmark: values.landmark,
           },
-          orderType: mode,
-          medicines: mode === 'manual_text' ? medicines : [],
-          products: fresh.data.cart.items.map((i) => ({
+          orderType,
+          medicines: manualMeds,
+          products: catalogItems.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,
           })),
-          ...(prescriptionUrl ? { prescriptionUrl } : {}),
+          ...(prescriptions[0]?.url
+            ? { prescriptionUrl: prescriptions[0].url }
+            : {}),
         };
         frozen.current = payload;
       }
@@ -242,26 +221,42 @@ export default function Checkout() {
       </div>
     );
 
+  const c = cart.data?.cart;
+  const catalogItems = c?.items ?? [];
+  const manualMeds = c?.manualMedicines ?? [];
+  const prescriptions = c?.prescriptions ?? [];
+  const isBagEmpty =
+    catalogItems.length === 0 &&
+    manualMeds.length === 0 &&
+    prescriptions.length === 0;
+
   return (
     <div className="container page">
       <PageHeading
         eyebrow="THOUGHTFULLY TAKEN CARE OF"
         title="Let’s get your care home."
       >
-        Tell us what you need. We’ll send it to your neighbourhood pharmacy.
+        Confirm your delivery details to send your care bag to the pharmacy.
       </PageHeading>
-      {auth.isPending ? (
+      {auth.isPending || cart.isPending ? (
         <CheckoutSkeleton />
       ) : auth.error ? (
         <ErrorState error={auth.error} retry={() => auth.refetch()} />
       ) : !auth.data ? (
         <Empty title="A quick sign-in, then you’re all set.">
           <p>
-            Sign in securely with email to place an order or upload a
-            prescription.
+            Sign in securely with email to place your order.
           </p>
           <Link className="btn" href="/login/?next=/checkout/">
             Sign in to continue
+          </Link>
+        </Empty>
+      ) : isBagEmpty ? (
+        <Empty title="Your care bag is empty." icon={ShoppingBag}>
+          <p>Add products, medicine names, or a prescription to your bag first.</p>
+          <Link className="btn" href="/cart/">
+            Go to your care bag
+            <ArrowRight size={17} />
           </Link>
         </Empty>
       ) : (
@@ -270,141 +265,30 @@ export default function Checkout() {
             <fieldset disabled={locked} className="panel">
               <div className="form-section-title">
                 <span>01</span>
-                <h2>What do you need?</h2>
+                <h2>Items in your bag</h2>
               </div>
-              <div className="segmented">
-                <button
-                  type="button"
-                  className={mode === 'manual_text' ? 'active' : ''}
-                  onClick={() => setMode('manual_text')}
-                >
-                  <ClipboardList size={17} />
-                  Medicine list
-                </button>
-                <button
-                  type="button"
-                  className={mode === 'prescription_image' ? 'active' : ''}
-                  onClick={() => setMode('prescription_image')}
-                >
-                  <Upload size={17} />
-                  Prescription
-                </button>
-              </div>
-              {mode === 'manual_text' ? (
-                <>
-                  <p className="muted">
-                    Include the medicine name, strength, and pack or tablet
-                    unit.
-                  </p>
-                  {lines.map((l, i) => (
-                    <div className="medicine-row" key={i}>
-                      <input
-                        aria-label={`Medicine ${i + 1} name`}
-                        maxLength={120}
-                        placeholder="Medicine name, strength, pack"
-                        value={l.name}
-                        onChange={(e) =>
-                          setLines(
-                            lines.map((v, j) =>
-                              i === j ? { ...v, name: e.target.value } : v,
-                            ),
-                          )
-                        }
-                      />
-                      <input
-                        aria-label={`Medicine ${i + 1} quantity`}
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={l.quantity}
-                        onChange={(e) =>
-                          setLines(
-                            lines.map((v, j) =>
-                              i === j
-                                ? { ...v, quantity: Number(e.target.value) }
-                                : v,
-                            ),
-                          )
-                        }
-                      />
-                      <button
-                        type="button"
-                        className="icon-button"
-                        aria-label="Remove medicine"
-                        onClick={() =>
-                          setLines(lines.filter((_, j) => i !== j))
-                        }
-                      >
-                        <Trash2 size={17} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    className="text-link"
-                    disabled={lines.length >= 30}
-                    onClick={() =>
-                      setLines([...lines, { name: '', quantity: 1 }])
-                    }
-                  >
-                    <Plus size={17} />
-                    Add another medicine
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="muted">
-                    Your prescription is shared to process and review your
-                    order. Read our{' '}
-                    <Link href="/prescription-notice/">
-                      prescription notice
-                    </Link>{' '}
-                    and <Link href="/privacy/">privacy notice</Link>.
-                  </p>
-                  <label className="upload-zone">
-                    <Upload size={30} />
-                    <strong>
-                      {file ? file.name : 'Choose your prescription'}
-                    </strong>
-                    <span>JPG, PNG or WebP · Up to 5 MB</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (
-                          f &&
-                          (!['image/jpeg', 'image/png', 'image/webp'].includes(
-                            f.type,
-                          ) ||
-                            f.size > 5242880)
-                        ) {
-                          setError(
-                            new Error('Choose JPG, PNG, or WebP up to 5 MB.'),
-                          );
-                          e.target.value = '';
-                          return;
-                        }
-                        setFile(f ?? null);
-                        upload.current = null;
-                      }}
-                    />
-                  </label>
-                  <p className="fine-print">
-                    Uploading does not mean your prescription has been medically
-                    verified.
-                  </p>
-                </>
-              )}
-              {cart.data && cart.data.cart.items.length > 0 && (
-                <div className="notice">
-                  Also included:{' '}
-                  {cart.data.cart.items
-                    .map((i) => `${i.name} × ${i.quantity}`)
-                    .join(', ')}
+              {catalogItems.length > 0 && (
+                <div className="notice" style={{ marginBottom: '0.5rem' }}>
+                  <strong>Products:</strong>{' '}
+                  {catalogItems.map((i) => `${i.name} × ${i.quantity}`).join(', ')}
                 </div>
               )}
+              {manualMeds.length > 0 && (
+                <div className="notice" style={{ marginBottom: '0.5rem' }}>
+                  <strong>Manual Medicines:</strong>{' '}
+                  {manualMeds.map((m) => `${m.name} × ${m.quantity}`).join(', ')}
+                </div>
+              )}
+              {prescriptions.length > 0 && (
+                <div className="notice" style={{ marginBottom: '0.5rem' }}>
+                  <strong>Prescriptions:</strong> {prescriptions.length} attached
+                </div>
+              )}
+              <Link href="/cart/" className="text-link">
+                Edit items in your bag →
+              </Link>
             </fieldset>
+
             <fieldset disabled={locked} className="panel">
               <div className="form-section-title">
                 <span>02</span>

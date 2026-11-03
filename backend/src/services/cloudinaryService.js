@@ -31,7 +31,19 @@ export function createUploadSignature({ cloudName, apiKey, apiSecret, folder }, 
   };
 }
 
-export function isTrustedPrescriptionUrl(value, { cloudName, folder }, expectedUploadId) {
+// export function isTrustedPrescriptionUrl(value, { cloudName, folder }, expectedUploadId) {
+//   let url;
+//   try { url = new URL(value); } catch { return false; }
+//   return (
+//     url.protocol === 'https:' &&
+//     url.hostname === 'res.cloudinary.com' &&
+//     !url.username && !url.password && !url.port &&
+//     (url.pathname.startsWith(`/${cloudName}/image/upload/`) || url.pathname.startsWith(`/${cloudName}/image/authenticated/`)) &&
+//     url.pathname.includes(`/${folder}/${expectedUploadId}/`) &&
+//     !url.pathname.includes('..')
+//   );
+// }
+export function isTrustedPrescriptionUrl(value, { cloudName, folder }) {
   let url;
   try { url = new URL(value); } catch { return false; }
   return (
@@ -39,7 +51,7 @@ export function isTrustedPrescriptionUrl(value, { cloudName, folder }, expectedU
     url.hostname === 'res.cloudinary.com' &&
     !url.username && !url.password && !url.port &&
     (url.pathname.startsWith(`/${cloudName}/image/upload/`) || url.pathname.startsWith(`/${cloudName}/image/authenticated/`)) &&
-    url.pathname.includes(`/${folder}/${expectedUploadId}/`) &&
+    url.pathname.includes(`/${folder}/`) &&
     !url.pathname.includes('..')
   );
 }

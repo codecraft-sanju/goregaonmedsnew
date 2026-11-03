@@ -152,16 +152,19 @@ export async function createOrder(input, { userId, notifier, logger = console })
       }     
       const purchasedProductIds = input.products.map(p => new mongoose.Types.ObjectId(p.productId));
 
-      const userBefore = await User.findOneAndUpdate(
+     const userBefore = await User.findOneAndUpdate(
         { _id: userId },
         { 
           $inc: { totalOrders: 1 }, 
-          $set: { fullName: input.customerName },
-          $pull: { cart: { productId: { $in: purchasedProductIds } } }
+          $set: { 
+             fullName: input.customerName,
+             cart: [],             // Catalog items clear
+             manualMedicines: [],  // Manual items clear
+             prescriptions: []     // Prescriptions clear
+          }
         },
         { session, new: false } 
       );
-
       if (!userBefore) {
         throw unauthorized('Your account is no longer available. Please log in again.');
       }
@@ -185,7 +188,7 @@ export async function createOrder(input, { userId, notifier, logger = console })
         medicines: input.medicines,
         products: secureProducts, 
         inventoryReservations: inventoryReservations,
-        prescriptionUrl: input.orderType === 'prescription_image' ? input.prescriptionUrl : null,
+    prescriptionUrl: (input.orderType === 'prescription_image' || input.orderType === 'mixed') ? input.prescriptionUrl : null,
         address: input.address,
         offerOptIn: true, 
         firstOrderAtCreation: previousOrders === 0, 

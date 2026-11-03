@@ -64,26 +64,22 @@ export const createOrderSchema = z
     clientRequestId: z.string().uuid('Invalid request id'),
     customerName: text(2, 80, 'Full name'),
     mobileNumber,
-    orderType: z.enum(ORDER_TYPES),
+    orderType: z.enum(ORDER_TYPES).optional(), // Optional kyunki backend controller khud cart se decide karega
     medicines: z.array(medicine).max(30, 'Up to 30 medicines per order').default([]),
     products: z.array(orderProduct).max(20, 'Up to 20 products per order').default([]),
-    prescriptionUrl: z.string().max(500).optional(),
+    prescriptionUrl: z.string().max(500).nullable().optional(),
     address: checkoutAddressSchema,
-    
     offerOptIn: z.boolean().default(false),
   })
   .superRefine((order, ctx) => {
-    if (order.orderType === 'manual_text' && order.medicines.length === 0 && order.products.length === 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['medicines'], message: 'Add at least one medicine or product' });
-    }
-    if (order.orderType === 'prescription_image' && !order.prescriptionUrl) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['prescriptionUrl'], message: 'Upload your prescription' });
-    }
-    
-    // FIX: Duplicate Product Array Check
-    const productIds = order.products.map(p => p.productId);
+    // Duplicate Product Array Check
+    const productIds = order.products.map((p) => p.productId);
     if (new Set(productIds).size !== productIds.length) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['products'], message: 'Duplicate products are not allowed in checkout. Please merge quantities into a single item.' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['products'],
+        message: 'Duplicate products are not allowed in checkout. Please merge quantities into a single item.',
+      });
     }
   });
 
@@ -192,17 +188,22 @@ export const verifyOtpSchema = z.object({
 }).strict();
 
 export const updateCartSchema = z.object({
-  productId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Product ID'),
-  quantity: z.union([z.string(), z.number()])
-    .transform(val => (val === '' ? null : Number(val)))
-    .pipe(
-      z.number({ invalid_type_error: 'Quantity cannot be empty' })
-       .int('Quantity must be a whole number')
-       .min(0, 'Quantity cannot be negative')
-       .max(100, 'Quantity cannot exceed 100')
-    )
-}).strict();
-
+  type: z.enum(['catalog', 'manual', 'prescription']),
+  productId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Product ID').optional(),
+  name: z.string().trim().min(1).max(120).optional(),
+  url: z.string().url().max(500).optional(),
+  quantity: z.coerce.number().int().min(0).max(100).default(1)
+}).superRefine((data, ctx) => {
+  if (data.type === 'catalog' && !data.productId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Product ID required', path: ['productId'] });
+  }
+  if (data.type === 'manual' && !data.name) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Medicine name required', path: ['name'] });
+  }
+  if (data.type === 'prescription' && !data.url) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Prescription URL required', path: ['url'] });
+  }
+});
 export const reverseGeocodeSchema = z.object({
   lat: z.coerce.number().min(-90).max(90, 'Invalid latitude'),
   lng: z.coerce.number().min(-180).max(180, 'Invalid longitude')

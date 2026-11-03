@@ -91,62 +91,76 @@ async function generateCartEstimate(enrichedCart, userId) {
 
 export async function getCart(userId, guestId) {
   let rawCart = [];
+  let manualMedicines = [];
+  let prescriptions = [];
 
   if (userId) {
-    const user = await User.findById(userId).select('cart').lean();
-    if (user && user.cart) rawCart = user.cart;
+    const user = await User.findById(userId).select('cart manualMedicines prescriptions').lean();
+    if (user) {
+      rawCart = user.cart || [];
+      manualMedicines = user.manualMedicines || [];
+      prescriptions = user.prescriptions || [];
+    }
   } else if (guestId) {
     const guestCartHash = await redisClient.hgetall(getGuestCartKey(guestId));
     if (guestCartHash && Object.keys(guestCartHash).length > 0) {
-      rawCart = Object.entries(guestCartHash).map(([productId, quantity]) => ({
-        productId,
-        quantity: parseInt(quantity, 10),
-      }));
+      for (const [key, val] of Object.entries(guestCartHash)) {
+        if (key.startsWith('p:')) rawCart.push({ productId: key.slice(2), quantity: parseInt(val, 10) });
+        else if (key.startsWith('m:')) manualMedicines.push({ name: key.slice(2), quantity: parseInt(val, 10) });
+        else if (key.startsWith('url:')) prescriptions.push({ url: key.slice(4) });
+      }
     }
   }
 
   const items = await getEnrichedCart(rawCart);
   const estimate = await generateCartEstimate(items, userId);
 
-  return { items, estimate };
+  return { items, manualMedicines, prescriptions, estimate };
 }
 
-export async function updateCart(userId, guestId, productId, quantity) {
-  const product = await Product.findById(productId).lean();
-  if (!product || !product.isActive) {
-    throw new Error('Product not found or currently inactive');
-  }
-  if (quantity > 0 && product.trackStock && quantity > product.stockQuantity) {
-    throw new Error(`Cannot add ${quantity} items. Only ${product.stockQuantity} left in stock.`);
+export async function updateCart(userId, guestId, itemData) {
+  const { type, productId, name, url, quantity } = itemData;
+
+  // Stock check sirf catalog products ke liye
+  if (type === 'catalog') {
+    const product = await Product.findById(productId).lean();
+    if (!product || !product.isActive) throw new Error('Product not found or currently inactive');
+    if (quantity > 0 && product.trackStock && quantity > product.stockQuantity) {
+      throw new Error(`Cannot add ${quantity} items. Only ${product.stockQuantity} left in stock.`);
+    }
   }
 
-  // FIX: Cleaner approach to merging array items to prevent duplicate IDs
   if (userId) {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
-    if (quantity === 0) {
-      user.cart = user.cart.filter(item => String(item.productId) !== String(productId));
-    } else {
-      const existingItemIndex = user.cart.findIndex(item => String(item.productId) === String(productId));
-      
-      if (existingItemIndex > -1) {
-        // Agar product cart mein hai, toh nayi row mat banao, existing quantity replace/merge karo
-        user.cart[existingItemIndex].quantity = quantity; 
-      } else {
-        // Sirf tabhi push karo jab naya product ho
-        user.cart.push({ productId, quantity });
+    if (type === 'catalog') {
+      if (quantity === 0) user.cart = user.cart.filter(item => String(item.productId) !== String(productId));
+      else {
+        const existing = user.cart.findIndex(item => String(item.productId) === String(productId));
+        if (existing > -1) user.cart[existing].quantity = quantity;
+        else user.cart.push({ productId, quantity });
+      }
+    } else if (type === 'manual') {
+      if (quantity === 0) user.manualMedicines = user.manualMedicines.filter(item => item.name !== name);
+      else {
+        const existing = user.manualMedicines.findIndex(item => item.name === name);
+        if (existing > -1) user.manualMedicines[existing].quantity = quantity;
+        else user.manualMedicines.push({ name, quantity });
+      }
+    } else if (type === 'prescription') {
+      if (quantity === 0) user.prescriptions = user.prescriptions.filter(item => item.url !== url);
+      else {
+        if (!user.prescriptions.find(item => item.url === url)) user.prescriptions.push({ url });
       }
     }
     await user.save();
   } else if (guestId) {
     const redisKey = getGuestCartKey(guestId);
+    let hashKey = type === 'catalog' ? `p:${productId}` : (type === 'manual' ? `m:${name}` : `url:${url}`);
 
-    if (quantity === 0) {
-      await redisClient.hdel(redisKey, productId);
-    } else {
-      await redisClient.hset(redisKey, productId, quantity);
-    }
+    if (quantity === 0) await redisClient.hdel(redisKey, hashKey);
+    else await redisClient.hset(redisKey, hashKey, type === 'prescription' ? 1 : quantity);
     
     await redisClient.expire(redisKey, GUEST_CART_TTL);
   }
@@ -156,7 +170,10 @@ export async function updateCart(userId, guestId, productId, quantity) {
 
 export async function clearCart(userId, guestId) {
   if (userId) {
-    await User.findByIdAndUpdate(userId, { $set: { cart: [] } });
+    
+    await User.findByIdAndUpdate(userId, { 
+        $set: { cart: [], manualMedicines: [], prescriptions: [] } 
+    });
   } else if (guestId) {
     await redisClient.del(getGuestCartKey(guestId));
   }
@@ -164,59 +181,35 @@ export async function clearCart(userId, guestId) {
 
 export async function mergeCartOnLogin(userId, guestId) {
   const redisKey = getGuestCartKey(guestId);
-  
   const guestCartHash = await redisClient.hgetall(redisKey);
-  if (!guestCartHash || Object.keys(guestCartHash).length === 0) {
-    return { hasAdjustments: false };
-  }
-
-  const guestCart = Object.entries(guestCartHash).map(([productId, quantity]) => ({
-    productId,
-    quantity: parseInt(quantity, 10),
-  }));
-
-  const user = await User.findById(userId).select('cart');
+  
+  if (!guestCartHash || Object.keys(guestCartHash).length === 0) return { hasAdjustments: false };
+  const user = await User.findById(userId);
   if (!user) return { hasAdjustments: false };
 
-  const productIds = guestCart.map((item) => item.productId);
-  const products = await Product.find(
-    { _id: { $in: productIds }, isActive: true },
-    'trackStock stockQuantity inStock'
-  ).lean();
-  
-  const productMap = new Map(products.map((p) => [String(p._id), p]));
-  const cartMap = new Map(user.cart.map((item) => [String(item.productId), item.quantity]));
   let hasAdjustments = false;
 
-  for (const item of guestCart) {
-    const product = productMap.get(item.productId);
-    if (!product || !product.inStock) {
-      hasAdjustments = true;
-      continue;
-    }
-
-    const existingQty = cartMap.get(item.productId) || 0;
+  for (const [key, val] of Object.entries(guestCartHash)) {
+    const quantity = parseInt(val, 10);
     
-    let maxAllowed = 100;
-    if (product.trackStock) {
-      maxAllowed = Math.min(100, product.stockQuantity);
-    }
-
-    const requestedQty = existingQty + item.quantity;
-    const finalQty = Math.min(requestedQty, maxAllowed);
-    if (finalQty < requestedQty) {
-      hasAdjustments = true;
-    }
-
-    if (finalQty > 0) {
-      cartMap.set(item.productId, finalQty);
+    if (key.startsWith('p:')) {
+      const productId = key.slice(2);
+      const existing = user.cart.findIndex(item => String(item.productId) === String(productId));
+      if (existing > -1) user.cart[existing].quantity += quantity;
+      else user.cart.push({ productId, quantity });
+    } 
+    else if (key.startsWith('m:')) {
+      const name = key.slice(2);
+      const existing = user.manualMedicines.findIndex(item => item.name === name);
+      if (existing > -1) user.manualMedicines[existing].quantity += quantity;
+      else user.manualMedicines.push({ name, quantity });
+    } 
+    else if (key.startsWith('url:')) {
+      const url = key.slice(4);
+      if (!user.prescriptions.find(item => item.url === url)) user.prescriptions.push({ url });
     }
   }
-  const mergedCart = Array.from(cartMap.entries()).map(([productId, quantity]) => ({
-    productId,
-    quantity,
-  }));
-  user.cart = mergedCart;
+
   await user.save();
   await redisClient.del(redisKey);
   return { hasAdjustments };
