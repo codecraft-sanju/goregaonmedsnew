@@ -4,33 +4,42 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-/**
- * A short, non-data-blocking branded opening animation.
- * Mount as a sibling of the actual page; do not conditionally mount children.
- */
 export default function SiteIntro() {
   const [visible, setVisible] = useState(true);
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    // Respect users who request fewer animations.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    if (reducedMotion) {
       setVisible(false);
       return;
     }
 
     const previousOverflow = document.body.style.overflow;
+
+    // Lock scrolling only during the intro.
     document.body.style.overflow = 'hidden';
 
-    const exitTimer = window.setTimeout(() => setExiting(true), 1250);
-    const removeTimer = window.setTimeout(() => setVisible(false), 1710);
+    const exitTimer = window.setTimeout(() => {
+      setExiting(true);
+    }, 1250);
+
+    const removeTimer = window.setTimeout(() => {
+      document.body.style.overflow = previousOverflow;
+      setVisible(false);
+    }, 1710);
 
     return () => {
       window.clearTimeout(exitTimer);
       window.clearTimeout(removeTimer);
+
+      // Always restore scrolling on cleanup/unmount.
       document.body.style.overflow = previousOverflow;
     };
-  }, [visible]);
+  }, []); // IMPORTANT: Run only on mount.
 
   if (!visible) return null;
 
@@ -54,7 +63,8 @@ export default function SiteIntro() {
         </div>
 
         <div className="gm-intro__wordmark" aria-hidden="true">
-          <span>goregaon</span><span className="gm-intro__accent">meds</span>
+          <span>goregaon</span>
+          <span className="gm-intro__accent">meds</span>
         </div>
 
         <div className="gm-intro__tagline" aria-hidden="true">
