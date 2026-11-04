@@ -1,4 +1,4 @@
-//src/components/shell.tsx
+// src/components/shell.tsx
 'use client';
 
 import Link from 'next/link';
@@ -16,11 +16,11 @@ import {
   Package,
   ChevronDown,
   ShieldCheck,
-  Leaf,
 } from 'lucide-react';
 import { useCart } from '@/lib/hooks';
 import { Modal } from './ui';
 import SiteIntro from './site-intro';
+import { AnnouncementPerks, OfferPopupModal } from './offer-widgets';
 
 const links = [
   ['/', 'Home', House],
@@ -56,6 +56,7 @@ function StoreShell({ children }: { children: React.ReactNode }) {
     router = useRouter();
   const [q, setQ] = useState('');
   const [location, setLocation] = useState(false);
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
   const cart = useCart(),
     count = cart.data?.cart.items.reduce((n, i) => n + i.quantity, 0) ?? 0;
 
@@ -63,14 +64,16 @@ function StoreShell({ children }: { children: React.ReactNode }) {
     <>
       {/* Crucial: overlay is a sibling. The actual pages mount immediately. */}
       <SiteIntro />
+      <OfferPopupModal
+        manualOpen={offerModalOpen}
+        onCloseManual={() => setOfferModalOpen(false)}
+      />
 
       <a href="#main" className="skip-link">
         Skip to content
       </a>
       <div className="announcement">
-        <span>
-          <Leaf size={13} />A little local care. A healthier everyday.
-        </span>
+        <AnnouncementPerks onOpenOffer={() => setOfferModalOpen(true)} />
         <Link href="/shipping-policy/">
           Serving Goregaon East
           <ArrowUpRight size={13} />

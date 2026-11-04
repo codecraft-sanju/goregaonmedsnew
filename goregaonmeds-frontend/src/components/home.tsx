@@ -18,19 +18,25 @@ import {
   Activity,
   ChevronRight,
   HeartPulse,
+  Truck,
 } from 'lucide-react';
 import { Trending } from '@/features/catalog';
+import { useSettings } from '@/lib/hooks';
+import { HomeOfferBanner } from './offer-widgets';
 
 // Category images
 const categoryImages = {
-  Medicines: "/images/categories/medicines.webp",
-  "Everyday wellness": "/images/categories/everyday-wellness.webp",
-  "Skin & personal care": "/images/categories/skin-personal-care.webp",
-  "Vitamins & supplements": "/images/categories/vitamins-supplements.webp",
-  "Health devices": "/images/categories/health-devices.webp",
+  Medicines: '/images/categories/medicines.webp',
+  'Everyday wellness': '/images/categories/everyday-wellness.webp',
+  'Skin & personal care': '/images/categories/skin-personal-care.webp',
+  'Vitamins & supplements': '/images/categories/vitamins-supplements.webp',
+  'Health devices': '/images/categories/health-devices.webp',
 };
 
 export default function Home() {
+  const { data: settingsData } = useSettings();
+  const isFreeDelivery = settingsData?.settings.deliveryCharge === 0;
+
   return (
     <div className="container home">
       <section className="hero">
@@ -65,7 +71,7 @@ export default function Home() {
               Explore the shop
               <ArrowRight size={18} />
             </Link>
-           <Link className="hero-secondary" href="/cart/">
+            <Link className="hero-secondary" href="/cart/">
               <Upload size={18} />
               Upload prescription
             </Link>
@@ -80,6 +86,15 @@ export default function Home() {
               <Wallet size={16} />
               Pay at your doorstep
             </span>
+            {isFreeDelivery && (
+              <>
+                <i />
+                <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
+                  <Truck size={16} />
+                  Free Home Delivery
+                </span>
+              </>
+            )}
           </div>
         </div>
         <div
@@ -138,7 +153,7 @@ export default function Home() {
               <i key={i} />
             ))}
           </div>
-          
+
           <div className="hero-art-caption">
             THOUGHTFUL CARE, DELIVERED LOCALLY
           </div>
@@ -158,15 +173,25 @@ export default function Home() {
           Cash or UPI on delivery
         </span>
         <span>
-          <Heart />
-          Care for the whole family
+          {isFreeDelivery ? (
+            <>
+              <Truck />
+              Free home delivery in Goregaon East
+            </>
+          ) : (
+            <>
+              <Heart />
+              Care for the whole family
+            </>
+          )}
         </span>
       </div>
+
+      {/* Dynamic Offer Spotlight & Free Delivery Banner */}
+      <HomeOfferBanner />
+
       <section className="order-paths">
-        <Link
-      href="/cart/"
-          className="path-card prescription-card"
-        >
+        <Link href="/cart/" className="path-card prescription-card">
           <div className="path-icon">
             <Upload size={25} />
           </div>
@@ -184,7 +209,7 @@ export default function Home() {
             <i />
           </div>
         </Link>
-       <Link href="/cart/" className="path-card list-card">
+        <Link href="/cart/" className="path-card list-card">
           <div className="path-icon">
             <ClipboardList size={25} />
           </div>

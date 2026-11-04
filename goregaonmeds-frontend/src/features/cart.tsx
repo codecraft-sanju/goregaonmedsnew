@@ -13,16 +13,19 @@ import {
   Upload,
   ClipboardList,
   FileText,
+  Truck,
 } from 'lucide-react';
-import { useCart, useCartUpdate, useSession } from '@/lib/hooks';
+import { useCart, useCartUpdate, useSession, useSettings } from '@/lib/hooks';
 import { money } from '@/lib/api';
 import { uploadPrescription } from '@/lib/checkout';
 import { PageHeading, Empty, ErrorState, CartSkeleton } from '@/components/ui';
+import { CartOfferTracker } from '@/components/offer-widgets';
 
 export default function CartPage() {
   const cart = useCart();
   const update = useCartUpdate();
   const auth = useSession();
+  const settings = useSettings();
 
   const [medName, setMedName] = useState('');
   const [medQty, setMedQty] = useState(1);
@@ -38,6 +41,8 @@ export default function CartPage() {
     items.length === 0 &&
     manualMedicines.length === 0 &&
     prescriptions.length === 0;
+
+  const isFreeDeliverySetting = settings.data?.settings.deliveryCharge === 0;
 
   function handleAddManual(e: React.FormEvent) {
     e.preventDefault();
@@ -68,7 +73,9 @@ export default function CartPage() {
     setCustomError(null);
 
     if (!auth.data) {
-      setCustomError(new Error('Please sign in first to upload a prescription.'));
+      setCustomError(
+        new Error('Please sign in first to upload a prescription.'),
+      );
       e.target.value = '';
       return;
     }
@@ -95,7 +102,8 @@ export default function CartPage() {
   return (
     <div className="container page">
       <PageHeading title="Your care bag.">
-        Shop products, type a medicine list, or attach a prescription — all in one bag.
+        Shop products, type a medicine list, or attach a prescription — all in
+        one bag.
       </PageHeading>
       {cart.isPending ? (
         <CartSkeleton />
@@ -110,7 +118,11 @@ export default function CartPage() {
                 <ClipboardList size={18} />
                 <h2>Add medicine by name or prescription</h2>
               </div>
-              <form onSubmit={handleAddManual} className="medicine-row" style={{ marginTop: '0.75rem' }}>
+              <form
+                onSubmit={handleAddManual}
+                className="medicine-row"
+                style={{ marginTop: '0.75rem' }}
+              >
                 <input
                   aria-label="Medicine name, strength, pack"
                   maxLength={120}
@@ -124,19 +136,38 @@ export default function CartPage() {
                   min="1"
                   max="100"
                   value={medQty}
-                  onChange={(e) => setMedQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                  onChange={(e) =>
+                    setMedQty(
+                      Math.max(1, Math.min(100, Number(e.target.value) || 1)),
+                    )
+                  }
                 />
-                <button type="submit" className="btn secondary small" disabled={!medName.trim()}>
+                <button
+                  type="submit"
+                  className="btn secondary small"
+                  disabled={!medName.trim()}
+                >
                   <Plus size={16} /> Add
                 </button>
               </form>
 
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border, #eee)' }}>
+              <div
+                style={{
+                  marginTop: '1rem',
+                  paddingTop: '1rem',
+                  borderTop: '1px solid var(--border, #eee)',
+                }}
+              >
                 {auth.data ? (
-                  <label className="upload-zone" style={{ cursor: uploading ? 'wait' : 'pointer' }}>
+                  <label
+                    className="upload-zone"
+                    style={{ cursor: uploading ? 'wait' : 'pointer' }}
+                  >
                     <Upload size={24} />
                     <strong>
-                      {uploading ? 'Uploading prescription…' : 'Attach a prescription image'}
+                      {uploading
+                        ? 'Uploading prescription…'
+                        : 'Attach a prescription image'}
                     </strong>
                     <span>JPG, PNG or WebP · Up to 5 MB</span>
                     <input
@@ -162,7 +193,9 @@ export default function CartPage() {
             {/* Cart Items List Panel */}
             {isCartEmpty ? (
               <Empty title="A little room for care." icon={ShoppingBag}>
-                <p>Your bag is empty. Add medicines above or explore our catalog.</p>
+                <p>
+                  Your bag is empty. Add medicines above or explore our catalog.
+                </p>
                 <Link className="btn" href="/products/">
                   Explore the shop
                   <ArrowRight size={17} />
@@ -174,7 +207,11 @@ export default function CartPage() {
                 {items.map((i) => (
                   <div className="cart-row" key={i.productId}>
                     <div className="cart-thumb">
-                      {i.imageUrl ? <img src={i.imageUrl} alt="" /> : <Pill />}
+                      {i.imageUrl ? (
+                        <img src={i.imageUrl} alt="" />
+                      ) : (
+                        <Pill />
+                      )}
                     </div>
                     <div className="cart-info">
                       <h3>{i.name}</h3>
@@ -237,7 +274,9 @@ export default function CartPage() {
                     </div>
                     <div className="cart-info">
                       <h3>{m.name}</h3>
-                      <p className="muted">Custom medicine · Price confirmed at billing</p>
+                      <p className="muted">
+                        Custom medicine · Price confirmed at billing
+                      </p>
                     </div>
                     <div className="stepper">
                       <button
@@ -338,28 +377,42 @@ export default function CartPage() {
                 </div>
                 <div className="price-row">
                   <span>Delivery</span>
-                  <strong>
-                    {money(cart.data.cart.estimate.deliveryCharge)}
-                  </strong>
+                  {cart.data.cart.estimate.deliveryCharge === 0 ? (
+                    <span className="gm-free-tag">
+                      <Truck size={12} /> FREE
+                    </span>
+                  ) : (
+                    <strong>
+                      {money(cart.data.cart.estimate.deliveryCharge)}
+                    </strong>
+                  )}
                 </div>
                 <div className="summary-total">
                   <span>Estimated total</span>
                   <strong>{money(cart.data.cart.estimate.finalAmount)}</strong>
                 </div>
-                {cart.data.cart.estimate.offerApplied && (
-                  <p className="notice">
-                    Potentially eligible for a first-order gift. Confirmed at
-                    billing.
-                  </p>
-                )}
               </>
             ) : (
-              <p className="muted">
-                {manualMedicines.length > 0 || prescriptions.length > 0
-                  ? 'Custom medicines and prescription items will be priced by the pharmacist after review.'
-                  : 'Add items to view your estimate.'}
-              </p>
+              <>
+                <p className="muted">
+                  {manualMedicines.length > 0 || prescriptions.length > 0
+                    ? 'Custom medicines and prescription items will be priced by the pharmacist after review.'
+                    : 'Add items to view your estimate.'}
+                </p>
+                {isFreeDeliverySetting && (
+                  <div className="price-row">
+                    <span>Delivery in Goregaon East</span>
+                    <span className="gm-free-tag">
+                      <Truck size={12} /> FREE
+                    </span>
+                  </div>
+                )}
+              </>
             )}
+
+            {/* Visual First-Order Gift Card with /glucoone.png & Progress Bar */}
+            <CartOfferTracker cart={cart.data?.cart} />
+
             <p className="fine-print">
               Final pricing and availability are confirmed by the pharmacy. Pay
               at Delivery (Cash/UPI).

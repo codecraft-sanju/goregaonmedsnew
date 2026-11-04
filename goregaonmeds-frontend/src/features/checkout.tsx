@@ -11,8 +11,9 @@ import {
   ShieldCheck,
   ShoppingBag,
   ArrowRight,
+  Truck,
 } from 'lucide-react';
-import { api, send, ApiError } from '@/lib/api';
+import { api, send, ApiError, money } from '@/lib/api';
 import { useSession, useCart, useSettings } from '@/lib/hooks';
 import { checkoutSchema, CheckoutFields } from '@/lib/checkout';
 import {
@@ -21,6 +22,7 @@ import {
   ErrorState,
   Empty,
 } from '@/components/ui';
+import { CartOfferTracker } from '@/components/offer-widgets';
 
 type Options = {
   savedPhones: string[];
@@ -92,7 +94,9 @@ export default function Checkout() {
           manualMeds.length === 0 &&
           prescriptions.length === 0
         ) {
-          throw new Error('Your care bag is empty. Please add items before checkout.');
+          throw new Error(
+            'Your care bag is empty. Please add items before checkout.',
+          );
         }
 
         if (catalogItems.some((i) => !i.isAvailable)) {
@@ -105,7 +109,6 @@ export default function Checkout() {
           throw new Error('An order can contain up to 20 catalog products.');
         }
 
-        // Fallback orderType calculation so Zod schema validation passes even if backend checks req.body first
         const hasCatalog = catalogItems.length > 0;
         const hasManual = manualMeds.length > 0;
         const hasPrescription = prescriptions.length > 0;
@@ -230,6 +233,9 @@ export default function Checkout() {
     manualMeds.length === 0 &&
     prescriptions.length === 0;
 
+  const deliveryFee =
+    c?.estimate?.deliveryCharge ?? settings.data?.settings.deliveryCharge;
+
   return (
     <div className="container page">
       <PageHeading
@@ -244,16 +250,16 @@ export default function Checkout() {
         <ErrorState error={auth.error} retry={() => auth.refetch()} />
       ) : !auth.data ? (
         <Empty title="A quick sign-in, then you’re all set.">
-          <p>
-            Sign in securely with email to place your order.
-          </p>
+          <p>Sign in securely with email to place your order.</p>
           <Link className="btn" href="/login/?next=/checkout/">
             Sign in to continue
           </Link>
         </Empty>
       ) : isBagEmpty ? (
         <Empty title="Your care bag is empty." icon={ShoppingBag}>
-          <p>Add products, medicine names, or a prescription to your bag first.</p>
+          <p>
+            Add products, medicine names, or a prescription to your bag first.
+          </p>
           <Link className="btn" href="/cart/">
             Go to your care bag
             <ArrowRight size={17} />
@@ -270,18 +276,23 @@ export default function Checkout() {
               {catalogItems.length > 0 && (
                 <div className="notice" style={{ marginBottom: '0.5rem' }}>
                   <strong>Products:</strong>{' '}
-                  {catalogItems.map((i) => `${i.name} × ${i.quantity}`).join(', ')}
+                  {catalogItems
+                    .map((i) => `${i.name} × ${i.quantity}`)
+                    .join(', ')}
                 </div>
               )}
               {manualMeds.length > 0 && (
                 <div className="notice" style={{ marginBottom: '0.5rem' }}>
                   <strong>Manual Medicines:</strong>{' '}
-                  {manualMeds.map((m) => `${m.name} × ${m.quantity}`).join(', ')}
+                  {manualMeds
+                    .map((m) => `${m.name} × ${m.quantity}`)
+                    .join(', ')}
                 </div>
               )}
               {prescriptions.length > 0 && (
                 <div className="notice" style={{ marginBottom: '0.5rem' }}>
-                  <strong>Prescriptions:</strong> {prescriptions.length} attached
+                  <strong>Prescriptions:</strong> {prescriptions.length}{' '}
+                  attached
                 </div>
               )}
               <Link href="/cart/" className="text-link">
@@ -390,16 +401,27 @@ export default function Checkout() {
                 Pay at Delivery<small>Cash / UPI</small>
               </strong>
             </div>
+
+            {deliveryFee !== undefined && (
+              <div className="price-row">
+                <span>Delivery charge</span>
+                {deliveryFee === 0 ? (
+                  <span className="gm-free-tag">
+                    <Truck size={12} /> FREE
+                  </span>
+                ) : (
+                  <strong>{money(deliveryFee)}</strong>
+                )}
+              </div>
+            )}
+
+            {/* Visual First-Order Gift Card with /glucoone.png */}
+            <CartOfferTracker cart={c} />
+
             <p>
               Prices, availability, and your final bill are confirmed by the
               pharmacy.
             </p>
-            {settings.data?.settings.firstOrderOfferEnabled && (
-              <p className="notice">
-                A first-order gift may apply when the medicine subtotal meets
-                the offer threshold. Eligibility is confirmed at billing.
-              </p>
-            )}
             <p className="fine-print">
               Your name, contact details, address, and order information are
               used to process and fulfil this order.
