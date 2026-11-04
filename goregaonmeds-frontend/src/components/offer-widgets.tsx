@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useSettings } from '@/lib/hooks';
 import { money, Cart } from '@/lib/api';
-import '@/styles/offers.css';
+// import '@/styles/offers.css';
 
 // Constant matching backend src/services/offerService.js
 export const OFFER_GIFT_DETAILS = {
@@ -52,9 +52,9 @@ export function AnnouncementPerks({
   }
 
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+    <div className="gm-ann-perks">
       {isFreeDelivery && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 650 }}>
+        <span className="gm-ann-delivery">
           <Truck size={13} />
           FREE Home Delivery in Goregaon East
         </span>
@@ -68,10 +68,12 @@ export function AnnouncementPerks({
         >
           <span className="gm-ann-dot" />
           <Gift size={12} />
-          Free {OFFER_GIFT_DETAILS.shortName} (Worth ₹{OFFER_GIFT_DETAILS.mrp}) on ₹{minAmount}+ meds
+          <span>
+            Free {OFFER_GIFT_DETAILS.shortName} (Worth ₹{OFFER_GIFT_DETAILS.mrp}) on ₹{minAmount}+ meds
+          </span>
         </button>
       )}
-    </span>
+    </div>
   );
 }
 
