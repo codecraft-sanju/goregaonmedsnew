@@ -3978,7 +3978,7 @@ footer {
    OFFERS & ANNOUNCEMENT BAR RESPONSIVE STYLES
    ========================================================= */
 
-.gm-ann-perks {
+/* .gm-ann-perks {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4042,5 +4042,528 @@ footer {
     max-width: 100%;
     justify-content: center;
     text-align: center;
+  }
+} */
+ /* =========================================================
+   OFFERS, POPUP, BANNER & CART TRACKER COMPLETE STYLES
+   ========================================================= */
+
+/* 1. Announcement Bar Offer & Free Delivery Pills */
+.gm-ann-perks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.gm-ann-delivery {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.gm-ann-Highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.gm-ann-Highlight:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.gm-ann-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6ee7b7;
+  box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.25);
+  flex-shrink: 0;
+}
+
+/* 2. Free Delivery Pill & Price Tag */
+.gm-free-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e3f5ec;
+  color: #06675d;
+  border: 1px solid #bde5d2;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+}
+
+.gm-strike-mrp {
+  text-decoration: line-through;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+  margin-right: 6px;
+}
+
+/* 3. Home Page Offer Spotlight Banner */
+.gm-offer-spotlight {
+  position: relative;
+  margin: 26px 0 32px;
+  border-radius: 20px;
+  background: linear-gradient(125deg, #e7f4ec 0%, #f3f8ef 55%, #eef5e4 100%);
+  border: 1px solid #cfe3d5;
+  padding: 26px 32px;
+  display: grid;
+  grid-template-columns: 165px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  overflow: hidden;
+  box-shadow: 0 14px 36px rgba(16, 76, 66, 0.06);
+}
+
+.gm-offer-spotlight::after {
+  content: '✳';
+  position: absolute;
+  right: -25px;
+  bottom: -55px;
+  font-size: 180px;
+  color: rgba(8, 127, 116, 0.055);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.gm-offer-visual {
+  position: relative;
+  width: 165px;
+  height: 145px;
+  background: #ffffff;
+  border: 1px solid #dcebe0;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  box-shadow: 0 10px 24px rgba(8, 127, 116, 0.08);
+  flex-shrink: 0;
+}
+
+.gm-offer-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.gm-offer-spotlight:hover .gm-offer-visual img {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+.gm-offer-mrp-pill {
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: var(--deep);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  padding: 4px 9px;
+  border-radius: 99px;
+  box-shadow: 0 4px 10px rgba(16, 76, 66, 0.2);
+}
+
+.gm-offer-mrp-pill s {
+  opacity: 0.7;
+  margin-right: 4px;
+}
+
+.gm-offer-copy {
+  min-width: 0;
+  z-index: 1;
+}
+
+.gm-offer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gm-offer-badge-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.gm-offer-badge-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffffcc;
+  border: 1px solid #cde0d3;
+  color: var(--deep);
+  font-size: 9.5px;
+  font-weight: 650;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.gm-offer-copy h2 {
+  font-size: clamp(21px, 2.5vw, 27px);
+  line-height: 1.15;
+  letter-spacing: -0.7px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.gm-offer-copy h2 span {
+  color: var(--teal);
+}
+
+.gm-offer-copy p {
+  font-size: 12px;
+  color: #4f6559;
+  line-height: 1.65;
+  max-width: 560px;
+}
+
+.gm-offer-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 1;
+}
+
+.gm-offer-cta small {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* 4. Cart & Checkout Interactive Offer Tracker Card */
+.gm-cart-offer {
+  border-radius: 15px;
+  border: 1px solid #cfe3d5;
+  background: linear-gradient(135deg, #f1f8f3 0%, #f8fbf6 100%);
+  padding: 16px;
+  margin: 18px 0;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.gm-cart-offer.is-unlocked {
+  border-color: #8fd1b6;
+  background: linear-gradient(135deg, #e5f6ed 0%, #f2faf5 100%);
+}
+
+.gm-cart-offer-top {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.gm-cart-offer-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #dcebe0;
+  padding: 6px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.gm-cart-offer-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gm-cart-offer-free-dot {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
+}
+
+.gm-cart-offer-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gm-cart-offer-eyebrow {
+  font-size: 8.5px;
+  font-weight: 750;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.gm-cart-offer-info h4 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.gm-cart-offer-info p {
+  font-size: 11px;
+  color: #53695d;
+  line-height: 1.5;
+  margin-top: 3px;
+}
+
+.gm-progress-wrap {
+  margin-top: 12px;
+}
+
+.gm-progress-bar {
+  width: 100%;
+  height: 7px;
+  background: #dcebe0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.gm-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), #2bb698);
+  border-radius: 99px;
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gm-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* 5. First-Visit Offer Pop-up Modal */
+.gm-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(16, 48, 42, 0.55);
+  backdrop-filter: blur(5px);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  animation: gm-fade-in 0.25s ease both;
+}
+
+.gm-popup-card {
+  width: min(460px, 100%);
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #d8e8dd;
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(10, 44, 38, 0.26);
+  position: relative;
+  animation: gm-pop-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gm-popup-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  z-index: 3;
+}
+
+.gm-popup-close:hover {
+  background: #ffffff;
+}
+
+.gm-popup-stage {
+  background: radial-gradient(circle at 50% 55%, #ffffff 0%, #e4f2e8 75%);
+  padding: 28px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  border-bottom: 1px solid #e3ede6;
+}
+
+.gm-popup-stage img {
+  width: 155px;
+  height: 135px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 20px rgba(8, 127, 116, 0.15));
+  margin: 8px 0 10px;
+}
+
+.gm-popup-body {
+  padding: 22px 24px 24px;
+  text-align: center;
+}
+
+.gm-popup-body h3 {
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.gm-popup-body p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #566b5f;
+  margin-bottom: 16px;
+}
+
+.gm-popup-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f4f8f2;
+  border: 1px solid #e2ece0;
+  border-radius: 13px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  text-align: left;
+  font-size: 11.5px;
+  color: var(--ink);
+}
+
+.gm-popup-perks div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.gm-popup-perks svg {
+  color: var(--teal);
+}
+
+.gm-popup-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.gm-popup-actions .btn {
+  flex: 1;
+}
+
+@keyframes gm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes gm-pop-up {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 850px) {
+  .gm-offer-spotlight {
+    grid-template-columns: 125px minmax(0, 1fr);
+    padding: 22px;
+    gap: 18px;
+  }
+  .gm-offer-visual {
+    width: 125px;
+    height: 120px;
+  }
+  .gm-offer-cta {
+    grid-column: span 2;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    border-top: 1px solid #d5e6da;
+    padding-top: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .gm-ann-perks {
+    width: 100%;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .gm-ann-delivery {
+    font-size: 9.5px;
+  }
+  .gm-ann-Highlight {
+    font-size: 8.8px;
+    padding: 3px 9px;
+    max-width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .gm-offer-spotlight {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 20px 18px;
+    gap: 14px;
+  }
+  .gm-offer-visual {
+    margin: 0 auto;
+    width: 140px;
+    height: 120px;
+  }
+  .gm-offer-badges {
+    justify-content: center;
+  }
+  .gm-offer-cta {
+    grid-column: span 1;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .gm-offer-cta .btn {
+    width: 100%;
+  }
+  .gm-popup-actions {
+    flex-direction: column;
   }
 }
