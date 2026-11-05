@@ -7,7 +7,7 @@ import { getSettings, toAdminSettings, updateSettings } from '../services/settin
 import { createProductUploadSignature } from '../services/cloudinaryService.js';
 import { unauthorized } from '../utils/AppError.js';
 import { Order } from '../models/Order.js';
-import { Product } from '../models/Product.js'; 
+import { Product, formatCategory } from '../models/Product.js';
 import { SystemLog } from '../models/SystemLog.js';
 import { getLocalStartOfDay, getLocalEndOfDay } from '../utils/date.js';
 
@@ -17,6 +17,21 @@ function safeEqual(a, b) {
   const hashA = createHash('sha256').update(a).digest();
   const hashB = createHash('sha256').update(b).digest();
   return timingSafeEqual(hashA, hashB);
+}
+
+// Helper to deduplicate and sort category names cleanly
+function buildUniqueCategoriesList(rawCategories) {
+  const uniqueMap = new Map();
+  for (const cat of rawCategories) {
+    if (!cat || typeof cat !== 'string') continue;
+    const clean = formatCategory(cat);
+    if (!clean) continue;
+    const key = clean.toLowerCase();
+    if (!uniqueMap.has(key)) {
+      uniqueMap.set(key, clean);
+    }
+  }
+  return Array.from(uniqueMap.values()).sort((a, b) => a.localeCompare(b));
 }
 
 export function createAdminController({ env, notifier }) {
@@ -108,10 +123,10 @@ export function createAdminController({ env, notifier }) {
           const end = getLocalEndOfDay(endDate);
 
           if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-             return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD.' });
+            return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD.' });
           }
-          matchQueryPlaced.createdAt = { $gte: start,$lte: end };
-          matchQueryDelivered.deliveredAt = { $gte: start,$lte: end };
+          matchQueryPlaced.createdAt = { $gte: start, $lte: end };
+          matchQueryDelivered.deliveredAt = { $gte: start, $lte: end };
         }
         const [placedStats, salesStats] = await Promise.all([
           Order.aggregate([
@@ -120,7 +135,7 @@ export function createAdminController({ env, notifier }) {
               $group: {
                 _id: null,
                 totalOrders: { $sum: 1 },
-                pendingOrders: { $sum: {$cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] } }
+                pendingOrders: { $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] } }
               }
             }
           ]),
@@ -153,35 +168,48 @@ export function createAdminController({ env, notifier }) {
       }
     },
 
+    async listCategories(_req, res, next) {
+      try {
+        const rawCategories = await Product.distinct('category');
+        const categories = buildUniqueCategoriesList(rawCategories);
+        res.json({ success: true, categories });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async listProducts(req, res, next) {
       try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
-        const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50)); 
+        const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
         const skip = (page - 1) * limit;
 
         const { q } = req.query;
         const filter = {};
         if (q) {
           filter.$or = [
-            { name: { $regex: q,$options: 'i' } },
-            { category: { $regex: q,$options: 'i' } }
+            { name: { $regex: q, $options: 'i' } },
+            { category: { $regex: q, $options: 'i' } }
           ];
         }
 
-        const [products, total] = await Promise.all([
+        const [products, total, rawCategories] = await Promise.all([
           Product.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean(),
-          Product.countDocuments(filter)
+          Product.countDocuments(filter),
+          Product.distinct('category')
         ]);
 
+        const categories = buildUniqueCategoriesList(rawCategories);
         const totalPages = Math.ceil(total / limit);
 
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           products,
+          categories,
           pagination: {
             page,
             limit,
@@ -198,7 +226,11 @@ export function createAdminController({ env, notifier }) {
 
     async createProduct(req, res, next) {
       try {
-        const product = await Product.create(req.body);
+        const payload = { ...req.body };
+        if (payload.category) {
+          payload.category = formatCategory(payload.category);
+        }
+        const product = await Product.create(payload);
         res.status(201).json({ success: true, product });
       } catch (error) {
         next(error);
@@ -207,9 +239,13 @@ export function createAdminController({ env, notifier }) {
 
     async updateProduct(req, res, next) {
       try {
-       const product = await Product.findByIdAndUpdate(req.params.id, req.body, { 
-          new: true, 
-          runValidators: true 
+        const payload = { ...req.body };
+        if (payload.category) {
+          payload.category = formatCategory(payload.category);
+        }
+        const product = await Product.findByIdAndUpdate(req.params.id, payload, {
+          new: true,
+          runValidators: true
         });
         if (!product) {
           return res.status(404).json({ success: false, error: 'Product not found' });
@@ -236,22 +272,27 @@ export function createAdminController({ env, notifier }) {
       try {
         const logs = await SystemLog.find().sort({ createdAt: -1 }).limit(100);
         res.json({ success: true, logs });
-      } catch (error) { next(error); }
+      } catch (error) {
+        next(error);
+      }
     },
 
     async deleteSystemLog(req, res, next) {
       try {
-        const SystemLogModel = SystemLog;
-        await SystemLogModel.findByIdAndDelete(req.params.id);
+        await SystemLog.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Log deleted successfully' });
-      } catch (error) { next(error); }
+      } catch (error) {
+        next(error);
+      }
     },
 
     async clearAllLogs(req, res, next) {
       try {
         await SystemLog.deleteMany({});
         res.json({ success: true, message: 'All logs cleared successfully' });
-      } catch (error) { next(logErr => next(logErr)); }
+      } catch (error) {
+        next(error);
+      }
     }
   };
 }

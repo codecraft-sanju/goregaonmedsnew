@@ -9,7 +9,7 @@ import {
   loginSchema,
   settingsUpdateSchema,
   cancelOrderSchema,
-  createProductSchema, 
+  createProductSchema,
   updateProductSchema
 } from '../validation/schemas.js';
 
@@ -26,6 +26,7 @@ export function createAdminRouter({ env, controller, limiters }) {
     next();
   });
   router.use(requireTrustedOrigin(env));
+
   router.post('/login', limiters.adminLogin, validateBody(loginSchema), asyncHandler(controller.login));
   router.post('/logout', asyncHandler(controller.logout));
   router.get('/session', authenticated, asyncHandler(controller.session));
@@ -40,18 +41,20 @@ export function createAdminRouter({ env, controller, limiters }) {
 
   router.get('/settings', authenticated, asyncHandler(controller.getSettings));
   router.patch('/settings', authenticated, validateBody(settingsUpdateSchema), asyncHandler(controller.updateSettings));
-  
+
   router.get('/analytics/overview', authenticated, asyncHandler(controller.getAnalyticsOverview));
 
- 
   router.get('/uploads/product-signature', authenticated, asyncHandler(controller.productUploadSignature));
 
-  router.get('/products', authenticated, asyncHandler(controller.listProducts)); 
+  router.get('/products/categories', authenticated, asyncHandler(controller.listCategories));
+  router.get('/products', authenticated, asyncHandler(controller.listProducts));
   router.post('/products', authenticated, validateBody(createProductSchema), asyncHandler(controller.createProduct));
   router.put('/products/:id', authenticated, validateBody(updateProductSchema), asyncHandler(controller.updateProduct));
   router.delete('/products/:id', authenticated, asyncHandler(controller.deleteProduct));
+
   router.get('/logs', authenticated, asyncHandler(controller.getSystemLogs));
   router.delete('/logs/:id', authenticated, asyncHandler(controller.deleteSystemLog));
   router.delete('/logs', authenticated, asyncHandler(controller.clearAllLogs));
+
   return router;
 }
